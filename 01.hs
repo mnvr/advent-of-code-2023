@@ -1,7 +1,5 @@
 import System.IO.Error (tryIOError)
 import Data.Char (isDigit, digitToInt)
-import Data.Maybe (catMaybes, listToMaybe)
-import Data.Bifunctor (first)
 import Data.List (inits, find, isPrefixOf)
 
 main :: IO ()
@@ -13,19 +11,13 @@ getLines = tryIOError getLine >>= e
         e (Right s) = fmap (s :) getLines
 
 parse :: String -> Int
-parse s = left s * 10 + right (reverse s)
+parse s = first s spelled * 10 + first (reverse s) (map reverse spelled)
 
-left :: String -> Int
-left s@(c:s') = if isDigit c then digitToInt c else
-    case find (\(p, i) -> p `isPrefixOf` s) (zip spelled [1..]) of
-        Nothing -> left s'
-        (Just (s, i)) -> i
-
-right :: String -> Int
-right s@(c:s') = if isDigit c then digitToInt c else
-    case find (\(p, i) -> p `isPrefixOf` s) (zip (map reverse spelled) [1..]) of
-        Nothing -> right s'
-        (Just (s, i)) -> i
+first :: String -> [String] -> Int
+first s@(c:s') ms = if isDigit c then digitToInt c else
+    case find ((`isPrefixOf` s) . fst) (zip ms [1..]) of
+        Nothing -> first s' ms
+        (Just (_, i)) -> i
 
 spelled :: [String]
 spelled = ["one", "two", "three", "four", "five", "six", "seven", "eight", "nine"]
