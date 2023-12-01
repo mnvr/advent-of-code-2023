@@ -22,6 +22,7 @@ numbers (c:s) ms = let (d, ms') = matchOrConsume c ms in d : numbers s ms'
 -- we've "matched" the corresponding integer, otherwise the matcher should be
 -- reset to the original state.
 data Matcher = Matcher { remaining :: String, result :: Int, original :: String }
+    deriving Show
 
 -- 'matchOrConsume' takes a character and a current set of matchers, and if it
 -- matches a digit based on the current set, it returns the digit. In either
@@ -31,15 +32,14 @@ matchOrConsume c ms
     | isDigit c = (Just $ digitToInt c, ms)
     | otherwise =
         let (ds, ms') = unzip $ map (`match` c) ms in
-            -- ((listToMaybe . catMaybes) ds, ms')
-            (Nothing, ms')
+            ((listToMaybe . catMaybes) ds, ms')
 
 match :: Matcher -> Char -> (Maybe Int, Matcher)
-match (Matcher (r:rs) result original) c = if c == r then (Just result, m') else (Nothing, m')
-  where m' = if null rs then Matcher original result original else Matcher rs result original
+match (Matcher (r:rs) result original) c = if c == r && null rs then (Just result, m') else (Nothing, m')
+  where m' = if null rs || c /= r then Matcher original result original else Matcher rs result original
 
 matchers :: [Matcher]
-matchers = zipWith (\ s i -> Matcher s i s) spelled [0..]
+matchers = zipWith (\ s i -> Matcher s i s) spelled [1..]
 
 spelled :: [String]
 spelled = ["one", "two", "three", "four", "five", "six", "seven", "eight", "nine"]
