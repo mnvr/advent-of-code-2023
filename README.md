@@ -1,5 +1,4 @@
-My attempt at [Advent of Code 2023](https://adventofcode.com/2023), in
-Haskell.
+Haskell solutions to [Advent of Code 2023](https://adventofcode.com/2023).
 
 ## Running
 
@@ -10,4 +9,5 @@ to run the latest solution on the example input, use
 
 Other commands:
 
--   `make run` – interactively run the latest solution, waiting for input.
+-   `make read` – interactively run the latest solution with input from stdin.
+-   `make run` – run the latest solution on the actual input.
