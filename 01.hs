@@ -5,13 +5,19 @@ import Control.Monad (void)
 import Data.Char (isDigit, digitToInt)
 
 main :: IO ()
-main = void $ tryIOError processLines
+main = do
+    x <- next
+    y <- print (show x)
+    return ()
 
-processLines :: IO ()
-processLines = processLine >> processLines
+next :: IO [Int]
+next = do
+    l1 <- tryIOError getLine
+    case l1 of
+        (Left x) -> return []
+        (Right s) -> let x = convert s in next >>= (\xs -> return (x : xs))
 
-processLine :: IO ()
-processLine = getLine >>= (print . show . convert)
 
--- convert :: String -> Integer
-convert s = map digitToInt $ filter isDigit s
+convert :: String -> Int
+convert s = head xs * 10 + last xs
+    where xs = map digitToInt $ filter isDigit s
