@@ -36,8 +36,8 @@ matchOrConsume c ms
             ((listToMaybe . catMaybes) ds, ms')
 
 match :: Matcher -> Char -> (Maybe Int, Matcher)
-match (Matcher (r:rs) result original) c = if c == r && null rs then (Just result, m') else (Nothing, m')
-  where m' = if null rs || c /= r then Matcher original result original else Matcher rs result original
+match m@(Matcher (r:rs) result original) c = if c == r && null rs then (Just result, m') else (Nothing, m')
+  where m' = if null rs || c /= r then m { remaining = original } else m { remaining = rs }
 
 matchers :: [Matcher]
 matchers = zipWith (\ s i -> Matcher s i s) spelled [1..]
