@@ -11,8 +11,9 @@ getLines = tryIOError getLine >>= e
         e (Right s) = fmap (s :) getLines
 
 parse :: String -> Int
-parse s = head xs * 10 + last xs
+parse s = head xs * 10 + head ys
     where xs = catMaybes $ numbers s matchers
+          ys = catMaybes $ numbers (reverse s) reverseMatchers
 
 numbers :: String -> [Matcher] -> [Maybe Int]
 numbers [] _ = []
@@ -40,6 +41,9 @@ match (Matcher (r:rs) result original) c = if c == r && null rs then (Just resul
 
 matchers :: [Matcher]
 matchers = zipWith (\ s i -> Matcher s i s) spelled [1..]
+
+reverseMatchers :: [Matcher]
+reverseMatchers = zipWith (\ s i -> Matcher s i s) (map reverse spelled) [1..]
 
 spelled :: [String]
 spelled = ["one", "two", "three", "four", "five", "six", "seven", "eight", "nine"]
