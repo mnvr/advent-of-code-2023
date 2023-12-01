@@ -4,7 +4,7 @@ default: example
 
 example:
 	@f=`ls -t *.hs | head -1 | cut -f1 -d.`; \
-	in=`ls -t example/$$f* | head -1`; \
+	in=`ls -t examples/$$f* | head -1`; \
 	echo "cat $$in | runghc `ls -t *.hs | head -1`" && \
 	cat $$in | runghc `ls -t *.hs | head -1`
 
