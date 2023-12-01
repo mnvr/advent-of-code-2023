@@ -1,6 +1,7 @@
 import System.IO.Error (tryIOError)
 import Data.Char (isDigit, digitToInt)
 import Data.Maybe (catMaybes, listToMaybe)
+import Data.Bifunctor (first)
 
 main :: IO ()
 main = getLines >>= (print . sum . fmap parse)
@@ -31,13 +32,12 @@ data Matcher = Matcher { remaining :: String, result :: Int, original :: String 
 matchOrConsume :: Char -> [Matcher] -> (Maybe Int, [Matcher])
 matchOrConsume c ms
     | isDigit c = (Just $ digitToInt c, ms)
-    | otherwise =
-        let (ds, ms') = unzip $ map (`match` c) ms in
-            ((listToMaybe . catMaybes) ds, ms')
+    | otherwise = first (listToMaybe . catMaybes) $ unzip $ map (`match` c) ms
 
 match :: Matcher -> Char -> (Maybe Int, Matcher)
-match m@(Matcher (r:rs) result original) c = if c == r && null rs then (Just result, m') else (Nothing, m')
+match m@(Matcher (r:rs) result original) c = (if isMatch then Just result else Nothing, m')
   where m' = if null rs || c /= r then m { remaining = original } else m { remaining = rs }
+        isMatch = c == r && null rs
 
 matchers :: [Matcher]
 matchers = zipWith (\ s i -> Matcher s i s) spelled [1..]
