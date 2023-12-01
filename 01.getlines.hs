@@ -1,8 +1,14 @@
+    import System.IO.Error (tryIOError)
     import Data.Char (isDigit, digitToInt)
     import Data.List (isPrefixOf, findIndex)
 
     main :: IO ()
-    main = interact $ (++ "\n") . show . sum . fmap parse . lines
+    main = getLines >>= (print . sum . fmap parse)
+
+    getLines :: IO [String]
+    getLines = tryIOError getLine >>= e
+      where e (Left _) = pure []
+            e (Right s) = fmap (s :) getLines
 
     parse :: String -> Int
     parse s = first s spelled * 10 + first (reverse s) (map reverse spelled)
