@@ -1,5 +1,6 @@
 import System.IO.Error (tryIOError)
 import Data.Char (isDigit, digitToInt)
+import Data.Maybe (catMaybes)
 
 main :: IO ()
 main = getLines >>= (print . sum . fmap parse)
@@ -11,11 +12,11 @@ getLines = tryIOError getLine >>= e
 
 parse :: String -> Int
 parse s = head xs * 10 + last xs
-    where xs = numbers s matchers
+    where xs = catMaybes $ numbers s matchers
 
-numbers :: String -> [Matcher] -> [Int]
+numbers :: String -> [Matcher] -> [Maybe Int]
 numbers [] _ = []
-numbers (c:s) ms = if isDigit c then digitToInt c : numbers s ms else numbers s ms
+numbers (c:s) ms = let (d, ms') = matchOrConsume c ms in d : numbers s ms'
 
 -- A matcher is a map of strings to integers. When the string becomes empty,
 -- we've "matched" the corresponding integer, otherwise the matcher should be
