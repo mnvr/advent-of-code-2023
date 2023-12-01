@@ -3,12 +3,13 @@ default: example
 .PHONY: example read run
 
 example:
-	@f=`find *.hs | head -1 | cut -f1 -d.`; \
-	cat example/$$f | runghc $$f.hs
+	@f=`ls -t *.hs | head -1 | cut -f1 -d.`; \
+	in=`ls -t example/$$f* | head -1`; \
+	cat $$in | runghc $$f.hs
 
 read:
-	@runghc `find *.hs | head -1`
+	@runghc `ls -t *.hs | head -1`
 
 run:
-	@f=`find *.hs | head -1 | cut -f1 -d.`; \
+	@f=`ls -t *.hs | head -1 | cut -f1 -d.`; \
 	cat inputs/$$f | runghc $$f.hs
