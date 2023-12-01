@@ -1,8 +1,10 @@
-import GHC.IO (catchException)
-import Control.Exception (IOException)
+import GHC.IO (catchException, catch)
+import Control.Exception (IOException, try)
+import System.IO.Error (tryIOError)
+import Control.Monad (void)
 
 main :: IO ()
-main = catchException processLines (\(e :: IOException) -> pure ())
+main = void $ tryIOError processLines
 
 processLines :: IO ()
 processLines = processLine >> processLines
