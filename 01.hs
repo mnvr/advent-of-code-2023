@@ -5,19 +5,15 @@ import Control.Monad (void)
 import Data.Char (isDigit, digitToInt)
 
 main :: IO ()
-main = do
-    x <- next
-    y <- print (show x)
-    return ()
+main = parseLines parse >>= (print . sum)
 
-next :: IO [Int]
-next = do
-    l1 <- tryIOError getLine
-    case l1 of
+parseLines :: (String -> a) -> IO [a]
+parseLines f = do
+    es <- tryIOError getLine
+    case es of
         (Left x) -> return []
-        (Right s) -> let x = convert s in next >>= (\xs -> return (x : xs))
+        (Right s) -> let x = f s in parseLines f >>= (\xs -> return (x : xs))
 
-
-convert :: String -> Int
-convert s = head xs * 10 + last xs
+parse :: String -> Int
+parse s = head xs * 10 + last xs
     where xs = map digitToInt $ filter isDigit s
