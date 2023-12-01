@@ -1,9 +1,8 @@
 import System.IO.Error (tryIOError)
 import Data.Char (isDigit, digitToInt)
-import Data.Functor ((<&>))
 
 main :: IO ()
-main = getLines >>= ((print . process) . fmap parse)
+main = getLines >>= (print . sum . fmap parse)
 
 getLines :: IO [String]
 getLines = tryIOError getLine >>= e
@@ -13,6 +12,3 @@ getLines = tryIOError getLine >>= e
 parse :: String -> Int
 parse s = head xs * 10 + last xs
     where xs = map digitToInt $ filter isDigit s
-
-process :: [Int] -> Int
-process = sum
