@@ -9,9 +9,9 @@ latest solution on the latest of its example inputs, use
 
 Other commands:
 
--   `make read` – interactively run the latest solution with input from stdin.
--   `make run` – run the latest solution on the actual input.
+-   `make read` – interactively run, reading input from stdin.
+-   `make run` – run on the actual input.
 
 All of these are wrappers around the basic pattern of
 
-    cat somefile | runghc 0x.hs
+    cat somefile | runghc xx.hs

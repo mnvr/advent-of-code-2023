@@ -5,11 +5,15 @@ default: example
 example:
 	@f=`ls -t *.hs | head -1 | cut -f1 -d.`; \
 	in=`ls -t example/$$f* | head -1`; \
-	cat $$in | runghc $$f.hs
+	echo "cat $$in | runghc `ls -t *.hs | head -1`" && \
+	cat $$in | runghc `ls -t *.hs | head -1`
 
 read:
-	@runghc `ls -t *.hs | head -1`
+	@echo "runghc `ls -t *.hs | head -1`" && \
+	runghc `ls -t *.hs | head -1`
 
 run:
 	@f=`ls -t *.hs | head -1 | cut -f1 -d.`; \
-	cat inputs/$$f | runghc $$f.hs
+	in="inputs/$$f"; \
+	echo "cat $$in | runghc `ls -t *.hs | head -1`" && \
+	cat $$in | runghc `ls -t *.hs | head -1`
