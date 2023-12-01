@@ -1,6 +1,6 @@
 default: example
 
-.PHONY: example read run
+.PHONY: example read run test
 
 example:
 	@f=`ls -t *.hs | head -1 | cut -f1 -d.`; \
@@ -17,3 +17,12 @@ run:
 	in="inputs/$$f"; \
 	echo "cat $$in | runghc `ls -t *.hs | head -1`" && \
 	cat $$in | runghc `ls -t *.hs | head -1`
+
+test:
+	@f=`ls -t *.hs | head -1 | cut -f1 -d.`; \
+	in="inputs/$$f"; \
+	ans=`ls -t answers/$$f* | head -1`; \
+	echo "cat $$in | runghc `ls -t *.hs | head -1`" && \
+	echo "cat $$ans" && \
+	cat $$in | runghc `ls -t *.hs | head -1` && \
+	cat $$ans; echo

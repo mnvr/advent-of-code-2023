@@ -11,6 +11,8 @@ Other commands:
 
 -   `make read` – interactively run, reading input from stdin.
 -   `make run` – run on the actual input.
+-   `make test` – same as `make run`, but also print the latest expected answer.
+
 
 All of these are wrappers around the basic pattern of
 

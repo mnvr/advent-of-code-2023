@@ -1,6 +1,6 @@
 import System.IO.Error (tryIOError)
 import Data.Char (isDigit, digitToInt)
-import Data.List (inits, find, isPrefixOf)
+import Data.List (isPrefixOf, findIndex)
 
 main :: IO ()
 main = getLines >>= (print . sum . fmap parse)
@@ -15,9 +15,9 @@ parse s = first s spelled * 10 + first (reverse s) (map reverse spelled)
 
 first :: String -> [String] -> Int
 first s@(c:s') ms = if isDigit c then digitToInt c else
-    case find ((`isPrefixOf` s) . fst) (zip ms [1..]) of
+    case findIndex (`isPrefixOf` s) ms of
         Nothing -> first s' ms
-        (Just (_, i)) -> i
+        (Just i) -> i + 1
 
 spelled :: [String]
 spelled = ["one", "two", "three", "four", "five", "six", "seven", "eight", "nine"]
