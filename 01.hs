@@ -1,1 +1,2 @@
-main = print "Hello, world"
+main :: IO ()
+main = interact id
