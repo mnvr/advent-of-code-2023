@@ -1,5 +1,6 @@
 import Text.Parsec (ParseError, digit, many1, parse, sepBy, spaces, string, string', eof, space, char, endBy, sepEndBy, optional, (<|>))
 import Text.Parsec.String (Parser)
+import Data.Functor (($>))
 
 -- Parse a single integer
 integer :: Parser Integer
@@ -17,13 +18,13 @@ game :: Parser String
 game = string' "Game"
 
 red :: Parser C
-red = string' "red" >> return Red
+red =  Red <$ string' "red"
 
 green :: Parser C
-green = string' "green" >> return Green
+green = Green <$ string' "green"
 
 blue :: Parser C
-blue = string' "blue" >> return Blue
+blue = Blue <$ string' "blue"
 
 colon :: Parser Char
 colon = char ':'
