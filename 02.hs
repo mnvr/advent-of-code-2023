@@ -3,7 +3,6 @@
 
 import Text.Parsec (string, char, digit, many1, eof, sepEndBy, sepBy, space, (<|>), parse, between, newline, choice)
 import Text.Parsec.String (Parser)
-import Control.Exception (throw)
 
 main :: IO ()
 main = interact $ (++"\n") . show . (\gs -> (p1 gs, p2 gs)) . parseGames
@@ -39,13 +38,13 @@ p2 = sum . powers
 
 parseGames :: String -> [Game]
 parseGames s = case parse parser "" s of
-    Left err -> throw (userError (show err))
+    Left err -> error (show err)
     Right g -> g
   where
     parser = game `sepBy` newline <* eof
     int = read <$> many1 digit
     game = do
-      i <- between (string "Game" >> space) (char ':') int
+      i <- string "Game " *> int <* char ':'
       ds <- draw `sepBy` char ';'
       return Game { gid = i, draws = ds }
     draw = foldl (<>) mempty <$> (count `sepBy` char ',')
