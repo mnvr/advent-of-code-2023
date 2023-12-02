@@ -1,42 +1,38 @@
-import Text.Parsec (string', char, digit, many1, eof, sepEndBy, sepBy, space, (<|>), parse)
+import Text.Parsec (string', char, digit, many1, eof, sepEndBy, sepBy, space, (<|>), parse, between)
 import Text.Parsec.String (Parser)
 
 data C = Red | Green | Blue deriving Show
 
--- data Game = Game { gid :: Int, draws :: [Draw] } deriving Show
--- data Draw = Draw { red :: Int, green :: Int, blue :: Int } deriving Show
+data Game = Game { gid :: Int, draws :: [Draw] } deriving Show
+data Draw = Draw { red :: Int, green :: Int, blue :: Int } deriving Show
 
+dzero :: Draw
+dzero = Draw 0 0 0
 
-integer :: Parser Integer
-integer = read <$> many1 digit
+int :: Parser Int
+int = read <$> many1 digit
 
 -- myParser :: String -> Either ParseError [Integer]
 myParser = parse parser ""
 
 parser = do
     game
-    space
-    i <- integer
-    colon
+    i <- between space colon int
     ds <- draws
     eof
-    return (i, ds)
+    return (i,ds)
+    -- return Game { gid = i, draws = ds }
   where
     game = string' "Game"
-    red =  Red <$ string' "red"
-    green = Green <$ string' "green"
-    blue = Blue <$ string' "blue"
     colon = char ':'
     semicolon = char ';'
     comma = char ','
     draws = draw `sepEndBy` semicolon
     draw = count `sepBy` comma
-    count = do
-      space
-      b <- integer
-      space
-      t <- red <|> green <|> blue
-      return (b, t)
+    count = between space space int >>= \i ->
+      dzero { red = i } <$ string' "red" <|>
+      dzero { green = i } <$ string' "green" <|>
+      dzero { blue = i } <$ string' "blue"
 
 main :: IO ()
 main = do
