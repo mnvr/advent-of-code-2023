@@ -16,14 +16,14 @@ parseInteger = parse integers ""
 game :: Parser String
 game = string' "Game"
 
-red :: Parser String
-red = string' "red"
+red :: Parser C
+red = string' "red" >> return Red
 
-green :: Parser String
-green = string' "green"
+green :: Parser C
+green = string' "green" >> return Green
 
-blue :: Parser String
-blue = string' "blue"
+blue :: Parser C
+blue = string' "blue" >> return Blue
 
 colon :: Parser Char
 colon = char ':'
@@ -56,11 +56,7 @@ count = do
   space
   b <- integer
   space
-  l <- red <|> green <|> blue
-  t <- case l of
-    "red" -> pure Red
-    "green" -> pure Green
-    "blue" -> pure Blue
+  t <- red <|> green <|> blue
   return (b, t)
 
 main :: IO ()
