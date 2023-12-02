@@ -7,7 +7,7 @@ main :: IO ()
 main = interact $ (++ "\n") . show . sum . map parse . lines
 
 parse :: String -> Int
-parse s = read ((\f -> first (f s) f) <$> [id, reverse] >>= id)
+parse s = read $ [id, reverse] >>= (\f -> first (f s) f)
 
 first :: String -> (String -> String) -> String
 first s f = if isDigit (head s) then take 1 s else
