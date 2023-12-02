@@ -50,12 +50,18 @@ draws = draw `sepEndBy` semicolon
 
 draw = count `sepBy` comma
 
+data C = Red | Green | Blue deriving Show
+
 count = do
   space
   b <- integer
   space
   l <- red <|> green <|> blue
-  return (b, l)
+  t <- case l of
+    "red" -> pure Red
+    "green" -> pure Green
+    "blue" -> pure Blue
+  return (b, t)
 
 main :: IO ()
 main = do
