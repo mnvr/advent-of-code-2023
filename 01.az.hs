@@ -6,6 +6,11 @@ import Data.List (isPrefixOf, findIndex)
 main :: IO ()
 main = interact $ (++ "\n") . show . sum . map parse . lines
 
+-- Go through each string twice,
+-- 1. once in the forward direction, looking for each spelled out digit, and
+-- 2. then in the reversed direction, looking for the reversed digit.
+--
+-- Join both these digits to get the number.
 parse :: String -> Int
 parse s = read $ [id, reverse] >>= (\f -> first (f s) f)
 
