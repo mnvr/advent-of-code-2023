@@ -1,4 +1,4 @@
-import Text.Parsec (ParseError, digit, many1, parse, sepBy, spaces, string, string', eof, space)
+import Text.Parsec (ParseError, digit, many1, parse, sepBy, spaces, string, string', eof, space, char, endBy, sepEndBy, optional)
 import Text.Parsec.String (Parser)
 
 -- Parse a single integer
@@ -16,20 +16,48 @@ parseInteger = parse integers ""
 game :: Parser String
 game = string' "Game"
 
-myParser :: String -> Either ParseError Integer
+blue :: Parser String
+blue = string' "blue"
+
+colon :: Parser Char
+colon = char ':'
+
+semicolon :: Parser Char
+semicolon = char ';'
+
+comma :: Parser Char
+comma = char ','
+
+-- myParser :: String -> Either ParseError [Integer]
 myParser = parse parser ""
 
 parser = do
   game
   space
   i <- integer
+  colon
+  d <- draw
   eof
-  pure i
+  pure $ (i, d)
+
+draw = do
+  c1 <- count
+  comma
+  c2 <- count
+  optional semicolon
+  return [c1, c2] -- `sepEndBy` comma -- `endBy` semicolon
+
+count = do
+  space
+  b <- integer
+  space
+  blue
+  return b
 
 main :: IO ()
 main = do
   -- let input = "Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green"
-  let input = "Game 18"
+  let input = "Game 18: 3 blue, 4 blue;"
   case myParser input of
     Left err -> fail (show err)
     Right n -> putStrLn $ "Parsed: " ++ show n
