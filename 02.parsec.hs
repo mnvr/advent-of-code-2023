@@ -36,14 +36,13 @@ parser = do
   space
   i <- integer
   colon
-  d <- draw
+  ds <- draws
   eof
-  pure $ (i, d)
+  pure $ (i, ds)
 
-draw = do
-  cs <- count `sepBy` comma
-  optional semicolon
-  return cs
+draws = draw `sepEndBy` semicolon
+
+draw = count `sepBy` comma
 
 count = do
   space
@@ -55,7 +54,7 @@ count = do
 main :: IO ()
 main = do
   -- let input = "Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green"
-  let input = "Game 18: 3 blue, 4 blue, 5 blue;"
+  let input = "Game 18: 3 blue, 4 blue, 5 blue"
   case myParser input of
     Left err -> fail (show err)
     Right n -> putStrLn $ "Parsed: " ++ show n
