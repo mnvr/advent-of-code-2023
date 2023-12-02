@@ -1,7 +1,7 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Use &&" #-}
 
-import Text.Parsec (string', char, digit, many1, eof, sepEndBy, sepBy, space, (<|>), parse, between, newline)
+import Text.Parsec (string, char, digit, many1, eof, sepEndBy, sepBy, space, (<|>), parse, between, newline, choice)
 import Text.Parsec.String (Parser)
 import Control.Exception (throw)
 
@@ -45,12 +45,11 @@ parseGames s = case parse parser "" s of
     parser = game `sepBy` newline <* eof
     int = read <$> many1 digit
     game = do
-      i <- between (string' "Game" >> space) (char ':') int
-      ds <- draws
+      i <- between (string "Game" >> space) (char ':') int
+      ds <- draw `sepBy` char ';'
       return Game { gid = i, draws = ds }
-    draws = draw `sepBy` char ';'
     draw = foldl (<>) mempty <$> (count `sepBy` char ',')
     count = between space space int >>= \i ->
-      mempty { red = i } <$ string' "red" <|>
-      mempty { green = i } <$ string' "green" <|>
-      mempty { blue = i } <$ string' "blue"
+      Draw i 0 0 <$ string "red" <|>
+      Draw 0 i 0 <$ string "green" <|>
+      Draw 0 0 i <$ string "blue"
