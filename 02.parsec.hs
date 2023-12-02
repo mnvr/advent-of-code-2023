@@ -1,5 +1,7 @@
-import Text.Parsec (string', char, digit, many1, eof, sepEndBy, sepBy, space, (<|>), parse, between)
+import Text.Parsec (string', char, digit, many1, eof, sepEndBy, sepBy, space, (<|>), parse, between, newline)
 import Text.Parsec.String (Parser)
+import Control.Monad (void)
+import Control.Exception (throw)
 
 data C = Red | Green | Blue deriving Show
 
@@ -21,12 +23,14 @@ int = read <$> many1 digit
 myParser = parse parser ""
 
 parser = do
-    i <- between (game >> space) colon int
-    ds <- draws
+    gs <- game `sepBy` newline
     eof
-    return Game { gid = i, draws = ds }
+    return gs
   where
-    game = string' "Game"
+    game = do
+      i <- between (string' "Game" >> space) colon int
+      ds <- draws
+      return Game { gid = i, draws = ds }
     colon = char ':'
     semicolon = char ';'
     comma = char ','
@@ -38,8 +42,7 @@ parser = do
       d { blue = i } <$ string' "blue"
 
 main :: IO ()
-main = do
-  let input = "Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green"
+main = interact $ \input ->
   case myParser input of
-    Left err -> fail (show err)
-    Right n -> putStrLn $ "Parsed: " ++ show n
+    Left err -> throw (userError (show err))
+    Right n -> "Parsed: " ++ show n ++ "\n"
