@@ -9,6 +9,11 @@ data Draw = Draw { red :: Int, green :: Int, blue :: Int } deriving Show
 dzero :: Draw
 dzero = Draw 0 0 0
 
+dmerge :: Draw -> Draw -> Draw
+dmerge d1 d2 = Draw { red = red d1 + red d2,
+                      green = green d1 + green d2,
+                      blue = blue d1 + blue d2 }
+
 int :: Parser Int
 int = read <$> many1 digit
 
@@ -16,23 +21,21 @@ int = read <$> many1 digit
 myParser = parse parser ""
 
 parser = do
-    game
-    i <- between space colon int
+    i <- between (game >> space) colon int
     ds <- draws
     eof
-    return (i,ds)
-    -- return Game { gid = i, draws = ds }
+    return Game { gid = i, draws = ds }
   where
     game = string' "Game"
     colon = char ':'
     semicolon = char ';'
     comma = char ','
-    draws = draw `sepEndBy` semicolon
-    draw = count `sepBy` comma
-    count = between space space int >>= \i ->
-      dzero { red = i } <$ string' "red" <|>
-      dzero { green = i } <$ string' "green" <|>
-      dzero { blue = i } <$ string' "blue"
+    draws = draw `sepBy` semicolon
+    draw = foldl dmerge dzero <$> count dzero `sepBy` comma
+    count d = between space space int >>= \i ->
+      d { red = i } <$ string' "red" <|>
+      d { green = i } <$ string' "green" <|>
+      d { blue = i } <$ string' "blue"
 
 main :: IO ()
 main = do
