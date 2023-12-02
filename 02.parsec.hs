@@ -1,4 +1,4 @@
-import Text.Parsec (ParseError, digit, many1, parse, sepBy, spaces, string, string', eof, space, char, endBy, sepEndBy, optional)
+import Text.Parsec (ParseError, digit, many1, parse, sepBy, spaces, string, string', eof, space, char, endBy, sepEndBy, optional, (<|>))
 import Text.Parsec.String (Parser)
 
 -- Parse a single integer
@@ -15,6 +15,12 @@ parseInteger = parse integers ""
 
 game :: Parser String
 game = string' "Game"
+
+red :: Parser String
+red = string' "red"
+
+green :: Parser String
+green = string' "green"
 
 blue :: Parser String
 blue = string' "blue"
@@ -48,13 +54,12 @@ count = do
   space
   b <- integer
   space
-  blue
-  return b
+  l <- red <|> green <|> blue
+  return (b, l)
 
 main :: IO ()
 main = do
-  -- let input = "Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green"
-  let input = "Game 18: 3 blue, 4 blue, 5 blue"
+  let input = "Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green"
   case myParser input of
     Left err -> fail (show err)
     Right n -> putStrLn $ "Parsed: " ++ show n
