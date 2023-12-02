@@ -1,21 +1,13 @@
-import Text.Parsec (ParseError, digit, many1, parse, sepBy, spaces, string, string', eof, space, char, endBy, sepEndBy, optional, (<|>))
+import Text.Parsec (string', char, digit, many1, eof, sepEndBy, sepBy, space, (<|>), parse)
 import Text.Parsec.String (Parser)
-import Data.Functor (($>))
 
--- Parse a single integer
-integer :: Parser Integer
-integer = read <$> many1 digit
-
--- Parse a list of integers separated by spaces
-integers :: Parser [Integer]
-integers = integer `sepBy` spaces
-
--- Parse an integer from a string
-parseInteger :: String -> Either ParseError [Integer]
-parseInteger = parse integers ""
+data C = Red | Green | Blue deriving Show
 
 game :: Parser String
 game = string' "Game"
+
+integer :: Parser Integer
+integer = read <$> many1 digit
 
 red :: Parser C
 red =  Red <$ string' "red"
@@ -45,13 +37,11 @@ parser = do
   colon
   ds <- draws
   eof
-  pure $ (i, ds)
+  pure (i, ds)
 
 draws = draw `sepEndBy` semicolon
 
 draw = count `sepBy` comma
-
-data C = Red | Green | Blue deriving Show
 
 count = do
   space
