@@ -3,52 +3,40 @@ import Text.Parsec.String (Parser)
 
 data C = Red | Green | Blue deriving Show
 
-game :: Parser String
-game = string' "Game"
+-- data Game = Game { gid :: Int, draws :: [Draw] } deriving Show
+-- data Draw = Draw { red :: Int, green :: Int, blue :: Int } deriving Show
+
 
 integer :: Parser Integer
 integer = read <$> many1 digit
-
-red :: Parser C
-red =  Red <$ string' "red"
-
-green :: Parser C
-green = Green <$ string' "green"
-
-blue :: Parser C
-blue = Blue <$ string' "blue"
-
-colon :: Parser Char
-colon = char ':'
-
-semicolon :: Parser Char
-semicolon = char ';'
-
-comma :: Parser Char
-comma = char ','
 
 -- myParser :: String -> Either ParseError [Integer]
 myParser = parse parser ""
 
 parser = do
-  game
-  space
-  i <- integer
-  colon
-  ds <- draws
-  eof
-  pure (i, ds)
-
-draws = draw `sepEndBy` semicolon
-
-draw = count `sepBy` comma
-
-count = do
-  space
-  b <- integer
-  space
-  t <- red <|> green <|> blue
-  return (b, t)
+    game
+    space
+    i <- integer
+    colon
+    ds <- draws
+    eof
+    return (i, ds)
+  where
+    game = string' "Game"
+    red =  Red <$ string' "red"
+    green = Green <$ string' "green"
+    blue = Blue <$ string' "blue"
+    colon = char ':'
+    semicolon = char ';'
+    comma = char ','
+    draws = draw `sepEndBy` semicolon
+    draw = count `sepBy` comma
+    count = do
+      space
+      b <- integer
+      space
+      t <- red <|> green <|> blue
+      return (b, t)
 
 main :: IO ()
 main = do
