@@ -11,13 +11,11 @@ main = interact $ (++"\n") . show . (\gs -> (p1 gs, p2 gs)) . parseGames
 data Game = Game { gid :: Int, draws :: [Draw] } deriving Show
 data Draw = Draw { red :: Int, green :: Int, blue :: Int } deriving Show
 
-dzero :: Draw
-dzero = Draw { red = 0, green = 0, blue = 0 }
+instance Semigroup Draw where
+  (Draw a b c) <> (Draw x y z) = Draw (a + x) (b + y) (c + z)
 
-dmerge :: Draw -> Draw -> Draw
-dmerge d1 d2 = Draw { red = red d1 + red d2,
-                      green = green d1 + green d2,
-                      blue = blue d1 + blue d2 }
+instance Monoid Draw where
+  mempty = Draw 0 0 0
 
 parseGames :: String -> [Game]
 parseGames s = case parse parser "" s of
@@ -31,37 +29,28 @@ parseGames s = case parse parser "" s of
       ds <- draws
       return Game { gid = i, draws = ds }
     draws = draw `sepBy` char ';'
-    draw = foldl dmerge dzero <$> count dzero `sepBy` char ','
-    count d = between space space int >>= \i ->
-      d { red = i } <$ string' "red" <|>
-      d { green = i } <$ string' "green" <|>
-      d { blue = i } <$ string' "blue"
-
-p1Threshold :: Draw
-p1Threshold = Draw { red = 12, green = 13, blue = 14 }
-
-belowThreshold :: Draw -> Draw -> Bool
-belowThreshold threshold draw = and [red draw <= red threshold,
-                                     green draw <= green threshold,
-                                     blue draw <= blue threshold]
+    draw = foldl (<>) mempty <$> (count `sepBy` char ',')
+    count = between space space int >>= \i ->
+      mempty { red = i } <$ string' "red" <|>
+      mempty { green = i } <$ string' "green" <|>
+      mempty { blue = i } <$ string' "blue"
 
 possible :: Game -> Bool
-possible = all (belowThreshold p1Threshold) . draws
+possible = all valid . draws
+  where valid (Draw r g b) = r <= 12 && g <= 13 && b <= 14
 
 p1 :: [Game] -> Int
 p1 = sum . map gid . filter possible
 
 power :: Draw -> Int
-power Draw { red = r, green = g, blue = b } = r * g * b
+power (Draw r g b) = r * g * b
 
-fewest :: Draw -> Game -> Draw
-fewest d g = foldl m d (draws g)
-  where m d1 d2 = Draw { red = max (red d1) (red d2),
-                         green = max (green d1) (green d2),
-                         blue = max (blue d1) (blue d2) }
+fewest :: Game -> Draw
+fewest g = foldl m mempty (draws g)
+  where m (Draw a b c) (Draw x y z) = Draw (max a x) (max b y) (max c z)
 
 powers :: [Game] -> [Int]
-powers = map (power . fewest dzero)
+powers = map (power . fewest)
 
 p2 :: [Game] -> Int
 p2 = sum . powers
