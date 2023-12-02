@@ -37,16 +37,16 @@ p2 :: [Game] -> Int
 p2 = sum . powers
 
 parseGames :: String -> [Game]
-parseGames s = case parse parser "" s of
+parseGames s = case parse games "" s of
     Left err -> error (show err)
     Right g -> g
   where
-    parser = game `sepBy` newline <* eof
-    int = read <$> many1 digit
+    games = game `sepBy` newline
     game = do
       i <- string "Game " *> int <* char ':'
       ds <- draw `sepBy` char ';'
       return Game { gid = i, draws = ds }
+    int = read <$> many1 digit
     draw = foldl (<>) mempty <$> (count `sepBy` char ',')
     count = between space space int >>= \i ->
       Draw i 0 0 <$ string "red" <|>
