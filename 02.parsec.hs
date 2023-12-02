@@ -11,7 +11,7 @@ parseInteger = parse integer ""
 
 main :: IO ()
 main = do
-  let input = "123"
+  let input = "e123"
   case parseInteger input of
-    Left err -> putStrLn $ "Parse error: " ++ show err
+    Left err -> fail (show err)
     Right n -> putStrLn $ "Parsed: " ++ show n
