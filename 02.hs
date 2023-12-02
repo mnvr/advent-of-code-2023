@@ -4,8 +4,10 @@
 import Data.Text qualified as T
 
 main :: IO ()
--- main = interact $ (++"\n")
-main = interact $  unlines . concatMap each . take 1 . lines
+main = interact $ (++"\n") . show . sum . map gid . p1 . map parse . lines
+
+debug :: IO ()
+debug = interact $  unlines . concatMap each . take 10 . lines
   where each l = let g = parse l in [l, show g, show $ length $ p1 [g]]
 
 data Game = Game { gid :: Int, draws :: [Draw] } deriving Show
