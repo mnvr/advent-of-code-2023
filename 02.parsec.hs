@@ -1,9 +1,6 @@
 import Text.Parsec (string', char, digit, many1, eof, sepEndBy, sepBy, space, (<|>), parse, between, newline)
 import Text.Parsec.String (Parser)
-import Control.Monad (void)
 import Control.Exception (throw)
-
-data C = Red | Green | Blue deriving Show
 
 data Game = Game { gid :: Int, draws :: [Draw] } deriving Show
 data Draw = Draw { red :: Int, green :: Int, blue :: Int } deriving Show
@@ -16,33 +13,24 @@ dmerge d1 d2 = Draw { red = red d1 + red d2,
                       green = green d1 + green d2,
                       blue = blue d1 + blue d2 }
 
-int :: Parser Int
-int = read <$> many1 digit
 
--- myParser :: String -> Either ParseError [Integer]
-myParser = parse parser ""
-
-parser = do
-    gs <- game `sepBy` newline
-    eof
-    return gs
+parseGames :: String -> [Game]
+parseGames s = case parse parser "" s of
+    Left err -> throw (userError (show err))
+    Right g -> g
   where
+    parser = game `sepBy` newline <* eof
+    int = read <$> many1 digit
     game = do
-      i <- between (string' "Game" >> space) colon int
+      i <- between (string' "Game" >> space) (char ':') int
       ds <- draws
       return Game { gid = i, draws = ds }
-    colon = char ':'
-    semicolon = char ';'
-    comma = char ','
-    draws = draw `sepBy` semicolon
-    draw = foldl dmerge dzero <$> count dzero `sepBy` comma
+    draws = draw `sepBy` char ';'
+    draw = foldl dmerge dzero <$> count dzero `sepBy` char ','
     count d = between space space int >>= \i ->
       d { red = i } <$ string' "red" <|>
       d { green = i } <$ string' "green" <|>
       d { blue = i } <$ string' "blue"
 
 main :: IO ()
-main = interact $ \input ->
-  case myParser input of
-    Left err -> throw (userError (show err))
-    Right n -> "Parsed: " ++ show n ++ "\n"
+main = interact (show . parseGames)
