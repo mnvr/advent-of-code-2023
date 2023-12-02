@@ -1,8 +1,12 @@
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+{-# HLINT ignore "Use &&" #-}
+
 import Data.Text qualified as T
 
 main :: IO ()
 -- main = interact $ (++"\n")
-main = interact $  unlines . concatMap (\l -> [l, (show . parse) l]) . take 1 . lines
+main = interact $  unlines . concatMap each . take 1 . lines
+  where each l = let g = parse l in [l, show g, show $ length $ p1 [g]]
 
 data Game = Game { gid :: Int, draws :: [Draw] } deriving Show
 data Draw = Draw { red :: Int, green :: Int, blue :: Int } deriving Show
@@ -17,7 +21,24 @@ parseDraw :: T.Text -> Draw
 parseDraw t = foldl update zero iters
     where zero = Draw { red = 0, green = 0, blue = 0 }
           iters = T.split (==',') t
-          update d it = let [count, color] = T.words it in case T.unpack color of
-            "red" -> d { red = (read . T.unpack) count }
-            "green" -> d { green = (read . T.unpack) count }
-            "blue" -> d { blue = (read . T.unpack) count }
+          update d it = case color of
+            "red" -> d { red = count }
+            "green" -> d { green = count }
+            "blue" -> d { blue = count }
+            where [count', color'] = T.words it
+                  color = T.unpack color'
+                  count = (read . T.unpack) count'
+
+p1Threshold :: Draw
+p1Threshold = Draw { red = 12, green = 13, blue = 14 }
+
+belowThreshold :: Draw -> Draw -> Bool
+belowThreshold threshold draw = and [red draw <= red threshold,
+                                     green draw <= green threshold,
+                                     blue draw <= blue threshold]
+
+possible :: Game -> Bool
+possible = all (belowThreshold p1Threshold) . draws
+
+p1 :: [Game] -> [Game]
+p1 = filter possible
