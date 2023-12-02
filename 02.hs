@@ -1,7 +1,4 @@
-{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
-{-# HLINT ignore "Use &&" #-}
-
-import Text.Parsec (string, char, digit, many1, eof, sepEndBy, sepBy, space, (<|>), parse, between, newline, choice)
+import Text.Parsec
 import Text.Parsec.String (Parser)
 
 main :: IO ()
