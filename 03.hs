@@ -2,14 +2,14 @@ import Data.Char (isDigit)
 import Data.Maybe (catMaybes, fromMaybe)
 
 main :: IO ()
-main = interact $ (++"\n") . show . sum . parse
+main = interact $ (++ "\n") . show . p1
 
 data Grid = Grid { rows :: [String], my :: Int, mx :: Int }
   deriving Show
 
 makeGrid :: String -> Grid
 makeGrid s = Grid { rows = ls, my = length ls - 1, mx = length (head ls) - 1 }
-    where ls = take 20 . drop 0 . lines $ s
+    where ls = lines s
 
 neighbouringCells :: Grid -> Int -> Int -> [Char]
 neighbouringCells grid y x = catMaybes
@@ -55,7 +55,8 @@ validDigitsOrSpaces grid = [partDigitsInRow y | y <- [0..my grid]]
   where partDigitsInRow y = [partDigitOrSpace y x | x <- [0..mx grid]]
         partDigitOrSpace y x = fromMaybe ' ' $ digitOfPart grid y x
 
--- parse :: [Char] -> [Int]
-parse s = partNumbers
-  where grid = makeGrid s
-        partNumbers = validDigits grid
+partNumbers :: String -> [Int]
+partNumbers = validDigits . makeGrid
+
+p1 :: String -> Int
+p1 = sum . partNumbers
