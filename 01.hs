@@ -1,11 +1,17 @@
-import Data.Char (isDigit)
+import Data.Char (isDigit, digitToInt)
 import Data.List (isPrefixOf, findIndex)
 
 main :: IO ()
-main = interact $ (++ "\n") . show . sum . fmap parse . lines
+main = interact $ (++ "\n") . show . (\z -> (p1 z, p2 z)) . lines
+  where p1 = sum . map parse1
+        p2 = sum . map parse2
 
-parse :: String -> Int
-parse s = first s spelled * 10 + first (reverse s) (map reverse spelled)
+parse1 :: String -> Int
+parse1 s = head xs * 10 + last xs
+    where xs = map digitToInt $ filter isDigit s
+
+parse2 :: String -> Int
+parse2 s = first s spelled * 10 + first (reverse s) (map reverse spelled)
 
 first :: String -> [String] -> Int
 first s@(c:s') ms = if isDigit c then read [c] else

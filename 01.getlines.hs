@@ -2,6 +2,11 @@ import System.IO.Error (tryIOError)
 import Data.Char (isDigit, digitToInt)
 import Data.List (isPrefixOf, findIndex)
 
+-- An alternative to interact, by using line by line processing using getLine.
+--
+-- Mostly kept around as a demonstration, for all practical purposes, the normal
+-- interact version should be better.
+
 main :: IO ()
 main = getLines >>= (print . sum . fmap parse)
 
