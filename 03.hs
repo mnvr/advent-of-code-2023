@@ -1,6 +1,6 @@
 import Data.Char (isDigit)
 import Data.Maybe (catMaybes, isJust, fromJust, isNothing)
-import Control.Applicative ((<|>))
+import Control.Applicative ((<|>), Applicative (liftA2))
 import Data.Map qualified as M
 
 main :: IO ()
@@ -33,7 +33,7 @@ neighbouringSymbols :: Grid -> Int -> Int -> [Cell]
 neighbouringSymbols grid y x = filter isSymbol (neighbouringCells grid y x)
 
 isSymbol :: Cell -> Bool
-isSymbol (Cell {cc}) = (not . isDigit) cc && cc /= '.'
+isSymbol (Cell {cc}) = liftA2 (&&) (not . isDigit) (/= '.') cc
 
 -- A particular index is a digit of a part number if (a) it is a digit, and (b)
 -- if any of the digits of that number are near a symbol.
