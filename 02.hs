@@ -44,7 +44,7 @@ parseGames s = case parse games "" s of
       ds <- draw `sepBy` char ';'
       return Game { gid = i, draws = ds }
     int = read <$> many1 digit
-    draw = foldl (<>) mempty <$> (count `sepBy` char ',')
+    draw = chainl count (char ',' >> pure (<>)) mempty
     count = between space space int >>= \i ->
       Draw i 0 0 <$ string "red" <|>
       Draw 0 i 0 <$ string "green" <|>
