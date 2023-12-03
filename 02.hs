@@ -14,7 +14,7 @@ instance Monoid Draw where
   mempty = Draw 0 0 0
 
 possible :: Game -> Bool
-possible = all valid . draws
+possible = valid . fewest . draws
   where valid (Draw r g b) = r <= 12 && g <= 13 && b <= 14
 
 p1 :: [Game] -> Int
@@ -27,11 +27,8 @@ fewest :: [Draw] -> Draw
 fewest = foldl m mempty
   where m (Draw a b c) (Draw x y z) = Draw (max a x) (max b y) (max c z)
 
-powers :: [Game] -> [Int]
-powers = map (power . fewest . draws)
-
 p2 :: [Game] -> Int
-p2 = sum . powers
+p2 = sum . map (power . fewest . draws)
 
 parseGames :: String -> [Game]
 parseGames s = case parse games "" s of
