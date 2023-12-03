@@ -7,7 +7,6 @@ main :: IO ()
 main = interact $ (++ "\n") . show . (\ps -> (p1 ps, p2 ps)) . parseParts
 
 data Grid = Grid { rows :: [String], my :: Int, mx :: Int }
-  deriving Show
 
 data Part = Part { partNum :: Int, partNeighbourSymbols :: [Cell] }
 data PartDigit = PartDigit { pdChar :: Char, pdNeighbourSymbols :: [Cell] }
@@ -23,9 +22,8 @@ neighbouringCells grid y x = catMaybes
                                  not (u == 0 && v == 0)]
 
 cell :: Grid -> Int -> Int -> Maybe Cell
-cell grid y x
-  | isInBounds grid y x = Just Cell {
-                            cc = (rows grid !! y) !! x, cy = y, cx = x }
+cell grid y x | isInBounds grid y x =
+    Just Cell { cc = (rows grid !! y) !! x, cy = y, cx = x }
   | otherwise = Nothing
 
 isInBounds :: Grid -> Int -> Int -> Bool
@@ -33,9 +31,6 @@ isInBounds (Grid {my, mx}) y x = y >= 0 && y <= my && x >= 0 && x <= mx
 
 neighbouringSymbols :: Grid -> Int -> Int -> [Cell]
 neighbouringSymbols grid y x = filter isSymbol (neighbouringCells grid y x)
-
-nearSymbol :: Grid -> Int -> Int -> Bool
-nearSymbol grid y x = not . null $ neighbouringSymbols grid y x
 
 isSymbol :: Cell -> Bool
 isSymbol (Cell {cc}) = (not . isDigit) cc && cc /= '.'
@@ -105,7 +100,6 @@ makeLookupTable ps = modify $ foldl merge M.empty $ zip ps [0..]
 gearRatio :: [Part] -> Int
 gearRatio [x] = 0
 gearRatio [x, y] = partNum x * partNum y
-gearRatio _ = error "unexpected gear with three parts"
 
 p2 :: [Part] -> Int
 p2 ps = foldl combine 0 lookupTable
