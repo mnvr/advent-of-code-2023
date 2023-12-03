@@ -39,8 +39,7 @@ parseGames s = case parse games "" s of
     Right g -> g
   where
     games = game `sepBy` newline
-    game = (\i ds -> Game { gid = i, draws = ds })
-        <$> (string "Game " *> int <* char ':') <*> draw `sepBy` char ';'
+    game = Game <$> (string "Game " *> int <* char ':') <*> draw `sepBy` char ';'
     int = read <$> many1 digit
     draw = chainl count (char ',' >> pure (<>)) mempty
     count = between space space int >>= \i ->
