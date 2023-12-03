@@ -16,4 +16,7 @@ cat "$1" | tr ",;:" '\n' | \
   /blue/  { if (b < $1) b = $1 }
   END { print r, g, b; }
   ' | \
-  awk '{ if ($1 < 13 && $2 < 14 && $3 < 15) s += NR } END { print s }'
+  awk '
+  { if ($1 < 13 && $2 < 14 && $3 < 15) c += NR }
+  { s += $1 * $2 * $3 }
+  END { print c,s }'
