@@ -1,5 +1,3 @@
-{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
-{-# HLINT ignore "Redundant if" #-}
 import Data.Char (isDigit)
 import Data.Maybe (catMaybes, fromMaybe)
 
@@ -44,10 +42,9 @@ digitOfPart_ seen grid y x
     | not $ isInBounds grid y x = False
     | otherwise =
         let c = rows grid !! y !! x
-        in if not (isDigit c) then False
-           else nearSymbol grid y x
+        in (isDigit c && (nearSymbol grid y x
                 || digitOfPart_ ((y,x) : seen) grid y (x - 1)
-                || digitOfPart_ ((y,x) : seen) grid y (x + 1)
+                || digitOfPart_ ((y,x) : seen) grid y (x + 1)))
 
 validDigits :: Grid -> [Int]
 validDigits = concatMap numbers . validDigitsOrSpaces
@@ -62,4 +59,3 @@ validDigitsOrSpaces grid = [partDigitsInRow y | y <- [0..my grid]]
 parse s = partNumbers
   where grid = makeGrid s
         partNumbers = validDigits grid
-        partNumbers2 = nearSymbol grid 0 9
