@@ -2,6 +2,7 @@ import Data.Char (isDigit)
 import Data.Maybe (catMaybes, fromMaybe)
 import Control.Monad (filterM)
 import Debug.Trace (trace)
+import Control.Applicative ((<|>))
 
 main :: IO ()
 main = interact $ (++"\n") . show . parse
@@ -11,7 +12,7 @@ data Grid = Grid { rows :: [String], my :: Int, mx :: Int }
 
 makeGrid :: String -> Grid
 makeGrid s = Grid { rows = ls, my = length ls - 1, mx = length (head ls) - 1 }
-    where ls = take 20 . lines $ s
+    where ls = take 10 . drop 0 . lines $ s
 
 neighbouringCells :: Grid -> Int -> Int -> [Char]
 neighbouringCells grid y x = catMaybes
@@ -32,20 +33,19 @@ nearSymbol grid y x = any isSymbol (neighbouringCells grid y x)
 isSymbol :: Char -> Bool
 isSymbol c = (not . isDigit) c && c /= '.'
 
--- A particular index is a digit of a part number it is a digit, and if any of
--- the digits of that number are near a symbol.
+-- A particular index is a digit of a part number if (a) it is a digit, and (b)
+-- if any of the digits of that number are near a symbol.
 digitOfPart :: Grid -> Int -> Int -> Maybe Char
-digitOfPart grid y x = cell grid y x >>= valid
-  where valid d | isDigit d && check [] y x = Just d
-                | otherwise = Nothing
-        check :: [(Int,Int)] -> Int -> Int -> Bool
-        check seen y x
-          | (y,x) `elem` seen = False
-          | nearSymbol grid y x = True
-          | inBounds grid y x =
-            let seen' = (y,x) : seen
-            in check seen' y (x - 1) || check seen' y (x + 1)
-          | otherwise = False
+digitOfPart = digitOfPart_ []
+
+digitOfPart_ :: [(Int,Int)] -> Grid -> Int -> Int ->  Maybe Char
+digitOfPart_ seen grid y x
+  | (y,x) `elem` seen = Nothing
+  | otherwise = cell grid y x >>= \c ->
+      if isDigit c && nearSymbol grid y x then Just c
+      else let seen' = (y,x) : seen
+           in     digitOfPart_ seen' grid y (x - 1)
+              <|> digitOfPart_ seen' grid y (x + 1)
 
 validDigits :: Grid -> [Int]
 validDigits = concatMap numbers . validDigitsOrSpaces
@@ -56,7 +56,8 @@ validDigitsOrSpaces grid = [partDigitsInRow y | y <- [0..my grid]]
   where partDigitsInRow y = [partDigitOrSpace y x | x <- [0..mx grid]]
         partDigitOrSpace y x = fromMaybe ' ' $ digitOfPart grid y x
 
-parse :: [Char] -> [Int]
+-- parse :: [Char] -> [Int]
 parse s = partNumbers
   where grid = makeGrid s
-        partNumbers = validDigits grid
+        partNumbers = validDigitsOrSpaces grid
+        partNumbers2 = nearSymbol grid 0 9
