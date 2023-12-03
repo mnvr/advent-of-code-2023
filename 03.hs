@@ -90,8 +90,17 @@ p1 :: [Part] -> Int
 p1 = sum . map partNum
 
 makeLookupTable :: [Part] -> M.Map Cell [Part]
-makeLookupTable = foldl merge M.empty
-  where merge map part = map
+makeLookupTable ps = foldl merge M.empty $ zip ps [0..]
+  where merge :: M.Map Cell [Part] -> (Part, Int) -> M.Map Cell [Part]
+        merge m (part, i) = foldl add m (partNeighbourSymbols part)
+        add :: M.Map Cell [Part] -> Cell -> M.Map Cell [Part]
+        add m symbol@(Cell {cc = '*'}) = m --   case 3 of m
+        add m _ = m
+            -- case lookup symbol m of _ -> m
+        --               Nothing -> M.insert symbol [i] m'
+        --               Just is -> M.update symbol i:is m'
+        --         f m' _ = m'
+
 
 p2 :: [Part] -> Int
 p2 ps = length lookupTable
