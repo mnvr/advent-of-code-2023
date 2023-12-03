@@ -1,5 +1,5 @@
 import Data.Char (isDigit)
-import Data.Maybe (catMaybes, fromMaybe)
+import Data.Maybe (catMaybes, isJust, fromJust, isNothing)
 import Control.Applicative ((<|>))
 
 main :: IO ()
@@ -8,7 +8,8 @@ main = interact $ (++ "\n") . show . p1
 data Grid = Grid { rows :: [String], my :: Int, mx :: Int }
   deriving Show
 
-data PartDigit = Part { pdChar :: Char, pdNeighbourSymbols :: [Cell] }
+data Part = Part { partNum :: Int, partNeighbourSymbols :: [Cell] }
+data PartDigit = PartDigit { pdChar :: Char, pdNeighbourSymbols :: [Cell] }
 data Cell = Cell { cc :: Char, cy :: Int, cx :: Int } deriving Eq
 
 makeGrid :: String -> Grid
@@ -40,9 +41,11 @@ isSymbol (Cell {cc}) = (not . isDigit) cc && cc /= '.'
 
 -- A particular index is a digit of a part number if (a) it is a digit, and (b)
 -- if any of the digits of that number are near a symbol.
-partDigit :: Grid -> Int -> Int -> Maybe Char
+partDigit :: Grid -> Int -> Int -> Maybe PartDigit
 partDigit grid y x = cell grid y x >>= \(Cell {cc}) ->
-    cc <$ neighbouringSymbolsOfPartDigit_ [] grid y x
+    case neighbouringSymbolsOfPartDigit_ [] grid y x of
+        Just ns -> Just PartDigit { pdChar = cc, pdNeighbourSymbols = ns }
+        Nothing -> Nothing
 
 neighbouringSymbolsOfPartDigit_ ::
     [(Int,Int)] -> Grid -> Int -> Int -> Maybe [Cell]
@@ -60,17 +63,27 @@ neighbouringSymbolsOfPartDigit_ seen grid y x
                    else Just ns
            else Nothing
 
-validDigits :: Grid -> [Int]
-validDigits = concatMap numbers . validDigitsOrSpaces
-  where numbers row = map read (words row)
+-- Group consecutive sequences of 'Just PartDigit's
+splits :: [Maybe PartDigit] -> [[PartDigit]]
+splits xs = case span isJust (dropWhile isNothing xs) of
+              ([], []) -> []
+              (ys, []) -> [map fromJust ys]
+              (ys, rest) -> map fromJust ys : splits rest
 
-validDigitsOrSpaces :: Grid -> [String]
-validDigitsOrSpaces grid = [partDigitsInRow y | y <- [0..my grid]]
-  where partDigitsInRow y = [partDigitOrSpace y x | x <- [0..mx grid]]
-        partDigitOrSpace y x = fromMaybe ' ' $ partDigit grid y x
+parts :: Grid -> [Part]
+parts = concatMap numbers . partDigitsOrSpaces
+  where
+    numbers row = map combine (splits row)
+    combine pds = Part {
+        partNum = read (map pdChar pds),
+        partNeighbourSymbols = concatMap pdNeighbourSymbols pds }
+
+partDigitsOrSpaces :: Grid -> [[Maybe PartDigit]]
+partDigitsOrSpaces grid = [partDigitsInRow y | y <- [0..my grid]]
+  where partDigitsInRow y = [partDigit grid y x | x <- [0..mx grid]]
 
 partNumbers :: String -> [Int]
-partNumbers = validDigits . makeGrid
+partNumbers = map partNum . parts . makeGrid
 
 p1 :: String -> Int
 p1 = sum . partNumbers
