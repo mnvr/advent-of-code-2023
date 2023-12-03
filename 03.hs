@@ -102,7 +102,12 @@ makeLookupTable ps = modify $ foldl merge M.empty $ zip ps [0..]
                        else M.insert symbol (i:is) m
         add i m _ = m
 
-p2 :: [Part] -> Int
-p2 ps = length lookupTable
-  where lookupTable = makeLookupTable ps
+gearRatio :: [Part] -> Int
+gearRatio [x] = 0
+gearRatio [x, y] = partNum x * partNum y
+gearRatio _ = error "unexpected gear with three parts"
 
+p2 :: [Part] -> Int
+p2 ps = foldl combine 0 lookupTable
+  where lookupTable = makeLookupTable ps
+        combine v ps = v + gearRatio ps
