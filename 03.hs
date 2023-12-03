@@ -1,5 +1,5 @@
 import Data.Char (isDigit)
-import Data.Maybe (catMaybes)
+import Data.Maybe (catMaybes, fromMaybe)
 import Control.Monad (filterM)
 
 main :: IO ()
@@ -37,9 +37,15 @@ digitOfPart grid y x = cell grid y x >>= valid
         check :: [(Int,Int)] -> Int -> Int -> Bool
         check seen y x = True
 
-validDigits :: Grid -> [String]
-validDigits grid = [partDigitsInRow y | y <- [0..my grid]]
-  where partDigitsInRow y = catMaybes [digitOfPart grid y x | x <- [0..mx grid]]
+validDigits :: Grid -> [Int]
+validDigits = concatMap numbers . validDigitsOrSpaces
+  where numbers row = map read (words row)
+
+validDigitsOrSpaces :: Grid -> [String]
+validDigitsOrSpaces grid = [partDigitsInRow y | y <- [0..my grid]]
+  where partDigitsInRow y = [partDigitOrSpace y x | x <- [0..mx grid]]
+        partDigitOrSpace y x = fromMaybe ' ' $ digitOfPart grid y x
+
 
 parse s = test
   where grid = makeGrid s
