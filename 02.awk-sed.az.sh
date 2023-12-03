@@ -5,7 +5,7 @@
 
 test -z "$1" && echo "usage: $0 <path-to-input>" && exit 1
 
-cat "$1" | tr ",;:" '\n' | \
+cat "$1" | sed 's/[,:;]/\n/g' | \
   awk '
   /Game/ { if ($2 > 1) print r, g, b; r=0; g=0; b=0 }
   /red/   { if (r < $1) r = $1 }
