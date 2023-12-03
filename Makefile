@@ -1,6 +1,6 @@
 default: example
 
-.PHONY: example read run test
+.PHONY: example read run test watch
 
 example:
 	@f=`ls -t *.hs | head -1 | cut -f1 -d.`; \
@@ -26,3 +26,10 @@ test:
 	echo "cat $$ans" && \
 	cat $$in | runghc `ls -t *.hs | head -1` && \
 	cat $$ans; echo
+
+watch:
+	@f=`ls -t *.hs | head -1 | cut -f1 -d.`; \
+	in=`ls -t examples/$$f* | head -1`; \
+	hs=`ls -t *.hs | head -1`; \
+	echo "fswatch $$hs | while read f; do cat $$in | runghc $$hs; done" && \
+	fswatch $$hs | while read f; do cat $$in | runghc $$hs; done
