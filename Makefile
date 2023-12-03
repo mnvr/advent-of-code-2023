@@ -37,10 +37,9 @@ watch:
 	fswatch $$hs | while read f; do cat $$in | runghc $$hs; done
 
 verify:
-	@ls -r 03.hs | cut -f1 -d. | uniq | while read n; do \
+	@ls -r *.hs | cut -f1 -d. | uniq | while read n; do \
 	  in="inputs/$$n"; \
       hs="$$n.hs"; \
-	  echo diff $$hs $$hs; \
+	  cat $$in | runghc $$hs && \
+	  echo "(`cat answers/$$n-a`,`cat answers/$$n-b`)" ;\
 	done
-
-#      ; \# diff <(cat $$in | runghc $$hs) <(echo "(`cat answers/$$n-a`,`cat answers/$$n-b`)") ; \
