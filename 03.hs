@@ -1,9 +1,10 @@
 import Data.Char (isDigit)
 import Data.Maybe (catMaybes, isJust, fromJust, isNothing)
 import Control.Applicative ((<|>))
+import Data.Map qualified as M
 
 main :: IO ()
-main = interact $ (++ "\n") . show . p1
+main = interact $ (++ "\n") . show . (\ps -> (p1 ps, p2 ps)) . parseParts
 
 data Grid = Grid { rows :: [String], my :: Int, mx :: Int }
   deriving Show
@@ -82,8 +83,17 @@ partDigitsOrSpaces :: Grid -> [[Maybe PartDigit]]
 partDigitsOrSpaces grid = [partDigitsInRow y | y <- [0..my grid]]
   where partDigitsInRow y = [partDigit grid y x | x <- [0..mx grid]]
 
-partNumbers :: String -> [Int]
-partNumbers = map partNum . parts . makeGrid
+parseParts :: String -> [Part]
+parseParts = parts . makeGrid
 
-p1 :: String -> Int
-p1 = sum . partNumbers
+p1 :: [Part] -> Int
+p1 = sum . map partNum
+
+makeLookupTable :: [Part] -> M.Map Cell [Part]
+makeLookupTable = foldl merge M.empty
+  where merge map part = map
+
+p2 :: [Part] -> Int
+p2 ps = length lookupTable
+  where lookupTable = makeLookupTable ps
+
