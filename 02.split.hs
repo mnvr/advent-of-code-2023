@@ -4,17 +4,17 @@ import Data.Text qualified as T
 -- instead of using Parsec.
 
 main :: IO ()
-main = interact $ (++"\n") . show . (\gs -> (p1 gs, p2 gs)) . map parse . lines
+main = interact $ (++"\n") . show . (\gs -> (p1 gs, p2 gs)) . map parseGame . lines
 -- main = debug1
 
 debug1 :: IO ()
 debug1 = interact $  unlines . concatMap each . take 10 . lines
-  where each l = let g = parse l in
+  where each l = let g = parseGame l in
           [l, show g, show . length $ filter possible [g]]
 
 debug2 :: IO ()
 debug2 = interact $  unlines . concatMap each . take 10 . lines
-  where each l = let g = parse l in
+  where each l = let g = parseGame l in
           [l, show g, show $ fewest (draws g), show . power $ fewest (draws g)]
 
 data Game = Game { gid :: Int, draws :: [Draw] } deriving Show
@@ -46,19 +46,16 @@ powers = map (power . fewest . draws)
 p2 :: [Game] -> Int
 p2 = sum . powers
 
-parse :: String -> Game
-parse s = Game { gid = gid, draws = draws }
+parseGame :: String -> Game
+parseGame s = Game { gid = gid, draws = draws }
   where [gt, rt] = T.split (==':') (T.pack s)
         gid = read . T.unpack . last $ T.words gt
-        draws = map parseDraw $ T.split (==';') rt
-
-parseDraw :: T.Text -> Draw
-parseDraw t = foldl update mempty iters
-    where iters = T.split (==',') t
-          update d it = case color of
-            "red" -> d { red = count }
-            "green" -> d { green = count }
-            "blue" -> d { blue = count }
-            where [count', color'] = T.words it
-                  color = T.unpack color'
-                  count = (read . T.unpack) count'
+        draws = map draw $ T.split (==';') rt
+        draw t = foldl update mempty (T.split (==',') t)
+        update d it = case color of
+          "red" -> d { red = count }
+          "green" -> d { green = count }
+          "blue" -> d { blue = count }
+          where [count', color'] = T.words it
+                color = T.unpack color'
+                count = (read . T.unpack) count'
