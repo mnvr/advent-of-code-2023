@@ -11,7 +11,7 @@ data Grid = Grid { rows :: [String], my :: Int, mx :: Int }
 
 data Part = Part { partNum :: Int, partNeighbourSymbols :: [Cell] }
 data PartDigit = PartDigit { pdChar :: Char, pdNeighbourSymbols :: [Cell] }
-data Cell = Cell { cc :: Char, cy :: Int, cx :: Int } deriving Eq
+data Cell = Cell { cc :: Char, cy :: Int, cx :: Int } deriving (Ord, Eq)
 
 makeGrid :: String -> Grid
 makeGrid s = Grid { rows = ls, my = length ls - 1, mx = length (head ls) - 1 }
@@ -90,17 +90,17 @@ p1 :: [Part] -> Int
 p1 = sum . map partNum
 
 makeLookupTable :: [Part] -> M.Map Cell [Part]
-makeLookupTable ps = foldl merge M.empty $ zip ps [0..]
-  where merge :: M.Map Cell [Part] -> (Part, Int) -> M.Map Cell [Part]
-        merge m (part, i) = foldl add m (partNeighbourSymbols part)
-        add :: M.Map Cell [Part] -> Cell -> M.Map Cell [Part]
-        add m symbol@(Cell {cc = '*'}) = m --   case 3 of m
-        add m _ = m
-            -- case lookup symbol m of _ -> m
-        --               Nothing -> M.insert symbol [i] m'
-        --               Just is -> M.update symbol i:is m'
-        --         f m' _ = m'
-
+makeLookupTable ps = modify $ foldl merge M.empty $ zip ps [0..]
+  where modify :: M.Map Cell [Int] -> M.Map Cell [Part]
+        modify = M.map (map (ps !!))
+        merge :: M.Map Cell [Int] -> (Part, Int) -> M.Map Cell [Int]
+        merge m (part, i) = foldl (add i) m (partNeighbourSymbols part)
+        add :: Int -> M.Map Cell [Int] -> Cell -> M.Map Cell [Int]
+        add i m symbol@(Cell {cc = '*'}) = case M.lookup symbol m of
+            Nothing -> M.insert symbol [i] m
+            Just is -> if i `elem` is then m
+                       else M.insert symbol (i:is) m
+        add i m _ = m
 
 p2 :: [Part] -> Int
 p2 ps = length lookupTable
