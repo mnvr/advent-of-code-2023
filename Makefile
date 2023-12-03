@@ -3,10 +3,11 @@ default: example
 .PHONY: example read run test watch
 
 example:
-	@f=`ls -t *.hs | head -1 | cut -f1 -d.`; \
-	in=`ls -t examples/$$f* | head -1`; \
-	echo "cat $$in | runghc `ls -t *.hs | head -1`" && \
-	cat $$in | runghc `ls -t *.hs | head -1`
+	@n=`ls -t *.hs | head -1 | cut -f1 -d.`; \
+	in=`ls -t examples/$$n* | head -1`; \
+	hs=`ls -t *.hs | head -1`; \
+	echo "cat $$in | runghc $$hs" && \
+	cat $$in | runghc $$hs
 
 read:
 	@echo "runghc `ls -t *.hs | head -1`" && \
@@ -15,17 +16,19 @@ read:
 run:
 	@f=`ls -t *.hs | head -1 | cut -f1 -d.`; \
 	in="inputs/$$f"; \
-	echo "cat $$in | runghc `ls -t *.hs | head -1`" && \
-	cat $$in | runghc `ls -t *.hs | head -1`
+	hs=`ls -t *.hs | head -1`; \
+	echo "cat $$in | runghc $$hs" && \
+	cat $$in | runghc $$hs
 
 test:
-	@f=`ls -t *.hs | head -1 | cut -f1 -d.`; \
-	in="inputs/$$f"; \
-	ans=`ls -t answers/$$f* | head -1`; \
-	echo "cat $$in | runghc `ls -t *.hs | head -1`" && \
-	echo "cat $$ans" && \
-	cat $$in | runghc `ls -t *.hs | head -1` && \
-	cat $$ans; echo
+	@n=`ls -t *.hs | head -1 | cut -f1 -d.`; \
+	in="inputs/$$n"; \
+	ans=`ls -t answers/$$n* | head -1`; \
+	hs=`ls -t *.hs | head -1`; \
+	echo "cat $$in | runghc $$hs" && \
+	echo 'echo "(`cat answers/'$$n'-a`,`cat answers/'$$n'-b`)"' && \
+	cat $$in | runghc $$hs && \
+	echo "(`cat answers/$$n-a`,`cat answers/$$n-b`)"
 
 watch:
 	@f=`ls -t *.hs | head -1 | cut -f1 -d.`; \
