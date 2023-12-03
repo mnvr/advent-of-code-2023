@@ -1,18 +1,17 @@
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+{-# HLINT ignore "Redundant if" #-}
 import Data.Char (isDigit)
 import Data.Maybe (catMaybes, fromMaybe)
-import Control.Monad (filterM)
-import Debug.Trace (trace)
-import Control.Applicative ((<|>))
 
 main :: IO ()
-main = interact $ (++"\n") . show . parse
+main = interact $ (++"\n") . show . sum . parse
 
 data Grid = Grid { rows :: [String], my :: Int, mx :: Int }
   deriving Show
 
 makeGrid :: String -> Grid
 makeGrid s = Grid { rows = ls, my = length ls - 1, mx = length (head ls) - 1 }
-    where ls = take 10 . drop 0 . lines $ s
+    where ls = take 20 . drop 0 . lines $ s
 
 neighbouringCells :: Grid -> Int -> Int -> [Char]
 neighbouringCells grid y x = catMaybes
@@ -21,11 +20,11 @@ neighbouringCells grid y x = catMaybes
 
 cell :: Grid -> Int -> Int -> Maybe Char
 cell grid y x
-  | inBounds grid y x = Just ((rows grid !! y) !! x)
+  | isInBounds grid y x = Just ((rows grid !! y) !! x)
   | otherwise = Nothing
 
-inBounds :: Grid -> Int -> Int -> Bool
-inBounds (Grid {my, mx}) y x = y >= 0 && y <= my && x >= 0 && x <= mx
+isInBounds :: Grid -> Int -> Int -> Bool
+isInBounds (Grid {my, mx}) y x = y >= 0 && y <= my && x >= 0 && x <= mx
 
 nearSymbol :: Grid -> Int -> Int -> Bool
 nearSymbol grid y x = any isSymbol (neighbouringCells grid y x)
@@ -36,16 +35,19 @@ isSymbol c = (not . isDigit) c && c /= '.'
 -- A particular index is a digit of a part number if (a) it is a digit, and (b)
 -- if any of the digits of that number are near a symbol.
 digitOfPart :: Grid -> Int -> Int -> Maybe Char
-digitOfPart = digitOfPart_ []
+digitOfPart grid y x = cell grid y x >>= \c ->
+    if digitOfPart_ [] grid y x then Just c else Nothing
 
-digitOfPart_ :: [(Int,Int)] -> Grid -> Int -> Int ->  Maybe Char
+digitOfPart_ :: [(Int,Int)] -> Grid -> Int -> Int -> Bool
 digitOfPart_ seen grid y x
-  | (y,x) `elem` seen = Nothing
-  | otherwise = cell grid y x >>= \c ->
-      if isDigit c && nearSymbol grid y x then Just c
-      else let seen' = (y,x) : seen
-           in     digitOfPart_ seen' grid y (x - 1)
-              <|> digitOfPart_ seen' grid y (x + 1)
+    | (y,x) `elem` seen = False
+    | not $ isInBounds grid y x = False
+    | otherwise =
+        let c = rows grid !! y !! x
+        in if not (isDigit c) then False
+           else nearSymbol grid y x
+                || digitOfPart_ ((y,x) : seen) grid y (x - 1)
+                || digitOfPart_ ((y,x) : seen) grid y (x + 1)
 
 validDigits :: Grid -> [Int]
 validDigits = concatMap numbers . validDigitsOrSpaces
@@ -59,5 +61,5 @@ validDigitsOrSpaces grid = [partDigitsInRow y | y <- [0..my grid]]
 -- parse :: [Char] -> [Int]
 parse s = partNumbers
   where grid = makeGrid s
-        partNumbers = validDigitsOrSpaces grid
+        partNumbers = validDigits grid
         partNumbers2 = nearSymbol grid 0 9
