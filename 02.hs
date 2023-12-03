@@ -4,17 +4,17 @@ import Text.Parsec.String (Parser)
 main :: IO ()
 main = interact $ (++"\n") . show . (\gs -> (p1 gs, p2 gs)) . parseGames
 
-data Game = Game { gid :: Int, draws :: [Draw] } deriving Show
+data Game = Game { gid :: Int, draw :: Draw } deriving Show
 data Draw = Draw { red :: Int, green :: Int, blue :: Int } deriving Show
 
 instance Semigroup Draw where
-  (Draw a b c) <> (Draw x y z) = Draw (a + x) (b + y) (c + z)
+  (Draw a b c) <> (Draw x y z) = Draw (max a x) (max b y) (max c z)
 
 instance Monoid Draw where
   mempty = Draw 0 0 0
 
 possible :: Game -> Bool
-possible = valid . fewest . draws
+possible = valid . draw
   where valid (Draw r g b) = r <= 12 && g <= 13 && b <= 14
 
 p1 :: [Game] -> Int
@@ -23,12 +23,8 @@ p1 = sum . map gid . filter possible
 power :: Draw -> Int
 power (Draw r g b) = r * g * b
 
-fewest :: [Draw] -> Draw
-fewest = foldl m mempty
-  where m (Draw a b c) (Draw x y z) = Draw (max a x) (max b y) (max c z)
-
 p2 :: [Game] -> Int
-p2 = sum . map (power . fewest . draws)
+p2 = sum . map (power . draw)
 
 parseGames :: String -> [Game]
 parseGames s = case parse games "" s of
@@ -36,8 +32,9 @@ parseGames s = case parse games "" s of
     Right g -> g
   where
     games = game `sepBy` newline
-    game = Game <$> (string "Game " *> int <* char ':') <*> draw `sepBy` char ';'
+    game = Game <$> (string "Game " *> int <* char ':') <*> draws
     int = read <$> many1 digit
+    draws = chainl draw (char ';' >> pure (<>)) mempty
     draw = chainl count (char ',' >> pure (<>)) mempty
     count = between space space int >>= \i ->
       Draw i 0 0 <$ string "red" <|>
