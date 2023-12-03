@@ -35,7 +35,13 @@ digitOfPart grid y x = cell grid y x >>= valid
   where valid d | isDigit d && check [] y x = Just d
                 | otherwise = Nothing
         check :: [(Int,Int)] -> Int -> Int -> Bool
-        check seen y x = True
+        check seen y x
+          | (y,x) `elem` seen = False
+          | nearSymbol grid y x = True
+          | otherwise = let seen' = (y,x) : seen in False
+        --   | nearSymbol grid y x = True
+        --   | otherwise = let seen' = (y,x) : seen in False
+        --                 -- in check seen' y (x - 1) || check seen' y (x + 1)
 
 validDigits :: Grid -> [Int]
 validDigits = concatMap numbers . validDigitsOrSpaces
