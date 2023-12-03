@@ -1,6 +1,7 @@
 import Data.Char (isDigit)
 import Data.Maybe (catMaybes, fromMaybe)
 import Control.Monad (filterM)
+import Debug.Trace (trace)
 
 main :: IO ()
 main = interact $ (++"\n") . show . parse
@@ -10,7 +11,7 @@ data Grid = Grid { rows :: [String], my :: Int, mx :: Int }
 
 makeGrid :: String -> Grid
 makeGrid s = Grid { rows = ls, my = length ls - 1, mx = length (head ls) - 1 }
-    where ls = take 2 . lines $ s
+    where ls = take 20 . lines $ s
 
 neighbouringCells :: Grid -> Int -> Int -> [Char]
 neighbouringCells grid y x = catMaybes
@@ -18,9 +19,12 @@ neighbouringCells grid y x = catMaybes
                                  not (u == 0 && v == 0)]
 
 cell :: Grid -> Int -> Int -> Maybe Char
-cell (Grid {rows, my, mx}) y x
-  | y >= 0 && y <= my && x >= 0 && x <= mx = Just ((rows !! y) !! x)
+cell grid y x
+  | inBounds grid y x = Just ((rows grid !! y) !! x)
   | otherwise = Nothing
+
+inBounds :: Grid -> Int -> Int -> Bool
+inBounds (Grid {my, mx}) y x = y >= 0 && y <= my && x >= 0 && x <= mx
 
 nearSymbol :: Grid -> Int -> Int -> Bool
 nearSymbol grid y x = any isSymbol (neighbouringCells grid y x)
@@ -38,10 +42,10 @@ digitOfPart grid y x = cell grid y x >>= valid
         check seen y x
           | (y,x) `elem` seen = False
           | nearSymbol grid y x = True
-          | otherwise = let seen' = (y,x) : seen in False
-        --   | nearSymbol grid y x = True
-        --   | otherwise = let seen' = (y,x) : seen in False
-        --                 -- in check seen' y (x - 1) || check seen' y (x + 1)
+          | inBounds grid y x =
+            let seen' = (y,x) : seen
+            in check seen' y (x - 1) || check seen' y (x + 1)
+          | otherwise = False
 
 validDigits :: Grid -> [Int]
 validDigits = concatMap numbers . validDigitsOrSpaces
@@ -52,7 +56,7 @@ validDigitsOrSpaces grid = [partDigitsInRow y | y <- [0..my grid]]
   where partDigitsInRow y = [partDigitOrSpace y x | x <- [0..mx grid]]
         partDigitOrSpace y x = fromMaybe ' ' $ digitOfPart grid y x
 
-
-parse s = test
+parse :: [Char] -> [Int]
+parse s = partNumbers
   where grid = makeGrid s
-        test = validDigits grid
+        partNumbers = validDigits grid
