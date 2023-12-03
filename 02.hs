@@ -1,8 +1,9 @@
 import Text.Parsec
 import Text.Parsec.String (Parser)
+import Control.Applicative (liftA2)
 
 main :: IO ()
-main = interact $ (++"\n") . show . (\gs -> (p1 gs, p2 gs)) . parseGames
+main = interact $ (++"\n") . show . liftA2 (,) p1 p2 . parseGames
 
 data Game = Game { gid :: Int, draw :: Draw } deriving Show
 data Draw = Draw { red :: Int, green :: Int, blue :: Int } deriving Show
