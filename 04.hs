@@ -1,6 +1,6 @@
 import Text.Parsec
 import Text.Parsec.String (Parser)
-import Data.List (sort)
+import Data.Map qualified as M
 
 main :: IO ()
 main = interact $ (++ "\n") . show . p2 . parseCards
@@ -38,6 +38,23 @@ winrec cards i = case wins cards i of
     [] -> []
     xs -> xs ++ concatMap (winrec cards) xs
 
+winrecmemo :: [Card] -> (Int, M.Map Int [Int]) -> ([Int], M.Map Int [Int])
+winrecmemo cards (i, memo) = case M.lookup i memo of
+    Just xs -> (xs, memo)
+    Nothing -> case wins cards i of
+                 [] -> ([], M.insert i [] memo)
+                --  ys -> (winrec cards i, memo)
+                 ys -> let (result', memo') = foldl f ([], memo) ys
+                           result = concat (ys : result')
+                       in (result, M.insert i result memo')
+                         where f (prev, m) y = let (z2, m2) = winrecmemo cards (y, m)
+                                               in (z2 : prev, m2)
+
 p2 :: [Card] -> Int
-p2 cs = sum $ map ((+1) . length . winrec cs) [0..length cs - 1]
+p2 cards = fst $ foldl f (0, M.empty) [0..length cards - 1]
+  where f (s, m) i = let (extra, m') = winrecmemo cards (i, m)
+                        in (s + 1 + length extra, m')
+
+
 -- p2 cs = (\x -> (length x, sort x)) $ winrec cs 0
+-- p2 cs = sum $ map ((+1) . length . winrec cs) [0..length cs - 1]
