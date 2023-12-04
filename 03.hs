@@ -78,11 +78,10 @@ p1 = sum . map partNum
 makeGearIndex :: [Part] -> M.Map Cell [Part]
 makeGearIndex = M.map (map snd) . snd . foldl f1 (0, M.empty)
   where f1 (i, m') part = (i + 1, foldl f2 m' (partSymbols part))
-          where f2 m symbol@(Cell {cc = '*'}) = M.insert symbol ys m
-                  where ys = case M.lookup symbol m of
-                               Nothing -> [(i, part)]
-                               Just xs -> if isJust (lookup i xs) then xs
-                                          else (i, part) : xs
+          where f2 m symbol@(Cell {cc = '*'}) = case M.lookup symbol m of
+                    Nothing -> M.insert symbol [(i, part)] m
+                    Just xs -> if isJust (lookup i xs) then m
+                               else M.insert symbol ((i, part) : xs) m
                 f2 m _ = m
 
 gearRatio :: [Part] -> Int
