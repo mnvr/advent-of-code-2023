@@ -2,7 +2,6 @@ import Control.Applicative (asum, liftA2)
 import Control.Monad (guard)
 import Data.Char (isDigit)
 import Data.Map qualified as M
-import Data.Set qualified as S
 import Data.Maybe (catMaybes, isJust, fromJust, isNothing)
 
 main :: IO ()
@@ -10,7 +9,7 @@ main = interact $ (++ "\n") . show . liftA2 (,) p1 p2 . parseParts
 
 data Grid = Grid { rows :: [String], my :: Int, mx :: Int }
 
-data Part = Part { partNum :: Int, partSymbols :: [Cell] } deriving (Ord, Eq)
+data Part = Part { partNum :: Int, partSymbols :: [Cell] }
 data PartDigit = PartDigit { pdChar :: Char, pdSymbols :: [Cell] }
 data Cell = Cell { cc :: Char, cy :: Int, cx :: Int } deriving (Ord, Eq)
 
@@ -77,12 +76,13 @@ p1 :: [Part] -> Int
 p1 = sum . map partNum
 
 makeGearIndex :: [Part] -> M.Map Cell [Part]
-makeGearIndex =  M.map (map snd . S.elems) . snd . foldl f1 (0, M.empty)
+makeGearIndex = M.map (map snd) . snd . foldl f1 (0, M.empty)
   where f1 (i, m') part = (i + 1, foldl f2 m' (partSymbols part))
           where f2 m symbol@(Cell {cc = '*'}) = M.insert symbol ys m
                   where ys = case M.lookup symbol m of
-                               Nothing -> S.singleton (i, part)
-                               Just s -> S.insert (i, part) s
+                               Nothing -> [(i, part)]
+                               Just xs -> if isJust (lookup i xs) then xs
+                                          else (i, part) : xs
                 f2 m _ = m
 
 gearRatio :: [Part] -> Int
