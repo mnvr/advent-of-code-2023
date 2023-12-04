@@ -2,6 +2,7 @@ import Control.Applicative (asum, liftA2)
 import Control.Monad (guard)
 import Data.Char (isDigit)
 import Data.Map qualified as M
+import Data.Set qualified as S
 import Data.Maybe (catMaybes, isJust, fromJust, isNothing)
 
 main :: IO ()
@@ -9,7 +10,7 @@ main = interact $ (++ "\n") . show . liftA2 (,) p1 p2 . parseParts
 
 data Grid = Grid { rows :: [String], my :: Int, mx :: Int }
 
-data Part = Part { partNum :: Int, partSymbols :: [Cell] }
+data Part = Part { partNum :: Int, partSymbols :: [Cell] } deriving (Ord, Eq)
 data PartDigit = PartDigit { pdChar :: Char, pdSymbols :: [Cell] }
 data Cell = Cell { cc :: Char, cy :: Int, cx :: Int } deriving (Ord, Eq)
 
@@ -75,18 +76,27 @@ splits ms = case span isJust (dropWhile isNothing ms) of
 p1 :: [Part] -> Int
 p1 = sum . map partNum
 
-makeGearIndex :: [Part] -> M.Map Cell [Part]
-makeGearIndex = M.map (map snd) . snd . foldl merge (0, M.empty)
-  where merge (i, m') part = (i + 1, foldl add m' (partSymbols part))
-          where add m symbol@(Cell {cc = '*'}) = case M.lookup symbol m of
-                    Nothing -> M.insert symbol [(i, part)] m
-                    Just ips -> if isJust (lookup i ips) then m
-                                else M.insert symbol ((i,part):ips) m
-                add m _ = m
+makeGearIndex :: [Part] -> M.Map Cell (S.Set (Int, Part))
+makeGearIndex = snd . foldl f1 (0, M.empty)
+  where f1 (i, m') part = (i + 1, foldl f2 m' (partSymbols part))
+          where f2 m symbol@(Cell {cc = '*'}) = M.insert symbol ys m
+                  where ys = case M.lookup symbol m of
+                               Nothing -> S.singleton (i, part)
+                               Just s -> S.insert (i, part) s
+                f2 m _ = m
+
+makeGearIndex2 :: [Part] -> M.Map Cell [Part]
+makeGearIndex2 parts = m3
+  where m1 :: M.Map Cell (S.Set (Int, Part))
+        m1 = makeGearIndex parts
+        m2 :: M.Map Cell [(Int, Part)]
+        m2 = M.map S.elems m1
+        m3 :: M.Map Cell [Part]
+        m3 = M.map (\e -> map (\(i, p) -> p) e) m2
 
 gearRatio :: [Part] -> Int
 gearRatio [_] = 0
 gearRatio [x, y] = partNum x * partNum y
 
 p2 :: [Part] -> Int
-p2 = M.foldl (\s xs -> s + gearRatio xs) 0 . makeGearIndex
+p2 = M.foldl (\s xs -> s + gearRatio xs) 0 . makeGearIndex2
