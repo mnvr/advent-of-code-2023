@@ -76,8 +76,8 @@ splits ms = case span isJust (dropWhile isNothing ms) of
 p1 :: [Part] -> Int
 p1 = sum . map partNum
 
-makeGearIndex :: [Part] -> M.Map Cell (S.Set (Int, Part))
-makeGearIndex = snd . foldl f1 (0, M.empty)
+makeGearIndex :: [Part] -> M.Map Cell [Part]
+makeGearIndex =  M.map (map snd . S.elems) . snd . foldl f1 (0, M.empty)
   where f1 (i, m') part = (i + 1, foldl f2 m' (partSymbols part))
           where f2 m symbol@(Cell {cc = '*'}) = M.insert symbol ys m
                   where ys = case M.lookup symbol m of
@@ -85,18 +85,9 @@ makeGearIndex = snd . foldl f1 (0, M.empty)
                                Just s -> S.insert (i, part) s
                 f2 m _ = m
 
-makeGearIndex2 :: [Part] -> M.Map Cell [Part]
-makeGearIndex2 parts = m3
-  where m1 :: M.Map Cell (S.Set (Int, Part))
-        m1 = makeGearIndex parts
-        m2 :: M.Map Cell [(Int, Part)]
-        m2 = M.map S.elems m1
-        m3 :: M.Map Cell [Part]
-        m3 = M.map (\e -> map (\(i, p) -> p) e) m2
-
 gearRatio :: [Part] -> Int
 gearRatio [_] = 0
 gearRatio [x, y] = partNum x * partNum y
 
 p2 :: [Part] -> Int
-p2 = M.foldl (\s xs -> s + gearRatio xs) 0 . makeGearIndex2
+p2 = M.foldl (\s xs -> s + gearRatio xs) 0 . makeGearIndex
