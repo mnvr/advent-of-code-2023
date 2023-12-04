@@ -5,10 +5,17 @@
 
 test -z "$1" && echo "usage: $0 <path-to-input>" && exit 1
 
-cat "$1" | awk -F '.' '
-  { for (i=1; i<=NF; i++) if ($i != "") print "Item " $i " on row " NR  }
-  { for (i=1; i<=NF; i++) if ($i != "" && $i ~ /^[0-9]+$/) print "Number " $i " on row " NR  }
-  { for (i=1; i<=NF; i++) if ($i != "" && $i !~ /^[0-9]+$/) print "Symbol " $i " on row " NR  }
+cat "$1" | tr '.' ' ' | awk '
+  { for (i=1; i<=NF; i++) print "Field " $i " on row " NR  }
+  { for (i=1; i<=NF; i++) {
+      if ($i ~ /[0-9]/) {
+        n = $i; gsub(/[^0-9]/, "", n);
+        print "Number " n " on row " NR;
+      }
+      gsub(/[0-9]/, "", $i);
+      if ($i != "") print "Symbol " $i " on row " NR;
+    }
+  }
 ' | tee /tmp/ac3.facts
 
 cp /tmp/ac3.facts /tmp/ac3.facts.old
