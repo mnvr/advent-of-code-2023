@@ -2,7 +2,7 @@ import Text.Parsec
 import Text.Parsec.String (Parser)
 
 main :: IO ()
-main = interact $ (++ "\n") . show . p1 . parseCards
+main = interact $ (++ "\n") . show . p2 . parseCards
 
 data Card = Card { winning :: [Int], have :: [Int] } deriving (Show)
 
@@ -17,10 +17,20 @@ parseCards s = case parse cards "" s of
     num = read <$> many1 digit
     nums = many1 (between spaces spaces num)
 
+matches :: Card -> Int
+matches Card { winning, have } = length $ filter (`elem` have) winning
+
 points :: Card -> Int
-points Card { winning, have } = point . length $ filter (`elem` have) winning
-  where point 0 = 0
-        point n = 2 ^ (n - 1)
+points = score . matches where score 0 = 0
+                               score n = 2 ^ (n - 1)
 
 p1 :: [Card] -> Int
 p1 = sum . map points
+
+wins :: [Card] -> Int -> [Int]
+wins cards i = case matches (cards !! i) of
+    0 -> []
+    n -> [(i+1)..(i+n)]
+
+-- p2 :: [Card] -> Int
+p2 cs = map (wins cs) [0..length cs - 1]
