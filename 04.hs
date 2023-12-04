@@ -13,14 +13,14 @@ parseCards s = case parse cards "" s of
   where
     cards = many1 card
     card = Card <$> (prelude *> nums <* char '|') <*> nums
-    prelude = string "Card" *> space *> num *> char ':'
+    prelude = string "Card" *> spaces *> num *> char ':'
     num = read <$> many1 digit
-    nums = many1 (between (many space) (many space) num)
+    nums = many1 (between spaces spaces num)
 
 points :: Card -> Int
-points Card { winning, have } = pt . length $ filter (`elem` have) winning
-  where pt 0 = 0
-        pt n = 2 ^ (n - 1)
+points Card { winning, have } = point . length $ filter (`elem` have) winning
+  where point 0 = 0
+        point n = 2 ^ (n - 1)
 
 p1 :: [Card] -> Int
 p1 = sum . map points
