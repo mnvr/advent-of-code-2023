@@ -12,11 +12,15 @@ parseCards s = case parse cards "" (head (lines s)) of
     Right g -> g
   where
     cards = card -- `sepBy` newline
-    card = string "Card" *> space *> num *> char ':' *> space *> nums <* char '|'
+    card = do
+        n1 <- string "Card" *> space *> num *> char ':' *> nums <* char '|'
+        n2 <- nums <* eof
+        pure (n1, n2)
+    -- <*> nums <* eof
     num :: Parser Int
     num = read <$> many1 digit
-    nums = many1 (num <* space)
+    nums = many1 (between (many space) (many space) num)
     -- winning = nums `endBy` string "|"
     -- winning = manyTill (num <* space) eof -- (char '|')
-    winning2 = num `sepBy` space -- many1 (space *> num) `endBy` (space *> char '|')
+    -- nums = num `sepBy` (many space) -- many1 (space *> num) `endBy` (space *> char '|')
     rest = many1 (space *> num)
