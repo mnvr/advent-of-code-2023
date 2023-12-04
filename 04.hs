@@ -1,9 +1,10 @@
 import Text.Parsec
 import Text.Parsec.String (Parser)
 import Data.Map qualified as M
+import Control.Applicative (liftA2)
 
 main :: IO ()
-main = interact $ (++ "\n") . show . p2 . parseCards
+main = interact $ (++ "\n") . show . liftA2 (,) p1 p2 . parseCards
 
 data Card = Card { winning :: [Int], have :: [Int] } deriving (Show)
 
@@ -43,7 +44,6 @@ winrecmemo cards (i, memo) = case M.lookup i memo of
     Just xs -> (xs, memo)
     Nothing -> case wins cards i of
                  [] -> ([], M.insert i [] memo)
-                --  ys -> (winrec cards i, memo)
                  ys -> let (result', memo') = foldl f ([], memo) ys
                            result = concat (ys : result')
                        in (result, M.insert i result memo')
@@ -54,7 +54,3 @@ p2 :: [Card] -> Int
 p2 cards = fst $ foldl f (0, M.empty) [0..length cards - 1]
   where f (s, m) i = let (extra, m') = winrecmemo cards (i, m)
                         in (s + 1 + length extra, m')
-
-
--- p2 cs = (\x -> (length x, sort x)) $ winrec cs 0
--- p2 cs = sum $ map ((+1) . length . winrec cs) [0..length cs - 1]
