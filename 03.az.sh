@@ -22,8 +22,8 @@ cp /tmp/ac3.facts /tmp/ac3.facts.old
 cat /tmp/ac3.facts.old | awk '/Number/ { print $2, $5 }' | while read n r
 do
   echo "Looking for $n from row $r"
-  cat "$1" | grep --word $n | awk -vn=$n -vr=$r '
-    { print "Number " n " on row " r " and column " index($0, n) }
+  cat "$1" | awk -vn=$n -vr=$r '
+    NR == r { print "Number " n " on row " r " and column " index($0, n) }
   ' | tee -a /tmp/ac3.facts
 done
 
