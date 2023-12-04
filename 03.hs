@@ -18,9 +18,8 @@ makeGrid s = Grid { rows = ls, my = length ls - 1, mx = length (head ls) - 1 }
     where ls = lines s
 
 region :: Grid -> Int -> Int -> [Cell]
-region grid y x = catMaybes
-    [cell grid (y + u) (x + v) | u <- [-1,0,1], v <- [-1,0,1],
-                                 not (u == 0 && v == 0)]
+region grid y x = catMaybes $
+  tail [cell grid (y + u) (x + v) | u <- [0,-1,1], v <- [0,-1,1]]
 
 cell :: Grid -> Int -> Int -> Maybe Cell
 cell grid y x | outOfBounds grid y x = Nothing
