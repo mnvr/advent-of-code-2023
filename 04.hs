@@ -38,7 +38,7 @@ wins cards i = case matches (cards !! i) of
     n -> [(i+1)..(i+n)]
 
 winsRec :: [Card] -> Int -> State (M.Map Int [Int]) [Int]
-winsRec cards i = gets ( M.lookup i) >>= \case
+winsRec cards i = gets (M.lookup i) >>= \case
     Just xs -> pure xs
     Nothing -> case wins cards i of
                  [] -> modify (M.insert i []) >> pure []
@@ -46,7 +46,7 @@ winsRec cards i = gets ( M.lookup i) >>= \case
                     result' <- foldM f [] ys
                     let result = concat (ys : result')
                     modify (M.insert i result) >> pure result
-                  where f prev y = winsRec cards y >>= pure . (: prev)
+                  where f prev y = (: prev) <$> winsRec cards y
 
 allWins :: [Card] -> State (M.Map Int [Int]) [Int]
 allWins cards = foldM f [] [0..length cards - 1]
