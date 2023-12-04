@@ -37,29 +37,8 @@ wins cards i = case matches (cards !! i) of
     0 -> []
     n -> [(i+1)..(i+n)]
 
-winsRec :: [Card] -> Int -> [Int]
-winsRec cards i = case wins cards i of
-    [] -> []
-    xs -> xs ++ concatMap (winsRec cards) xs
-
-winsRecMemo :: [Card] -> (Int, M.Map Int [Int]) -> ([Int], M.Map Int [Int])
-winsRecMemo cards (i, memo) = case M.lookup i memo of
-    Just xs -> (xs, memo)
-    Nothing -> case wins cards i of
-                 [] -> ([], M.insert i [] memo)
-                 ys -> let (result', memo') = foldl f ([], memo) ys
-                           result = concat (ys : result')
-                       in (result, M.insert i result memo')
-                         where f (prev, m) y = let (z2, m2) = winsRecMemo cards (y, m)
-                                               in (z2 : prev, m2)
-
-allWins :: [Card] -> [Int]
-allWins cards = fst $ foldl f ([], M.empty) [0..length cards - 1]
-  where f (w, m) i = let (extra, m') = winsRecMemo cards (i, m)
-                        in (1 + length extra : w, m')
-
-winsRecMemoState :: [Card] -> Int -> State (M.Map Int [Int]) [Int]
-winsRecMemoState cards i = gets ( M.lookup i) >>= \case
+winsRec :: [Card] -> Int -> State (M.Map Int [Int]) [Int]
+winsRec cards i = gets ( M.lookup i) >>= \case
     Just xs -> pure xs
     Nothing -> case wins cards i of
                  [] -> modify (M.insert i []) >> pure []
@@ -67,13 +46,12 @@ winsRecMemoState cards i = gets ( M.lookup i) >>= \case
                     result' <- foldM f [] ys
                     let result = concat (ys : result')
                     modify (M.insert i result) >> pure result
-                  where f prev y = winsRecMemoState cards y >>= pure . (: prev)
+                  where f prev y = winsRec cards y >>= pure . (: prev)
 
-allWinsState :: [Card] -> State (M.Map Int [Int]) [Int]
-allWinsState cards = foldM f [] [0..length cards - 1]
-  where f w i = winsRecMemoState cards i >>= \extra ->
+allWins :: [Card] -> State (M.Map Int [Int]) [Int]
+allWins cards = foldM f [] [0..length cards - 1]
+  where f w i = winsRec cards i >>= \extra ->
          pure ((1 + length extra) : w)
 
 p2 :: [Card] -> Int
--- p2 = sum . allWins
-p2 cards = sum $ evalState (allWinsState cards) M.empty
+p2 cards = sum $ evalState (allWins cards) M.empty
