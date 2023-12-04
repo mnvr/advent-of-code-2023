@@ -5,14 +5,14 @@
 
 test -z "$1" && echo "usage: $0 <path-to-input>" && exit 1
 
+rm /tmp/$0.tmp.?
+
 cat "$1" | head -2 | tr -s '.' ' ' | awk '
-  { print "Row was [" $0 "]"; }
-  { for (i=1; i<=NF; i++) print "Field " $i " on row " NR  }
+  { for (i=1; i<=NF; i++) print "Item " $i " on row " NR  }
   { for (i=1; i<=NF; i++) if ($i ~ /^[0-9]+$/) print "Number " $i " on row " NR  }
   { for (i=1; i<=NF; i++) if ($i !~ /^[0-9]+$/) print "Symbol " $i " on row " NR  }
 ' | tee /tmp/$0.tmp.1
 
-rm /tmp/$0.tmp.2
 cat /tmp/$0.tmp.1 | awk '/Number/ { print $2, $5 }' | while read n r
 do
   echo "Looking for $n from row $r"
@@ -21,7 +21,6 @@ do
   ' | tee -a /tmp/$0.tmp.2
 done
 
-rm /tmp/$0.tmp.3
 cat /tmp/$0.tmp.1 | awk '/Symbol */ { print $5 }' | while read r
 do
   echo "Looking for * from row $r"
@@ -30,13 +29,17 @@ do
   ' | tee -a /tmp/$0.tmp.3
 done
 
-rm /tmp/$0.tmp.4
-cat /tmp/$0.tmp.2 | grep column | awk '/Number/ { print $2, $5, $8 }' \
+cat /tmp/$0.tmp.2 | awk '/Number/ { print $2, $5, $8 }' \
 | while read n r c
 do
-  echo "Is the $n on row $r and column $c a part?"
-  cat "$1" | awk -vn=$n -vr=$r '
+  nsym=$(cat "$1" | awk -vn=$n -vr=$r -vc=$c '
     NR == r-1 || NR == r || NR == r + 1 {
-      print NR, $0, "Number " n " on row " r " and column " index($0, n) }
-  ' | tee -a /tmp/$0.tmp.4
+      print substr($0,c-1,length(n)+2)
+    }
+  ' | tr -d '0-9.\n' | wc -c)
+  if test "$nsym" -ne 0
+  then
+    echo "Part $n on row $r and column $c" \
+    | tee -a /tmp/$0.tmp.4
+  fi
 done
