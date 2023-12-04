@@ -5,7 +5,7 @@ default: example
 example:
 	@n=`ls -t *.hs | head -1 | cut -f1 -d.`; \
 	in=`ls -t examples/$$n* | head -1`; \
-	hs="$$n.hs"; \
+	hs=`ls -t *.hs | head -1`; \
 	echo "cat $$in | runghc $$hs" && \
 	cat $$in | runghc $$hs
 
@@ -16,14 +16,14 @@ read:
 run:
 	@n=`ls -t *.hs | head -1 | cut -f1 -d.`; \
 	in="inputs/$$n"; \
-	hs="$$n.hs"; \
+	hs=`ls -t *.hs | head -1`; \
 	echo "cat $$in | runghc $$hs" && \
 	cat $$in | runghc $$hs
 
 test:
 	@n=`ls -t *.hs | head -1 | cut -f1 -d.`; \
 	in="inputs/$$n"; \
-	hs="$$n.hs"; \
+	hs=`ls -t *.hs | head -1`; \
 	echo "cat $$in | runghc $$hs" && \
 	echo 'echo "(`cat answers/'$$n'-a`,`cat answers/'$$n'-b`)"' && \
 	cat $$in | runghc $$hs && \
@@ -32,7 +32,7 @@ test:
 watch:
 	@f=`ls -t *.hs | head -1 | cut -f1 -d.`; \
 	in=`ls -t examples/$$f* | head -1`; \
-	hs="$$n.hs"; \
+	hs=`ls -t *.hs | head -1`; \
 	echo "fswatch $$hs | while read f; do cat $$in | runghc $$hs; done" && \
 	fswatch $$hs | while read f; do cat $$in | runghc $$hs; done
 
