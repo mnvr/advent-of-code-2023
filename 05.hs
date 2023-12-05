@@ -67,4 +67,6 @@ mapRangeMap :: RangeMap -> Int -> Maybe Int
 mapRangeMap RangeMap { destinationRange, sourceRange, rangeLength } s =
     if s >= sourceRange && s <= (sourceRange + rangeLength) then Just (destinationRange + s - sourceRange) else Nothing
 
-p1 Almanac { seeds, maps } = rtraverse maps (seeds !! 0)
+p1 Almanac { seeds, maps } = xsmin $ fmap (rtraverse maps) seeds
+
+xsmin xs = foldl1 min xs
