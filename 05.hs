@@ -1,5 +1,6 @@
 import Text.Parsec
 import Text.Parsec.String (Parser)
+import Control.Monad (void)
 
 main :: IO ()
 main = interact $ (++ "\n") . show . p1 . parseAlmanac
@@ -20,7 +21,7 @@ parseAlmanac s = case parse almanac "" s of
      mapHeader :: Parser Char
      mapHeader = many1 (letter <|> char '-' <|> char ' ') >> char ':'
      endOfLineOrFile :: Parser ()
-     endOfLineOrFile = (endOfLine >> pure ()) <|> eof
+     endOfLineOrFile = void endOfLine <|> eof
      range :: Parser [Int]
      range = do
         n1 <- num
@@ -29,49 +30,20 @@ parseAlmanac s = case parse almanac "" s of
         sp
         n3 <- num
         pure [n1, n2, n3]
-     _ranges1 = do
+     ranges = do
         many1 (range >>= \ns -> endOfLineOrFile >> pure ns)
-     alMap = do
+     map = do
         mapHeader
         newline
-        _ranges1
-     _maps1 = do
-        many1 (alMap >>= \m -> (eof <|> (newline >> pure ())) >> pure m)
-        -- many1 (alMap >>= \m -> (eof <|> (newline >> pure ())) >> pure m)
+        ranges
+     maps = do
+        many1 (map >>= \m -> endOfLineOrFile >> pure m)
      almanac = do
         string "seeds: "
         seeds <- nums
         newline
         newline
-        m <- _maps1
-        -- newline
-
-        -- newline
-
-        -- range2 <- nums
-        -- newline
-        -- newline
-        -- string "soil-to-fertilizer map:"
-        -- newline
-        -- range3 <- nums
-        -- newline
-        -- range4 <- nums
-        -- newline
-        -- range5 <- nums
-        -- newline
+        m <- maps
         pure (seeds, m)
-
-
-        -- seeds = (,) <$> ( *> nums <* count 2 newline) <*> maps
-        -- num :: Parser Int
-        -- num = read <$> many1 digit
-        -- nums = many1 (between sp sp num) --`sepBy` spaces
-        -- maps = (,) <$> mhead <*> range
-        -- mhead = manyTill (noneOf "\n") endOfLine
-        -- ranges = count 2 range -- range `sepBy` newline
-        -- range = count 3 nums
-        -- sp = many (char ' ')
-
-
 
 p1 = id
