@@ -20,15 +20,21 @@ cat "$1" | tr '.' ' ' | tr -d '0-9' | awk '
 
 read_log | awk '/Number/ { print $2, $5 }' | while read n r
 do
-  echo "Looking for $n from row $r"
+  echo "Looking for all $n on row $r"
   cat "$1" | awk -vn=$n -vr=$r '
-    NR == r { print "Number " n " on row " r " and column " index($0, n) }
+    NR == r { s = $0; while (1) {
+      i = index(s, n);
+      if (i == 0) break;
+      c += i;
+      print "Number " n " on row " r " and column " c;
+      s = substr(s, c + length(n) + 1);
+    } }
   ' | log
 done
 
 read_log | awk '/Symbol */ { print $5 }' | while read r
 do
-  echo "Looking for * from row $r"
+  echo "Looking for all *'s on row $r"
   cat "$1" | awk -vr=$r '
     NR == r { s = $0; while (1) {
       i = index(s, "*");
