@@ -39,29 +39,12 @@ while read r c
 do
   echo '> Symbol *' "on row $r and column $c"
   nested_read_log | grep -E "on row `expr $r - 1`|$r|`expr $r + 1`" |
-  awk '/Number */ { print $2, $8 }' | while read n nc
-  do
-    echo ">>$n $nc"
-  done
-
-  # nested_read_log | awk -vr=$r -vc=$c '
-  #   NR == r-1 || NR == r || NR == r + 1 {
-  #     print substr($0,c-1,length(n)+2)
-  #   }
-  # '
-
-  # nsym=$(cat "$1" | awk -vn=$n -vr=$r -vc=$c '
-  #   NR == r-1 || NR == r || NR == r + 1 {
-  #     print substr($0,c-1,length(n)+2)
-  #   }
-  # ' | tr -d '0-9.\n' | wc -c | tr -d ' ')
-  # echo "Number $n on row $r and column $c has $nsym symbols around it" \
-  #   | log
-  # if test "$nsym" -ne 0
-  # then
-  #   echo "Part $n on row $r and column $c" \
-  #   | log
-  # fi
+  awk -vr=$r -vc=$c '/Number */ {
+    n = $2; nc = $8;
+    if (nc >= c - 1 || nc <= c + 1) {
+      echo "Gear on row " r " and column " c " touches part " n
+    }
+  }'
 done
 
 exit 0
