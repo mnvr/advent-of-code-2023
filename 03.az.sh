@@ -26,32 +26,17 @@ cat "$1" | awk '
         if (start==0) { start = i }
       } else {
         if (start) {
-          print "Number " n " on row " NR " and column " start;
+          print "Number", n, "on row", NR, "and column", start
           n = ""
           start = 0
         }
         if (c != ".") {
-          print "Symbol " c " on row " NR " and column " i
+          print "Symbol", c, "on row", NR, "and column", i
         }
       }
     }
   }
 ' | log
-
-read_log | awk '/Symbol */ { print $5, $8 }' |
-while read r c
-do
-  echo '> Symbol *' "on row $r and column $c"
-  nested_read_log | grep -E "on row `expr $r - 1`|$r|`expr $r + 1`" |
-  awk -vr=$r -vc=$c '/Number */ {
-    n = $2; nc = $8;
-    if (nc >= (c - 1) || nc <= (c + 1)) {
-      echo "Gear on row " r " and column " c " touches part " n
-    }
-  }'
-done
-
-exit 0
 
 read_log | awk '/Number/ { print $2, $5, $8 }' |
 while read n r c
@@ -70,8 +55,33 @@ do
   fi
 done
 
+read_log | awk '/Symbol */ { print $5, $8 }' |
+while read r c
+do
+  echo '> Symbol *' "on row $r and column $c" | log
+  echo grep -E "on row (`expr $r - 1`|$r|`expr $r + 1`) "
+  nested_read_log | grep -E "on row (`expr $r - 1`|$r|`expr $r + 1`) " |
+  awk -vr=$r -vc=$c '/Part */ {
+    n = $2; ns = $8; ne = ns + length(n) - 1;
+    print ">>", $0, "spans from", ns, "to", ne
+    print ">>", "To touch", c, "should be between", (ns - 1), "and", (ne + 1)
+    if (c >= (ns - 1) && c <= (ne + 1)) {
+      print "Gear on row", r "and column", c "touches part", n
+    }
+  }' | log
+done
+
+read_log | awk '/touches part/ { print $4, $7 }' | sort | uniq -c |
+awk '
+  $1 == 2 { print "Gear on row", $2, "and column", $3, "touches two parts" }
+' | log
+
+# while read r c n
+# do
+#done
+
 read_log | awk '/Part/ { s += $2 }
-  END { print "The sum of all part numbers is " s }' | log
+  END { print "The sum of all part numbers is", s }' | log
 
 rm /tmp/ac3.facts.old   #  One must keep flowing, like water.
 
