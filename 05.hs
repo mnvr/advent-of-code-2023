@@ -33,16 +33,15 @@ parseAlmanac s = case parse almanac "" s of
         mapHeader
         newline
         _ranges1
+     _maps1 = do
+        many1 (alMap >>= \m -> (eof <|> (newline >> pure ())) >> pure m)
+        -- many1 (alMap >>= \m -> (eof <|> (newline >> pure ())) >> pure m)
      almanac = do
         string "seeds: "
         seeds <- nums
         newline
         newline
-        ranges1 <- alMap
-        newline
-        ranges2 <- alMap
-        newline
-        ranges3 <- alMap
+        m <- _maps1
         -- newline
 
         -- newline
@@ -58,7 +57,7 @@ parseAlmanac s = case parse almanac "" s of
         -- newline
         -- range5 <- nums
         -- newline
-        pure (seeds, [ranges1, ranges2, ranges3])
+        pure (seeds, m)
 
 
         -- seeds = (,) <$> ( *> nums <* count 2 newline) <*> maps
