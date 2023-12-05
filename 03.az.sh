@@ -2,6 +2,10 @@
 
 # WIP
 # Spam facts about the problem, until we have enough facts to solve it.
+#
+# The Allez Cuisine theme for today was spam. This solution writes a very, very,
+# long email, putting in all sorts of content just to spam the keyword matchers.
+# But interestingly, when doing this, it manages to also find the solution.
 
 test -z "$1" && echo "usage: $0 <path-to-input>" && exit 1
 head -1 "$1" > /dev/null || exit 1
@@ -41,7 +45,7 @@ do
   nested_read_log | grep -E "on row `expr $r - 1`|$r|`expr $r + 1`" |
   awk -vr=$r -vc=$c '/Number */ {
     n = $2; nc = $8;
-    if (nc >= c - 1 || nc <= c + 1) {
+    if (nc >= (c - 1) || nc <= (c + 1)) {
       echo "Gear on row " r " and column " c " touches part " n
     }
   }'
