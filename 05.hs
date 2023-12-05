@@ -52,4 +52,12 @@ parseAlmanac s = case parse almanac "" s of
      convRangesMap = fmap convRangeMap
 
 
-p1 = id
+-- Guide a seed through the maps
+rtraverse :: [RangesMap] -> Int -> Int
+rtraverse [] s = s
+rtraverse (m:ms) s = rtraverse ms (mapRangesMap m s)
+
+mapRangesMap :: RangesMap -> Int -> Int
+mapRangesMap rms s = s
+
+p1 Almanac { seeds, maps } = rtraverse maps (seeds !! 0)
