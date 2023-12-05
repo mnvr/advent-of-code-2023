@@ -19,7 +19,7 @@ cat "$1" | tr '.' ' ' | tr -d '0-9' | awk '
   { for (i=1; i<=NF; i++) { if ($i != "") print "Symbol " $i " on row " NR; } }
 ' | log
 
-read_log | awk '/Number/ { print $2, $5 }' | while read n r
+read_log | awk '/Number/ { print $2, $5 }' | sort | uniq | while read n r
 do
   echo "Looking for all $n on row $r"
   cat "$1" | awk -vn=$n -vr=$r '
@@ -33,7 +33,7 @@ do
   ' | log
 done
 
-read_log | awk '/Symbol */ { print $5 }' | while read r
+read_log | awk '/Symbol */ { print $5 }' | sort | uniq | while read r
 do
   echo "Looking for all *'s on row $r"
   cat "$1" | awk -vr=$r '
