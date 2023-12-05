@@ -74,4 +74,6 @@ xsmin xs = foldl1 min xs
 
 p2 al = p1 $ al { seeds = expand (seeds al) }
 
-expand seeds = seeds
+expand :: [Int] -> [Int]
+expand [] = []
+expand (x:y:zs) = concat [[x..(x+y)], expand zs]
