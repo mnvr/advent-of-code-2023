@@ -19,6 +19,8 @@ parseAlmanac s = case parse almanac "" s of
      nums = sepBy num sp
      mapHeader :: Parser Char
      mapHeader = many1 (letter <|> char '-' <|> char ' ') >> char ':'
+     endOfLineOrFile :: Parser ()
+     endOfLineOrFile = (endOfLine >> pure ()) <|> eof
      range :: Parser [Int]
      range = do
         n1 <- num
@@ -28,7 +30,7 @@ parseAlmanac s = case parse almanac "" s of
         n3 <- num
         pure [n1, n2, n3]
      _ranges1 = do
-        many1 (range >>= \ns -> newline >> pure ns)
+        many1 (range >>= \ns -> endOfLineOrFile >> pure ns)
      alMap = do
         mapHeader
         newline
