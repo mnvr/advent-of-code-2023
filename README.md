@@ -1,4 +1,7 @@
-Haskell solutions to [Advent of Code 2023](https://adventofcode.com/2023).
+Haskell¹ solutions to [Advent of Code 2023](https://adventofcode.com/2023).
+
+<small>¹ The primary solutions are is Haskell. But for some problems, I've also
+done variations using other means and languages. </small>
 
 ## Running
 

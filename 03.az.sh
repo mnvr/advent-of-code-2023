@@ -1,6 +1,5 @@
 #!/bin/sh
 
-# WIP
 # Spam facts about the problem, until we have enough facts to solve it.
 #
 # The Allez Cuisine theme for today was spam. This solution writes a very, very,
