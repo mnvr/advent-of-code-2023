@@ -66,7 +66,7 @@ do
     print ">>", $0, "spans from", ns, "to", ne
     print ">>", "To touch", c, "should be between", (ns - 1), "and", (ne + 1)
     if (c >= (ns - 1) && c <= (ne + 1)) {
-      print "Gear on row", r "and column", c "touches part", n
+      print "Gear on row", r, "and column", c, "touches part", n
     }
   }' | log
 done
@@ -76,12 +76,22 @@ awk '
   $1 == 2 { print "Gear on row", $2, "and column", $3, "touches two parts" }
 ' | log
 
-# while read r c n
-# do
-#done
+read_log | awk '/touches two parts/ { print $4, $7 }' |
+while read r c
+do
+  nested_read_log | grep "Gear on row $r and column $c touches part" |
+  awk -vr=$r -vc=$c '
+    BEGIN { p = 1 }
+          { p = p * $10 }
+    END   { print "Gear on row", r, "and column", "has ratio", p }
+  ' | log
+done
 
 read_log | awk '/Part/ { s += $2 }
   END { print "The sum of all part numbers is", s }' | log
+
+read_log | awk '/has ratio/ { s += $9 }
+  END { print "The sum of all gear ratios is", s }' | log
 
 rm /tmp/ac3.facts.old   #  One must keep flowing, like water.
 
