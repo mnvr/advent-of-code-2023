@@ -7,7 +7,7 @@ main = interact $ (++ "\n") . show . p1 . parseAlmanac
 
 data Almanac = Almanac { seeds :: [Int], maps :: [RangesMap] } deriving Show
 type RangesMap = [RangeMap]
-data RangeMap = RangeMap { sourceRange :: Int, destinationRange :: Int, length :: Int } deriving Show
+data RangeMap = RangeMap { destinationRange :: Int, sourceRange :: Int, rangeLength :: Int } deriving Show
 
 -- parseAlmanac :: String -> Input
 parseAlmanac s = case parse almanac "" s of
@@ -58,6 +58,13 @@ rtraverse [] s = s
 rtraverse (m:ms) s = rtraverse ms (mapRangesMap m s)
 
 mapRangesMap :: RangesMap -> Int -> Int
-mapRangesMap rms s = s
+mapRangesMap [] s = s
+mapRangesMap (rm:rms) s = case mapRangeMap rm s of
+    Just s -> s
+    Nothing -> mapRangesMap rms s
+
+mapRangeMap :: RangeMap -> Int -> Maybe Int
+mapRangeMap RangeMap { destinationRange, sourceRange, rangeLength } s =
+    if s >= sourceRange && s <= (sourceRange + rangeLength) then Just (destinationRange + s - sourceRange) else Nothing
 
 p1 Almanac { seeds, maps } = rtraverse maps (seeds !! 0)
