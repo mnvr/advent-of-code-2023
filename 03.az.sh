@@ -61,7 +61,6 @@ read_log | awk '/Symbol */ { print $5, $8 }' |
 while read r c
 do
   echo '> Symbol *' "on row $r and column $c" | log
-  echo grep -E "on row (`expr $r - 1`|$r|`expr $r + 1`) "
   nested_read_log | grep -E "on row (`expr $r - 1`|$r|`expr $r + 1`) " |
   awk -vr=$r -vc=$c '/Part */ {
     n = $2; ns = $8; ne = ns + length(n) - 1;
