@@ -17,6 +17,12 @@ parseAlmanac s = case parse almanac "" s of
      num = read <$> many1 digit
      nums :: Parser [Int]
      nums = sepBy num sp
+     _ranges1 = do
+        range1 <- nums
+        newline
+        range2 <- nums
+        newline
+        return [range1, range2]
      almanac = do
         string "seeds: "
         seeds <- nums
@@ -24,10 +30,10 @@ parseAlmanac s = case parse almanac "" s of
         newline
         string "seed-to-soil map:"
         newline
-        range1 <- nums
-        newline
-        range2 <- nums
-        newline
+        ranges1 <- _ranges1
+        -- newline
+        -- range2 <- nums
+        -- newline
         newline
         string "soil-to-fertilizer map:"
         newline
@@ -37,7 +43,7 @@ parseAlmanac s = case parse almanac "" s of
         newline
         range5 <- nums
         newline
-        pure (seeds, [[range1, range2], [range3, range4, range5]])
+        pure (seeds, [ranges1, [range3, range4, range5]])
 
 
         -- seeds = (,) <$> ( *> nums <* count 2 newline) <*> maps
