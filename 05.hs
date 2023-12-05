@@ -36,8 +36,9 @@ parseAlmanac s = case parse almanac "" s of
         newline
         ranges1 <- _ranges1
         newline
-        -- string "soil-to-fertilizer map:"
-        -- ranges2 <- _ranges1
+        string "soil-to-fertilizer map:"
+        newline
+        ranges2 <- _ranges1
         -- newline
 
         -- range2 <- nums
@@ -51,10 +52,7 @@ parseAlmanac s = case parse almanac "" s of
         -- newline
         -- range5 <- nums
         -- newline
-        pure (seeds, [ranges1])
-        --,
-        --[range3, range4, range5]
-        -- ])
+        pure (seeds, [ranges1, ranges2])
 
 
         -- seeds = (,) <$> ( *> nums <* count 2 newline) <*> maps
