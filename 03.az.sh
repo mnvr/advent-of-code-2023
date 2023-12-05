@@ -5,6 +5,9 @@
 # The Allez Cuisine theme for today was spam. This solution writes a very, very,
 # long email, putting in all sorts of content just to spam the keyword matchers.
 # But interestingly, when doing this, it manages to also find the solution.
+#
+# I also wrote a blog post about this approach:
+# https://mrmr.io/prolog-is-a-vibe
 
 test -z "$1" && echo "usage: $0 <path-to-input>" && exit 1
 head -1 "$1" > /dev/null || exit 1
