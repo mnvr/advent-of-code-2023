@@ -4,6 +4,7 @@
 # Spam facts about the problem, until we have enough to solve it.
 
 test -z "$1" && echo "usage: $0 <path-to-input>" && exit 1
+head -1 "$1" > /dev/null || exit 1
 
 echo "Hello Dear May," | tee /tmp/ac3.facts
 
