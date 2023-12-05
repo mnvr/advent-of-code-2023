@@ -1,7 +1,30 @@
 #!/bin/sh
 
 # WIP
-# Spam facts about the problem, until we have enough to solve it.
+# Spam facts about the problem, until we have enough facts to solve it.
+
+echo "11*a33*3333-**-555!!e--44" | awk '
+  {
+    split($0, cs, "")
+    for(i=1; i<=length($0); i++) {
+      c = cs[i]
+      if (c ~ /[0-9]/) {
+        n = n  c
+        if (start==0) { start = i }
+      } else {
+        if (start) {
+          print "Number " n " column " start
+          n = ""
+          start = 0
+        }
+        if (c == "*") {
+          print "Symbol * column " i
+        }
+      }
+    }
+  }'
+
+exit 0
 
 test -z "$1" && echo "usage: $0 <path-to-input>" && exit 1
 head -1 "$1" > /dev/null || exit 1
