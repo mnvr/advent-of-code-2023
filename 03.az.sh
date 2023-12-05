@@ -3,7 +3,15 @@
 # WIP
 # Spam facts about the problem, until we have enough facts to solve it.
 
-echo "11*a33*3333-**-555!!e--44" | awk '
+test -z "$1" && echo "usage: $0 <path-to-input>" && exit 1
+head -1 "$1" > /dev/null || exit 1
+
+echo "Hello Dear May," | tee /tmp/ac3.facts
+
+read_log () { cp /tmp/ac3.facts /tmp/ac3.facts.old; cat /tmp/ac3.facts.old; }
+log () { tee -a /tmp/ac3.facts; }
+
+cat "$1" | awk '
   {
     split($0, cs, "")
     for(i=1; i<=length($0); i++) {
@@ -13,64 +21,19 @@ echo "11*a33*3333-**-555!!e--44" | awk '
         if (start==0) { start = i }
       } else {
         if (start) {
-          print "Number " n " column " start
+          print "Number " n " on row " NR " and column " start;
           n = ""
           start = 0
         }
-        if (c == "*") {
-          print "Symbol * column " i
+        if (c != ".") {
+          print "Symbol " c " on row " NR " and column " i
         }
       }
     }
-  }'
-
-exit 0
-
-test -z "$1" && echo "usage: $0 <path-to-input>" && exit 1
-head -1 "$1" > /dev/null || exit 1
-
-echo "Hello Dear May," | tee /tmp/ac3.facts
-
-read_log () { cp /tmp/ac3.facts /tmp/ac3.facts.old; cat /tmp/ac3.facts.old; }
-log () { tee -a /tmp/ac3.facts; }
-
-cat "$1" | awk -F '[^0-9]' '
-  { for (i=1; i<=NF; i++) { if ($i != "") print "Number " $i " on row " NR; } }
+  }
 ' | log
 
-cat "$1" | tr '.' ' ' | tr -d '0-9' | awk '
-  { for (i=1; i<=NF; i++) { if ($i != "") print "Symbol " $i " on row " NR; } }
-' | log
-
-read_log | awk '/Number/ { print $2, $5 }' | sort | uniq | while read n r
-do
-  echo "Looking for all $n on row $r"
-  cat "$1" | awk -vn=$n -vr=$r '
-    NR == r { s = $0; while (1) {
-      i = index(s, n);
-      if (i == 0) break;
-      c += i;
-      print "Number " n " on row " r " and column " c;
-      s = substr(s, c + length(n) + 1);
-    } }
-  ' | log
-done
-
-read_log | awk '/Symbol */ { print $5 }' | sort | uniq | while read r
-do
-  echo "Looking for all *'s on row $r"
-  cat "$1" | awk -vr=$r '
-    NR == r { s = $0; while (1) {
-      i = index(s, "*");
-      if (i == 0) break;
-      c += i;
-      print "Symbol * on row " r " and column " c;
-      s = substr(s, c + 1);
-    } }
-  ' | log
-done
-
-read_log | grep column | awk '/Number/ { print $2, $5, $8 }' |
+read_log | awk '/Number/ { print $2, $5, $8 }' |
 while read n r c
 do
   nsym=$(cat "$1" | awk -vn=$n -vr=$r -vc=$c '
