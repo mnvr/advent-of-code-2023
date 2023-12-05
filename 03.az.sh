@@ -25,12 +25,18 @@ do
 done
 
 cp /tmp/ac3.facts /tmp/ac3.facts.old
-cat /tmp/ac3.facts.old | grep column | awk '/Symbol */ { print $5 }' |
+cat /tmp/ac3.facts.old | awk '/Symbol */ { print $5 }' |
 while read r
 do
   echo "Looking for * from row $r"
   cat "$1" | awk -vr=$r '
-    NR == r { print "Symbol * on row " r " and column " index($0, "*") }
+    NR == r { s = $0; while (1) {
+      i = index(s, "*");
+      if (i == 0) break;
+      c += i;
+      print "Symbol * on row " r " and column " c;
+      s = substr(s, c + 1);
+    } }
   ' | tee -a /tmp/ac3.facts
 done
 
