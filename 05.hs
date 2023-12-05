@@ -17,6 +17,8 @@ parseAlmanac s = case parse almanac "" s of
      num = read <$> many1 digit
      nums :: Parser [Int]
      nums = sepBy num sp
+     mapHeader :: Parser Char
+     mapHeader = many1 (letter <|> char '-' <|> char ' ') >> char ':'
      range :: Parser [Int]
      range = do
         n1 <- num
@@ -27,18 +29,22 @@ parseAlmanac s = case parse almanac "" s of
         pure [n1, n2, n3]
      _ranges1 = do
         many1 (range >>= \ns -> newline >> pure ns)
+     alMap = do
+        mapHeader
+        newline
+        _ranges1
      almanac = do
         string "seeds: "
         seeds <- nums
         newline
         newline
-        string "seed-to-soil map:"
+        ranges1 <- alMap
         newline
-        ranges1 <- _ranges1
+        ranges2 <- alMap
         newline
-        string "soil-to-fertilizer map:"
-        newline
-        ranges2 <- _ranges1
+        ranges3 <- alMap
+        -- newline
+
         -- newline
 
         -- range2 <- nums
@@ -52,7 +58,7 @@ parseAlmanac s = case parse almanac "" s of
         -- newline
         -- range5 <- nums
         -- newline
-        pure (seeds, [ranges1, ranges2])
+        pure (seeds, [ranges1, ranges2, ranges3])
 
 
         -- seeds = (,) <$> ( *> nums <* count 2 newline) <*> maps
