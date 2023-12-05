@@ -5,8 +5,9 @@ import Control.Monad (void)
 main :: IO ()
 main = interact $ (++ "\n") . show . p1 . parseAlmanac
 
-data Almanac = Input { seeds :: [Int], maps :: [Map] }
-data Map = Map { sourceRange :: Int, destinationRange :: Int, length :: Int } deriving Show
+data Almanac = Almanac { seeds :: [Int], maps :: [RangesMap] } deriving Show
+type RangesMap = [RangeMap]
+data RangeMap = RangeMap { sourceRange :: Int, destinationRange :: Int, length :: Int } deriving Show
 
 -- parseAlmanac :: String -> Input
 parseAlmanac s = case parse almanac "" s of
@@ -44,6 +45,11 @@ parseAlmanac s = case parse almanac "" s of
         newline
         newline
         m <- maps
-        pure (seeds, m)
+        pure $ Almanac seeds (fmap convRangesMap m)
+     convRangesMap :: [[Int]] -> RangesMap
+     convRangeMap :: [Int] -> RangeMap
+     convRangeMap [a, b, c] = RangeMap a b c
+     convRangesMap = fmap convRangeMap
+
 
 p1 = id
