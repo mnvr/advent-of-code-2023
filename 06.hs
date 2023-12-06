@@ -1,5 +1,6 @@
 import Text.Parsec
 import Data.Char (isDigit)
+import Data.List (find)
 
 main :: IO ()
 main = interact $ (++ "\n") . show .
@@ -33,7 +34,12 @@ holdFor rt t = remainingTime * speed
         remainingTime = rt - t
 
 p2 :: Races -> Int
-p2 (Races [time] [distance]) = p2' time distance
+p2 (Races [t] [d]) = case (firstWayToWin t d, lastWayToWin t d) of
+    (Just f, Just l) -> l - f
+    _ -> 0
 
-p2' :: Int -> Int -> Int
-p2' time distance = waysToWin time distance
+firstWayToWin :: Int -> Int -> Maybe Int
+firstWayToWin rt d = find (> d) $ map (rt `holdFor`) [0..rt]
+
+lastWayToWin :: Int -> Int -> Maybe Int
+lastWayToWin rt d = find (> d) $ map (rt `holdFor`) (reverse [0..rt])
