@@ -2,11 +2,13 @@
 {-# HLINT ignore "Use list comprehension" #-}
 import Text.Parsec
 import Control.Monad (void)
-import Debug.Trace (trace)
+-- import Debug.Trace (trace)
+
+trace _ y = y
 
 main :: IO ()
 -- main = interact $ (++ "\n") . show . ((,) <$> p1 <*> p2) . parseAlmanac
-main = interact $ (++ "\n") . show . p2Debug . parseAlmanac
+main = interact $ (++ "\n") . show . p2 . parseAlmanac
 
 data Almanac = Almanac { seeds :: [Int], maps :: [Map] } deriving Show
 type Map = [RangeMapping]
