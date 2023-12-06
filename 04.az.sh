@@ -20,7 +20,7 @@ cat "$1" | tr -d '|' | nl | sort -nr | cut -f2- | awk -vnc=$nc '
 
   END {
     for (i = 1; i <= nc; i++) {
-        totalCards += (wins[i] + 1);
+        totalCards += (wins[i] + 1)
     }
     print score "," totalCards
   }
