@@ -1,6 +1,8 @@
 #!/bin/sh
 
-cat examples/04 | tr -d '|' | awk '
+test -z "$1" && echo "usage: $0 <path-to-input>" && exit 1
+
+cat "$1" | tr -d '|' | awk '
   {
     p=0;
     for(i=3;i<=NF;i++) t[$i]+=1
