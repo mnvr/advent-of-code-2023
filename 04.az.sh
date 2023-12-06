@@ -2,44 +2,26 @@
 
 test -z "$1" && echo "usage: $0 <path-to-input>" && exit 1
 
-nl=`awk 'END { print NR }' "$1"`
-echo "total cards $nl"
+nc=`awk 'END { print NR }' "$1"`
 
-cat "$1" | tr -d '|' | nl | sort -nr | cut -f2- | awk -vnl=$nl '
+cat "$1" | tr -d '|' | nl | sort -nr | cut -f2- | awk -vnc=$nc '
   {
-    p=0; s=0; matches=0; points=0;
-    for(i=3;i<=NF;i++) t[$i]+=1
-    for(k in t) if(t[k]>1) {p+=1; matches+=1;}
-    if(p>0) s+=2^(p-1)
-    ss += s;
-    delete t
+    matches = 0
+    for (i = 3; i <= NF; i++) count[$i] += 1
+    for (k in count) if (count[k] > 1) matches += 1
+    delete count
+    points = 0
+    if (matches > 0) points = 2 ^ (matches-1)
+    score += points
 
-    if (matches>0) { points=2^(matches-1)};
-
-
-    cardnum=nl-NR+1
-    instances[cardnum]=1;
-    g_matches[cardnum]=matches;
-    wins[cardnum]=0;
-    print "card", cardnum, "matches", g_matches[cardnum], "points", points
-
-    for(i=1; i<=matches; i++) {
-        j = cardnum+i
-        print "> we win one extra instance of card", j, "which itself had", wins[j], "wins"
-        wins[cardnum]+=(wins[j]+1);
-    }
-    print "card", cardnum, "wins", wins[cardnum]
-
+    i = nc - NR + 1
+    for (j = 1; j <= matches; j++) wins[i] += (wins[i+j] + 1)
   }
 
   END {
-    print "---"
-    totalCards=0;
-    for(i=1;i<=nl;i++) {
-        print "card", i, "extra wins", wins[i]
-        totalCards+=1; # the card itself
-        totalCards+=wins[i]; # and the extra cards it caused us to win
+    for (i = 1; i <= nc; i++) {
+        totalCards += (wins[i] + 1);
     }
-    print "total scratchcards we are left with is", totalCards
+    print score "," totalCards
   }
 '
