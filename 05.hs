@@ -2,12 +2,13 @@ import Text.Parsec
 import Control.Monad (void)
 
 main :: IO ()
-main = interact $ (++ "\n") . show . ((,) <$> p1 <*> p2) . parseAlmanac
+-- main = interact $ (++ "\n") . show . ((,) <$> p1 <*> p2) . parseAlmanac
+main = interact $ (++ "\n") . show . p2Debug . parseAlmanac
 
-data Almanac = Almanac { seeds :: [Int], maps :: [Map] }
+data Almanac = Almanac { seeds :: [Int], maps :: [Map] } deriving Show
 type Map = [RangeMapping]
-data RangeMapping = RangeMapping { from :: Range, to :: Range }
-data Range = Range { start :: Int, len :: Int }
+data RangeMapping = RangeMapping { from :: Range, to :: Range } deriving Show
+data Range = Range { start :: Int, len :: Int } deriving Show
 
 parseAlmanac :: String -> Almanac
 parseAlmanac s = case parse almanac "" s of
@@ -56,6 +57,8 @@ p2 :: Almanac -> Int
 p2 Almanac { seeds, maps } = minimum . map start . filter (\r -> len r /= 0) $
     foldl transformRanges (seedRanges seeds) maps
 
+p2Debug Almanac { seeds, maps } = foldl transformRanges (seedRanges seeds) maps
+
 seedRanges :: [Int] -> [Range]
 seedRanges [] = []
 seedRanges (x:y:rest) = Range x y : seedRanges rest
@@ -73,6 +76,9 @@ transformRange r (rm:rms) = case applyRangeMapping rm r of
     (Nothing, remaining) -> concatMap (`transformRange` rms) remaining
     (Just transformed, remaining) -> transformed : concatMap (`transformRange` rms) remaining
 
+isValid Range {start, len} = start > 0 && len > 0
+firstValid = find isValid rs
+
 -- Apply the given range mapping to the given range. The range mapping may be
 -- applicable to a subset of the range, so this will return a (optional)
 -- transformed range, and the ranges (possibly empty) that were unchanged.
@@ -80,8 +86,14 @@ transformRange r (rm:rms) = case applyRangeMapping rm r of
 -- Can produce zero length ranges, but that should be fine.
 applyRangeMapping :: RangeMapping -> Range -> (Maybe Range, [Range])
 applyRangeMapping RangeMapping { from, to } range@(Range { start = p, len = n })
+  = (find isValid [
+    Range (p - start from) + (start to) n,
+    ) (start from) - p
+
+
     -- no overlap (left case, right case)
   | q < start from || p > end from = (Nothing, [range])
+--   | True = (Nothing, [range])
     -- left overlap only
   | q >= start from && q <= end from =
         (jr (start to) (q - start from), [Range p (start from - p - 1)])
