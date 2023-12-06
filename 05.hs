@@ -2,6 +2,7 @@
 {-# HLINT ignore "Use list comprehension" #-}
 import Text.Parsec
 import Control.Monad (void)
+import Debug.Trace (trace)
 
 main :: IO ()
 -- main = interact $ (++ "\n") . show . ((,) <$> p1 <*> p2) . parseAlmanac
@@ -59,7 +60,12 @@ p2 :: Almanac -> Int
 p2 Almanac { seeds, maps } = minimum . map start . filter (\r -> len r /= 0) $
     foldl transformRanges (seedRanges seeds) maps
 
-p2Debug Almanac { seeds, maps } = foldl transformRanges (seedRanges seeds) maps
+p2Debug Almanac { seeds, maps } = (,) <$> length <*> id $ z
+  where sr' = (seedRanges seeds)
+        r = Range 82 1
+        sr = [r]
+        z = foldl transformRanges sr' maps
+        z2 = map (\rm -> mapRange rm r) (head maps)
 
 seedRanges :: [Int] -> [Range]
 seedRanges [] = []
@@ -74,7 +80,10 @@ transformRanges rs m = concatMap (`transformRange` m) rs
 -- may cause the range to split.
 transformRange :: Range -> [RangeMapping] -> [Range]
 transformRange r [] = [r]
-transformRange r (rm:rms) = concatMap (`transformRange` rms) $ map (mapRange rm) (intersections r (from rm))
+transformRange r (rm:rms) = concatMap transform (intersections r (from rm))
+  where transform x = trace ("transforming " ++ show x ++ " under " ++ show rm) $ case mapRange rm x of
+          Nothing -> transformRange x rms
+          Just y -> [trace ("transformed to " ++ show y) y]
 
 -- Not necessarily symmetric.
 intersections :: Range -> Range -> [Range]
@@ -90,10 +99,10 @@ intersections r@Range { start = s, len = n } r'@Range { start = s', len = n' }
 -- This is guaranteed to be called with a range that does not cross over the
 -- boundaries of the 'from' range mapping (i.e. either it falls completely
 -- within, or is completely outside).
-mapRange :: RangeMapping -> Range -> Range
+mapRange :: RangeMapping -> Range -> Maybe Range
 mapRange RangeMapping { from, to } r@Range { start = s, len = n }
-  | s >= start from && s + n <= start from = Range (s - start from + start to) n
-  | otherwise = r
+  | s >= start from && s <= (start from + len from) = Just $ Range (s - start from + start to) n
+  | otherwise = Nothing
 
 p2Brute :: Almanac -> Int
 p2Brute a = 0 -- p1 $ a { seeds = expand (seeds a) }
