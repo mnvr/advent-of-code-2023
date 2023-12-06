@@ -41,18 +41,16 @@ wins cards i = case matches (cards !! i) of
     0 -> []
     n -> [(i+1)..(i+n)]
 
-memo :: (MonadState (M.Map k b) m, Ord k) => k -> m b -> m b
-memo i compute = gets (M.lookup i) >>= \case
-  Just v -> pure v
-  Nothing -> compute >>= \r -> modify (M.insert i r) >> pure r
-
-winsRec :: MonadState (M.Map Int [Int]) m => [Card] -> Int -> m [Int]
-winsRec cards i = memo i (_f i)
-  where _f i = case wins cards i of
-          [] -> pure []
-          ys -> do
-            r' <- let f prev y = (: prev) <$> winsRec cards y in foldM f [] ys
-            pure $ concat (ys : r')
+winsRec :: [Card] -> Int -> State (M.Map Int [Int]) [Int]
+winsRec cards i = gets (M.lookup i) >>= \case
+    Just xs -> pure xs
+    Nothing -> case wins cards i of
+                 [] -> modify (M.insert i []) >> pure []
+                 ys -> do
+                    result' <- foldM f [] ys
+                    let result = concat (ys : result')
+                    modify (M.insert i result) >> pure result
+                  where f prev y = (: prev) <$> winsRec cards y
 
 allWins :: [Card] -> State (M.Map Int [Int]) [Int]
 allWins cards = foldM f [] [0..length cards - 1]
