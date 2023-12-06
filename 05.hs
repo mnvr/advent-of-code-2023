@@ -6,7 +6,7 @@ main = interact $ (++ "\n") . show . ((,) <$> p1 <*> p2) . parseAlmanac
 
 data Almanac = Almanac { seeds :: [Int], maps :: [Map] }
 type Map = [RangeMapping]
-data RangeMapping = RangeMapping { from :: Int, to :: Int, rlen :: Int }
+data RangeMapping = RangeMapping { from :: Int, to :: Int, rmLen :: Int }
 data Range = Range { start :: Int, len :: Int }
 
 parseAlmanac :: String -> Almanac
@@ -44,28 +44,18 @@ transformRanges rs m = concatMap (`transformRange` m) rs
 transformRange :: Range -> [RangeMapping] -> [Range]
 transformRange r [] = [r]
 transformRange r (rm:rms) = concatMap transform (intersections r rm)
-  where transform x = case mapRange rm x of
-          Nothing -> transformRange x rms
-          Just y -> [y]
+  where transform x | within rm (start x) = [apply rm x]
+                    | otherwise = transformRange x rms
+        within RangeMapping { from, rmLen = n } i = i >= from && i <= from + n
+        apply RangeMapping { from, to } r = Range (start r - from + to) (len r)
 
 -- Not necessarily symmetric.
 intersections :: Range -> RangeMapping -> [Range]
-intersections r@Range { start = s, len = n } RangeMapping { from = s', rlen = n' }
+intersections r@Range { start = s, len } RangeMapping { from = s', rmLen }
   | s > e' = [r]
   | e < s' = [r]
   | s < s' = mk s (s' - 1) : if e <= e' then [mk s' e] else [mk s' e', mk (e' + 1) e]
   | s <= e' = if e <= e' then [mk s e] else [mk s e', mk (e' + 1) e]
-  where e = s + n
-        e' = s' + n'
+  where e = s + len
+        e' = s' + rmLen
         mk rs re = Range rs (re - rs)
-
--- This is guaranteed to be called with a range that does not cross over the
--- boundaries of the 'from' range mapping (i.e. either it falls completely
--- within, or is completely outside).
-mapRange :: RangeMapping -> Range -> Maybe Range
-mapRange rm@RangeMapping { from, to, rlen } r@Range { start, len }
-  | within rm start = Just $ Range (start - from + to) len
-  | otherwise = Nothing
-
-within :: RangeMapping -> Int -> Bool
-within RangeMapping { from, rlen } i = i >= from && i <= from + rlen
