@@ -16,24 +16,12 @@ parseAlmanac s = case parse almanac "" s of
     Right v -> v
   where
      sp = char ' '
-     num :: Parser Int
      num = read <$> many1 digit
-     nums :: Parser [Int]
      nums = num `sepBy` sp
-     mapHeader :: Parser Char
-     mapHeader = many1 (letter <|> char '-' <|> char ' ') >> char ':'
-     endOfLineOrFile :: Parser ()
+     mapHeader = many1 (letter <|> char '-' <|> sp) >> char ':'
      endOfLineOrFile = void endOfLine <|> eof
-     range :: Parser [Int]
-     range = do
-        n1 <- num
-        sp
-        n2 <- num
-        sp
-        n3 <- num
-        pure [n1, n2, n3]
-     ranges = do
-        many1 (range >>= \ns -> endOfLineOrFile >> pure ns)
+     range = (,,) <$> (num <* sp) <*> (num <* sp) <*> num
+     ranges = range `endBy` endOfLineOrFile
      map = do
         mapHeader
         newline
@@ -47,10 +35,10 @@ parseAlmanac s = case parse almanac "" s of
         newline
         m <- maps
         pure $ Almanac seeds (fmap convRangesMap m)
-     convRangesMap :: [[Int]] -> RangesMap
-     convRangeMap :: [Int] -> RangeMap
-     convRangeMap [a, b, c] = RangeMap a b c
+     convRangesMap :: [(Int,Int,Int)] -> RangesMap
      convRangesMap = fmap convRangeMap
+     convRangeMap :: (Int,Int,Int) -> RangeMap
+     convRangeMap (a, b, c) = RangeMap a b c
 
 
 -- Guide a seed through the maps
