@@ -26,8 +26,8 @@ parseAlmanac s = case parse almanac "" s of
      almanac = Almanac <$> seeds <*> maps
      mkRangeMapping a b c = RangeMapping (Range b c) (Range a c)
 
-p1' :: Almanac -> Int
-p1' Almanac { seeds, maps } = minimum $ map (`mTransform` maps) seeds
+p1 :: Almanac -> Int
+p1 Almanac { seeds, maps } = minimum $ map (`mTransform` maps) seeds
 
 -- Guide a seed through the transformations under the given maps
 mTransform :: Int -> [Map] -> Int
@@ -52,23 +52,13 @@ offsetInRange :: Range -> Int -> Maybe Int
 offsetInRange Range { start, len } x =
     if x >= start && x <= (start + len) then Just (x - start) else Nothing
 
-p1 :: Almanac -> Int
-p1 Almanac { seeds, maps } = solve (identityRanges seeds) maps
-
 p2 :: Almanac -> Int
-p2 Almanac { seeds, maps } = solve (seedRanges seeds) maps
-
-identityRanges :: [Int] -> [Range]
-identityRanges [] = []
-identityRanges (x:rest) = Range x 1 : identityRanges rest
+p2 Almanac { seeds, maps } = minimum . map start . filter (\r -> len r /= 0) $
+    foldl transformRanges (seedRanges seeds) maps
 
 seedRanges :: [Int] -> [Range]
 seedRanges [] = []
 seedRanges (x:y:rest) = Range x y : seedRanges rest
-
-solve :: [Range] -> [Map] -> Int
-solve rs maps = minimum . map start . filter (\r -> len r /= 0) $
-    foldl transformRanges rs maps
 
 -- Transform seed ranges under the given range map. This may result in more
 -- ranges than we started with.
