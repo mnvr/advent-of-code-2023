@@ -2,18 +2,14 @@
 {-# HLINT ignore "Use list comprehension" #-}
 import Text.Parsec
 import Control.Monad (void)
--- import Debug.Trace (trace)
-
-trace _ y = y
 
 main :: IO ()
--- main = interact $ (++ "\n") . show . ((,) <$> p1 <*> p2) . parseAlmanac
-main = interact $ (++ "\n") . show . p2 . parseAlmanac
+main = interact $ (++ "\n") . show . ((,) <$> p1 <*> p2) . parseAlmanac
 
-data Almanac = Almanac { seeds :: [Int], maps :: [Map] } deriving Show
+data Almanac = Almanac { seeds :: [Int], maps :: [Map] }
 type Map = [RangeMapping]
-data RangeMapping = RangeMapping { from :: Range, to :: Range } deriving Show
-data Range = Range { start :: Int, len :: Int } deriving Show
+data RangeMapping = RangeMapping { from :: Range, to :: Range }
+data Range = Range { start :: Int, len :: Int }
 
 parseAlmanac :: String -> Almanac
 parseAlmanac s = case parse almanac "" s of
@@ -62,13 +58,6 @@ p2 :: Almanac -> Int
 p2 Almanac { seeds, maps } = minimum . map start . filter (\r -> len r /= 0) $
     foldl transformRanges (seedRanges seeds) maps
 
-p2Debug Almanac { seeds, maps } = (,) <$> length <*> id $ z
-  where sr' = (seedRanges seeds)
-        r = Range 82 1
-        sr = [r]
-        z = foldl transformRanges sr' maps
-        z2 = map (\rm -> mapRange rm r) (head maps)
-
 seedRanges :: [Int] -> [Range]
 seedRanges [] = []
 seedRanges (x:y:rest) = Range x y : seedRanges rest
@@ -83,9 +72,9 @@ transformRanges rs m = concatMap (`transformRange` m) rs
 transformRange :: Range -> [RangeMapping] -> [Range]
 transformRange r [] = [r]
 transformRange r (rm:rms) = concatMap transform (intersections r (from rm))
-  where transform x = trace ("transforming " ++ show x ++ " under " ++ show rm) $ case mapRange rm x of
+  where transform x = case mapRange rm x of
           Nothing -> transformRange x rms
-          Just y -> [trace ("transformed to " ++ show y) y]
+          Just y -> [y]
 
 -- Not necessarily symmetric.
 intersections :: Range -> Range -> [Range]
@@ -107,7 +96,7 @@ mapRange RangeMapping { from, to } r@Range { start = s, len = n }
   | otherwise = Nothing
 
 p2Brute :: Almanac -> Int
-p2Brute a = 0 -- p1 $ a { seeds = expand (seeds a) }
+p2Brute a = p1 $ a { seeds = expand (seeds a) }
 
 expand :: [Int] -> [Int]
 expand [] = []
