@@ -20,21 +20,26 @@ cat "$1" | tr -d '|' | nl | sort -nr | cut -f2- | awk -vnl=$nl '
     cardnum=nl-NR+1
     instances[cardnum]=1;
     g_matches[cardnum]=matches;
-    print "card", cardnum, "matches", g_matches[cardnum], "points", points, "instances", instances[cardnum]
+    wins[cardnum]=0;
+    print "card", cardnum, "matches", g_matches[cardnum], "points", points
 
     for(i=1; i<=matches; i++) {
-        j = cardnum+1
-        print "> we win one extra instance of card", j;
-        instances[j]+=1;
-        print "> card", j, "itself had", g_matches[j], "matches"
-        # for(k=g_matches)
+        j = cardnum+i
+        print "> we win one extra instance of card", j, "which itself had", wins[j], "wins"
+        wins[cardnum]+=(wins[j]+1);
     }
+    print "card", cardnum, "wins", wins[cardnum]
+
   }
 
   END {
     print "---"
+    totalCards=0;
     for(i=1;i<=nl;i++) {
-        print "card", i, "instances", instances[i]
+        print "card", i, "extra wins", wins[i]
+        totalCards+=1; # the card itself
+        totalCards+=wins[i]; # and the extra cards it caused us to win
     }
+    print "total scratchcards we are left with is", totalCards
   }
 '
