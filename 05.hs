@@ -1,10 +1,9 @@
 import Text.Parsec
 import Text.Parsec.String (Parser)
 import Control.Monad (void)
-import Control.Applicative (liftA2)
 
 main :: IO ()
-main = interact $ (++ "\n") . show . liftA2 (,) p1 p2 . parseAlmanac
+main = interact $ (++ "\n") . show . ((,) <$> p1 <*> p2) . parseAlmanac
 
 data Almanac = Almanac { seeds :: [Int], maps :: [RangesMap] } deriving Show
 type RangesMap = [RangeMap]

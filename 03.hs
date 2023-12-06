@@ -1,11 +1,11 @@
-import Control.Applicative (asum, liftA2)
+import Control.Applicative (asum)
 import Control.Monad (guard)
 import Data.Char (isDigit)
 import Data.Map qualified as M
 import Data.Maybe (catMaybes, isJust, fromJust, isNothing)
 
 main :: IO ()
-main = interact $ (++ "\n") . show . liftA2 (,) p1 p2 . parseParts
+main = interact $ (++ "\n") . show . ((,) <$> p1 <*> p2) . parseParts
 
 data Grid = Grid { rows :: [String], my :: Int, mx :: Int }
 

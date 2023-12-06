@@ -1,10 +1,8 @@
 {-# LANGUAGE LambdaCase #-}
 
-import Control.Applicative (liftA2)
 import Control.Monad.State
 import Data.Map qualified as M
 import Text.Parsec hiding (State)
-import Text.Parsec.String (Parser)
 
 -- Use Parsec to parse, and the State monad to memoize
 --
@@ -13,7 +11,7 @@ import Text.Parsec.String (Parser)
 -- https://mrmr.io/memoization-in-haskell
 
 main :: IO ()
-main = interact $ (++ "\n") . show . liftA2 (,) p1 p2 . parseCards
+main = interact $ (++ "\n") . show . ((,) <$> p1 <*> p2) . parseCards
 
 data Card = Card { winning :: [Int], have :: [Int] } deriving (Show)
 
