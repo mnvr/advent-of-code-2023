@@ -1,6 +1,6 @@
 default: example
 
-.PHONY: example read run test watch verify
+.PHONY: example read run test watch verify o clean
 
 example:
 	@n=`ls -t *.hs | head -1 | cut -f1 -d.`; \
@@ -43,3 +43,17 @@ verify:
 	  cat $$in | runghc $$hs && \
 	  echo "(`cat answers/$$n-a`,`cat answers/$$n-b`)" ;\
 	done
+
+o:
+	@n=`ls -t *.hs | head -1 | cut -f1 -d.`; \
+	in="inputs/$$n"; \
+	hs=`ls -t *.hs | head -1`; \
+	mkdir -p out && \
+	echo "ghc -O -outputdir out -o out/$$n $$hs" && \
+	echo "cat $$in | time ./out/$$n" && \
+	ghc -O -outputdir out -o out/$$n $$hs && \
+	cat $$in | time -h ./out/$$n && \
+	echo "(`cat answers/$$n-a`,`cat answers/$$n-b`)"
+
+clean:
+	rm -rf out
