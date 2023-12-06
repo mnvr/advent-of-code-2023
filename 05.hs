@@ -1,6 +1,7 @@
 import Text.Parsec
 import Text.Parsec.String (Parser)
 import Control.Monad (void)
+import Data.Char (isSpace)
 
 main :: IO ()
 main = interact $ (++ "\n") . show . ((,) <$> p1 <*> p2) . parseAlmanac
@@ -14,11 +15,12 @@ parseAlmanac s = case parse almanac "" s of
     Left err -> error (show err)
     Right v -> v
   where
-     sp :: Parser Char = char ' '
+     -- 'spacesNoNL' is like spaces, but does not match newlines.
+     spacesNoNL = skipMany1 (satisfy (\c -> isSpace c && c /= '\n'))
      num :: Parser Int
      num = read <$> many1 digit
      nums :: Parser [Int]
-     nums = sepBy num sp
+     nums = num `sepBy` spacesNoNL
      mapHeader :: Parser Char
      mapHeader = many1 (letter <|> char '-' <|> char ' ') >> char ':'
      endOfLineOrFile :: Parser ()
@@ -26,9 +28,9 @@ parseAlmanac s = case parse almanac "" s of
      range :: Parser [Int]
      range = do
         n1 <- num
-        sp
+        spacesNoNL
         n2 <- num
-        sp
+        spacesNoNL
         n3 <- num
         pure [n1, n2, n3]
      ranges = do
