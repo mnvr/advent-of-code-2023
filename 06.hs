@@ -11,8 +11,8 @@ parseRaces s = case parse races "" s of
     Right v -> v
   where races = Races <$> (nums <* newline) <*> nums
         num = read <$> many1 digit
-        nums = skipMany notDigitOrNL *> many1 (num <* skipMany notDigitOrNL)
-        notDigitOrNL = noneOf ('\n' : ['0'..'9'])
+        nums = many1 (between ignored ignored num)
+        ignored = skipMany (noneOf ('\n' : ['0'..'9']))
 
 -- p1 :: Races -> Int
 p1 = id
