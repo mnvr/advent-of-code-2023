@@ -6,12 +6,6 @@ import Text.Parsec hiding (State)
 import Data.Array qualified as A
 import Data.Array ((!), (//))
 
--- Use Parsec to parse, and the State monad to memoize
---
--- I also wrote a blog post about how to use the State monad to memoize. This
--- post can also serve as an tutorial introduction to the State monad:
--- https://mrmr.io/memoization-in-haskell
-
 main :: IO ()
 main = interact $ (++ "\n") . show . ((,) <$> p1 <*> p2) . parseCards
 
