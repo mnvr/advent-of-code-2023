@@ -59,7 +59,7 @@ p2 :: Almanac -> Int
 p2 Almanac { seeds, maps } = minimum . map start . filter (\r -> len r /= 0) $
     foldl transformRanges (seedRanges seeds) maps
 
-p2Debug Almanac { seeds, maps } = foldl transformRanges (seedRanges seeds) []
+p2Debug Almanac { seeds, maps } = foldl transformRanges (seedRanges seeds) maps
 
 seedRanges :: [Int] -> [Range]
 seedRanges [] = []
@@ -74,10 +74,7 @@ transformRanges rs m = concatMap (`transformRange` m) rs
 -- may cause the range to split.
 transformRange :: Range -> [RangeMapping] -> [Range]
 transformRange r [] = [r]
-transformRange r (rm:rms) = concatMap transform (intersections r (from rm))
-   where transform x = case mapRange rm x of
-           Nothing -> x `transformRange` rms
-           Just y -> [y]
+transformRange r (rm:rms) = concatMap (`transformRange` rms) $ map (mapRange rm) (intersections r (from rm))
 
 -- Not necessarily symmetric.
 intersections :: Range -> Range -> [Range]
@@ -91,11 +88,12 @@ intersections r@Range { start = s, len = n } r'@Range { start = s', len = n' }
         mk rs re = Range rs (re - rs)
 
 -- This is guaranteed to be called with a range that does not cross over the
--- boundaries of the start of the range mapping (either it falls within, or is
--- without, but no overlapping ranges).
-mapRange :: RangeMapping -> Range -> Maybe Range
-mapRange RangeMapping { from, to } range@Range { start = s, len = n } =
-    if s < start from then Nothing else Just (Range (s - start from + start to) n)
+-- boundaries of the 'from' range mapping (i.e. either it falls completely
+-- within, or is completely outside).
+mapRange :: RangeMapping -> Range -> Range
+mapRange RangeMapping { from, to } r@Range { start = s, len = n }
+  | s >= start from && s + n <= start from = Range (s - start from + start to) n
+  | otherwise = r
 
 p2Brute :: Almanac -> Int
 p2Brute a = 0 -- p1 $ a { seeds = expand (seeds a) }
