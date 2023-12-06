@@ -31,3 +31,9 @@ holdFor :: Int -> Int -> Int
 holdFor rt t = remainingTime * speed
   where speed = t
         remainingTime = rt - t
+
+p2 :: Races -> Int
+p2 (Races [time] [distance]) = p2' time distance
+
+p2' :: Int -> Int -> Int
+p2' time distance = waysToWin time distance
