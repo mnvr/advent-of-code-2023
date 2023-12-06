@@ -15,8 +15,8 @@ parseAlmanac s = case parse almanac "" s of
     Left err -> error (show err)
     Right v -> v
   where
-     -- 'spacesNoNL' is like spaces, but does not match newlines.
-     spacesNoNL = skipMany1 (satisfy (\c -> isSpace c && c /= '\n'))
+     -- 'spaces'' is like spaces, but does not match newlines.
+     spacesNoNL = skipMany1 (oneOf "\t ")
      num :: Parser Int
      num = read <$> many1 digit
      nums :: Parser [Int]
