@@ -53,7 +53,7 @@ offsetInRange Range { start, len } x =
     if x >= start && x <= (start + len) then Just (x - start) else Nothing
 
 p2 :: Almanac -> Int
-p2 Almanac { seeds, maps } = length $
+p2 Almanac { seeds, maps } = minimum . map start . filter (\r -> len r /= 0) $
     foldl transformRanges (seedRanges seeds) maps
 
 seedRanges :: [Int] -> [Range]
@@ -70,39 +70,36 @@ transformRanges rs m = concatMap (`transformRange` m) rs
 transformRange :: Range -> [RangeMapping] -> [Range]
 transformRange r [] = [r]
 transformRange r (rm:rms) = case applyRangeMapping rm r of
-    (Nothing, Nothing) -> error "where did the range disappear!"
-    (Nothing, Just [unchanged]) -> transformRange unchanged rms
-    (Just transformed, Nothing) -> [transformed]
-    (Just transformed, Just remaining) -> transformed : concatMap (`transformRange` rms) remaining
+    (Nothing, remaining) -> concatMap (`transformRange` rms) remaining
+    (Just transformed, remaining) -> transformed : concatMap (`transformRange` rms) remaining
 
 -- Apply the given range mapping to the given range. The range mapping may be
 -- applicable to a subset of the range, so this will return a (optional)
--- transformed range, and (possibly) the range that was unchanged.
+-- transformed range, and the ranges (possibly empty) that were unchanged.
 --
 -- Can produce zero length ranges, but that should be fine.
-applyRangeMapping :: RangeMapping -> Range -> (Maybe Range, Maybe [Range])
+applyRangeMapping :: RangeMapping -> Range -> (Maybe Range, [Range])
 applyRangeMapping RangeMapping { from, to } range@(Range { start = p, len = n })
     -- no overlap (left case, right case)
-  | q < start from || p > end from = (Nothing, Just [range])
+  | q < start from || p > end from = (Nothing, [range])
     -- left overlap only
   | q >= start from && q <= end from =
-            (jr (start to) (q - start from), jrl p (start from - p - 1))
+        (jr (start to) (q - start from), [Range p (start from - p - 1)])
     -- range lies entirely inside from
   | p >= start from && q <= end from =
-            (jr (start to + p - start from) n, Nothing)
+        (jr (start to + (p - start from)) n, [])
     -- right overlap only
   | p >= start from && q >= end from =
-            (jr (start to + p - start from) (end from - p),
-             jrl (end from + 1) (q - end from - 1))
+        (jr (start to + (p - start from)) (end from - p),
+         [Range (end from + 1) (q - (end from + 1))])
     -- range extends outside from on both ends
   | otherwise =
-      (jr (start to) (len from),
-      Just [Range p (start from - p), Range (q + 1) (q - end from - 1)])
+        (jr (start to) (len from),
+         [Range p (start from - p), Range (q + 1) (q - end from - 1)])
 
   where end Range { start, len } = start + len
         q = end range
         jr s l = Just (Range s l)
-        jrl s l = Just [Range s l]
 
 p2Brute :: Almanac -> Int
 p2Brute a = 0 -- p1 $ a { seeds = expand (seeds a) }
