@@ -26,17 +26,16 @@ parseAlmanac s = case parse almanac "" s of
      almanac = Almanac <$> seeds <*> maps
      mkRangeMapping a b c = RangeMapping (Range b c) (Range a c)
 
--- Sequence a seed through the transformations under the given maps
-rTraverse :: [RangeMap] -> Int -> Int
-rTraverse [] s = s
-rTraverse (m:ms) s = rTraverse ms (rmTransform m s)
+-- Guide a seed through the transformations under the given range maps
+mTransform :: Int -> [RangeMap] -> Int
+mTransform = foldl rmTransform
 
 -- Transform a seed using the given range mappings
-rmTransform :: [RangeMapping] -> Int -> Int
-rmTransform [] s = s
-rmTransform (rm:rms) s = case rmApply rm s of
+rmTransform :: Int -> [RangeMapping] -> Int
+rmTransform s [] = s
+rmTransform s (rm:rms) = case rmApply rm s of
     Just s -> s
-    Nothing -> rmTransform rms s
+    Nothing -> rmTransform s rms
 
 -- Apply the given range mapping to the seed if it lies in the source range.
 rmApply :: RangeMapping -> Int -> Maybe Int
@@ -50,9 +49,8 @@ offsetInRange :: Range -> Int -> Maybe Int
 offsetInRange Range { start, len } x =
     if x >= start && x <= (start + len) then Just (x - start) else Nothing
 
-p1 Almanac { seeds, maps } = 0 -- xsmin $ fmap (rTraverse maps) seeds
-
--- xsmin xs = foldl1 min xs
+p1 :: Almanac -> Int
+p1 Almanac { seeds, maps } = minimum $ map (`mTransform` maps) seeds
 
 p2 al = 0 -- p1 $ al { seeds = expand (seeds al) }
 
