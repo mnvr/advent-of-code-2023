@@ -5,7 +5,7 @@ main = interact $ (++ "\n") . show . p1 . parseRaces
 
 data Races = Races { times:: [Int], distances :: [Int] } deriving Show
 
--- parseRaces :: String -> Races
+parseRaces :: String -> Races
 parseRaces s = case parse races "" s of
     Left e -> error (show e)
     Right v -> v
@@ -14,8 +14,8 @@ parseRaces s = case parse races "" s of
         nums = many1 (between ignored ignored num)
         ignored = skipMany (noneOf ('\n' : ['0'..'9']))
 
--- p1 :: Races -> a
-p1 Races { times, distances } = zipWith waysToWin times distances
+p1 :: Races -> Int
+p1 Races { times, distances } = product $ zipWith waysToWin times distances
 
 -- How many ways can we win a race of time t and record distance d?
 waysToWin :: Int -> Int -> Int
