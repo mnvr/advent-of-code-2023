@@ -4,9 +4,10 @@ import Control.Monad (void)
 main :: IO ()
 main = interact $ (++ "\n") . show . ((,) <$> p1 <*> p2) . parseAlmanac
 
-data Almanac = Almanac { seeds :: [Int], maps :: [RangesMap] } deriving Show
-type RangesMap = [RangeMap]
-data RangeMap = RangeMap { destinationRange :: Int, sourceRange :: Int, rangeLength :: Int } deriving Show
+data Almanac = Almanac { seeds :: [Int], maps :: [RangeMap] }
+type RangeMap = [RangeMapping]
+data RangeMapping = RangeMapping { from :: Range, to :: Range }
+data Range = Range { start :: Int, len :: Int }
 
 parseAlmanac :: String -> Almanac
 parseAlmanac s = case parse almanac "" s of
@@ -19,38 +20,42 @@ parseAlmanac s = case parse almanac "" s of
      seeds = string "seeds: " *> nums <* count 2 newline
      mapHeader = many1 (letter <|> char '-' <|> sp) >> char ':'
      endOfLineOrFile = void endOfLine <|> eof
-     range = (,,) <$> (num <* sp) <*> (num <* sp) <*> num
-     ranges = range `endBy` endOfLineOrFile
-     map = mapHeader *> newline *> ranges
-     maps = map `endBy` endOfLineOrFile
-     almanac = Almanac <$> seeds <*> (fmap convRangesMap <$> maps)
-     convRangesMap :: [(Int,Int,Int)] -> RangesMap
-     convRangesMap = fmap convRangeMap
-     convRangeMap :: (Int,Int,Int) -> RangeMap
-     convRangeMap (a, b, c) = RangeMap a b c
+     rangeMapping = mkRangeMapping <$> (num <* sp) <*> (num <* sp) <*> num
+     rangeMap = mapHeader *> newline *> (rangeMapping `endBy` endOfLineOrFile)
+     maps = rangeMap `endBy` endOfLineOrFile
+     almanac = Almanac <$> seeds <*> maps
+     mkRangeMapping a b c = RangeMapping (Range b c) (Range a c)
 
+-- Sequence a seed through the transformations under the given maps
+rTraverse :: [RangeMap] -> Int -> Int
+rTraverse [] s = s
+rTraverse (m:ms) s = rTraverse ms (rmTransform m s)
 
--- Guide a seed through the maps
-rtraverse :: [RangesMap] -> Int -> Int
-rtraverse [] s = s
-rtraverse (m:ms) s = rtraverse ms (mapRangesMap m s)
-
-mapRangesMap :: RangesMap -> Int -> Int
-mapRangesMap [] s = s
-mapRangesMap (rm:rms) s = case mapRangeMap rm s of
+-- Transform a seed using the given range mappings
+rmTransform :: [RangeMapping] -> Int -> Int
+rmTransform [] s = s
+rmTransform (rm:rms) s = case rmApply rm s of
     Just s -> s
-    Nothing -> mapRangesMap rms s
+    Nothing -> rmTransform rms s
 
-mapRangeMap :: RangeMap -> Int -> Maybe Int
-mapRangeMap RangeMap { destinationRange, sourceRange, rangeLength } s =
-    if s >= sourceRange && s <= (sourceRange + rangeLength) then Just (destinationRange + s - sourceRange) else Nothing
+-- Apply the given range mapping to the seed if it lies in the source range.
+rmApply :: RangeMapping -> Int -> Maybe Int
+rmApply RangeMapping { from, to } s = case offsetInRange from s of
+    Nothing -> Nothing
+    Just o -> Just (start to + o)
 
-p1 Almanac { seeds, maps } = xsmin $ fmap (rtraverse maps) seeds
+-- If the given seed falls in the given range, then return its offset from the
+-- start of the range.
+offsetInRange :: Range -> Int -> Maybe Int
+offsetInRange Range { start, len } x =
+    if x >= start && x <= (start + len) then Just (x - start) else Nothing
 
-xsmin xs = foldl1 min xs
+p1 Almanac { seeds, maps } = 0 -- xsmin $ fmap (rTraverse maps) seeds
 
-p2 al = p1 $ al { seeds = expand (seeds al) }
+-- xsmin xs = foldl1 min xs
 
-expand :: [Int] -> [Int]
-expand [] = []
-expand (x:y:zs) = concat [[x..(x+y)], expand zs]
+p2 al = 0 -- p1 $ al { seeds = expand (seeds al) }
+
+-- expand :: [Int] -> [Int]
+-- expand [] = []
+-- expand (x:y:zs) = concat [[x..(x+y)], expand zs]
