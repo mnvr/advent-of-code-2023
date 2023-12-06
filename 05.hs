@@ -1,3 +1,5 @@
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+{-# HLINT ignore "Use list comprehension" #-}
 import Text.Parsec
 import Control.Monad (void)
 
@@ -57,7 +59,7 @@ p2 :: Almanac -> Int
 p2 Almanac { seeds, maps } = minimum . map start . filter (\r -> len r /= 0) $
     foldl transformRanges (seedRanges seeds) maps
 
-p2Debug Almanac { seeds, maps } = foldl transformRanges (seedRanges seeds) maps
+p2Debug Almanac { seeds, maps } = foldl transformRanges (seedRanges seeds) []
 
 seedRanges :: [Int] -> [Range]
 seedRanges [] = []
@@ -68,50 +70,32 @@ seedRanges (x:y:rest) = Range x y : seedRanges rest
 transformRanges :: [Range] -> Map -> [Range]
 transformRanges rs m = concatMap (`transformRange` m) rs
 
--- Transform a seed range under the given range map (which is a list of range
--- mappings really). Such a transformation may cause the range to split.
+-- Transform a seed range under the given range mappings. Such a transformation
+-- may cause the range to split.
 transformRange :: Range -> [RangeMapping] -> [Range]
 transformRange r [] = [r]
-transformRange r (rm:rms) = case applyRangeMapping rm r of
-    (Nothing, remaining) -> concatMap (`transformRange` rms) remaining
-    (Just transformed, remaining) -> transformed : concatMap (`transformRange` rms) remaining
+transformRange r (rm:rms) = concatMap transform (intersections r (from rm))
+   where transform x = case mapRange rm x of
+           Nothing -> x `transformRange` rms
+           Just y -> [y]
 
-isValid Range {start, len} = start > 0 && len > 0
-firstValid = find isValid rs
+-- Not necessarily symmetric.
+intersections :: Range -> Range -> [Range]
+intersections r@Range { start = s, len = n } r'@Range { start = s', len = n' }
+  | s > e' = [r]
+  | e < s' = [r]
+  | s < s' = [mk s (s' - 1), mk s' e] ++ if e <= e' then [] else [mk (e + 1) e']
+  | s <= e' = if e <= e' then [mk s e] else [mk s e', mk (e' + 1) e]
+  where e = s + n
+        e' = s' + n'
+        mk rs re = Range rs (re - rs)
 
--- Apply the given range mapping to the given range. The range mapping may be
--- applicable to a subset of the range, so this will return a (optional)
--- transformed range, and the ranges (possibly empty) that were unchanged.
---
--- Can produce zero length ranges, but that should be fine.
-applyRangeMapping :: RangeMapping -> Range -> (Maybe Range, [Range])
-applyRangeMapping RangeMapping { from, to } range@(Range { start = p, len = n })
-  = (find isValid [
-    Range (p - start from) + (start to) n,
-    ) (start from) - p
-
-
-    -- no overlap (left case, right case)
-  | q < start from || p > end from = (Nothing, [range])
---   | True = (Nothing, [range])
-    -- left overlap only
-  | q >= start from && q <= end from =
-        (jr (start to) (q - start from), [Range p (start from - p - 1)])
-    -- range lies entirely inside from
-  | p >= start from && q <= end from =
-        (jr (start to + (p - start from)) n, [])
-    -- right overlap only
-  | p >= start from && q >= end from =
-        (jr (start to + (p - start from)) (end from - p),
-         [Range (end from + 1) (q - (end from + 1))])
-    -- range extends outside from on both ends
-  | otherwise =
-        (jr (start to) (len from),
-         [Range p (start from - p), Range (q + 1) (q - end from - 1)])
-
-  where end Range { start, len } = start + len
-        q = end range
-        jr s l = Just (Range s l)
+-- This is guaranteed to be called with a range that does not cross over the
+-- boundaries of the start of the range mapping (either it falls within, or is
+-- without, but no overlapping ranges).
+mapRange :: RangeMapping -> Range -> Maybe Range
+mapRange RangeMapping { from, to } range@Range { start = s, len = n } =
+    if s < start from then Nothing else Just (Range (s - start from + start to) n)
 
 p2Brute :: Almanac -> Int
 p2Brute a = 0 -- p1 $ a { seeds = expand (seeds a) }
