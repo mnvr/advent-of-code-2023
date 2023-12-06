@@ -1,7 +1,9 @@
 import Text.Parsec
+import Data.Char (isDigit)
 
 main :: IO ()
-main = interact $ (++ "\n") . show . p1 . parseRaces
+main = interact $ (++ "\n") . show .
+  ((,) <$> p1 . parseRaces <*> p1 . parseAsSingleRace)
 
 data Races = Races { times:: [Int], distances :: [Int] } deriving Show
 
@@ -13,6 +15,9 @@ parseRaces s = case parse races "" s of
         num = read <$> many1 digit
         nums = many1 (between ignored ignored num)
         ignored = skipMany (noneOf ('\n' : ['0'..'9']))
+
+parseAsSingleRace :: String -> Races
+parseAsSingleRace s = parseRaces $ filter (\c -> isDigit c || c == '\n') s
 
 p1 :: Races -> Int
 p1 Races { times, distances } = product $ zipWith waysToWin times distances
