@@ -15,12 +15,11 @@ parseAlmanac s = case parse almanac "" s of
     Left err -> error (show err)
     Right v -> v
   where
-     -- 'spaces'' is like spaces, but does not match newlines.
-     spacesNoNL = skipMany1 (oneOf "\t ")
+     sp = char ' '
      num :: Parser Int
      num = read <$> many1 digit
      nums :: Parser [Int]
-     nums = num `sepBy` spacesNoNL
+     nums = num `sepBy` sp
      mapHeader :: Parser Char
      mapHeader = many1 (letter <|> char '-' <|> char ' ') >> char ':'
      endOfLineOrFile :: Parser ()
@@ -28,9 +27,9 @@ parseAlmanac s = case parse almanac "" s of
      range :: Parser [Int]
      range = do
         n1 <- num
-        spacesNoNL
+        sp
         n2 <- num
-        spacesNoNL
+        sp
         n3 <- num
         pure [n1, n2, n3]
      ranges = do
