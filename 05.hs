@@ -1,5 +1,3 @@
-{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
-{-# HLINT ignore "Use list comprehension" #-}
 import Text.Parsec
 import Control.Monad (void)
 
@@ -81,7 +79,7 @@ intersections :: Range -> Range -> [Range]
 intersections r@Range { start = s, len = n } r'@Range { start = s', len = n' }
   | s > e' = [r]
   | e < s' = [r]
-  | s < s' = [mk s (s' - 1), mk s' e] ++ if e <= e' then [] else [mk (e + 1) e']
+  | s < s' = mk s (s' - 1) : if e <= e' then [mk s' e] else [mk s' e', mk (e' + 1) e]
   | s <= e' = if e <= e' then [mk s e] else [mk s e', mk (e' + 1) e]
   where e = s + n
         e' = s' + n'
