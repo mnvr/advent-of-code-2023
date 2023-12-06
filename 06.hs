@@ -38,8 +38,26 @@ p2 (Races [t] [d]) = case (firstWayToWin t d, lastWayToWin t d) of
     (Just f, Just l) -> l - f
     _ -> 0
 
+-- Unoptimized versions.
+
+-- These take longer than I'd expect. With runghc, they take 15 seconds. It is
+-- faster after compiling with GHC - it gets down to 1 second. With "-O2", it
+-- becomes 0.4 second, about as fast as one would expect.
+--
+-- This is not too surprising, the relevant optimizations wouldn't have been
+-- kicking in when running under runghc, but still, interesting to find an
+-- example of this drastic difference between runghc'd and optimized code.
+--
+-- Fusing the find and map doesn't seem to have helped either.
+
 firstWayToWin :: Int -> Int -> Maybe Int
-firstWayToWin rt d = find (> d) $ map (rt `holdFor`) [0..rt]
+firstWayToWin rt d = find (\t -> (rt `holdFor` t) > d) [0..rt]
 
 lastWayToWin :: Int -> Int -> Maybe Int
-lastWayToWin rt d = find (> d) $ map (rt `holdFor`) (reverse [0..rt])
+lastWayToWin rt d = find (\t -> (rt `holdFor` t) > d) [rt,(rt-1)..0]
+
+firstWayToWin' :: Int -> Int -> Maybe Int
+firstWayToWin' rt d = find (> d) $ map (rt `holdFor`) [0..rt]
+
+lastWayToWin' :: Int -> Int -> Maybe Int
+lastWayToWin' rt d = find (> d) $ map (rt `holdFor`) (reverse [0..rt])
