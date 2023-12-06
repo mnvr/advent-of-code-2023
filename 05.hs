@@ -26,52 +26,17 @@ parseAlmanac s = case parse almanac "" s of
      almanac = Almanac <$> seeds <*> maps
      mkRangeMapping a b c = RangeMapping (Range b c) (Range a c)
 
-p1' :: Almanac -> Int
-p1' Almanac { seeds, maps } = minimum $ map (`mTransform` maps) seeds
-
--- Guide a seed through the transformations under the given maps
-mTransform :: Int -> [Map] -> Int
-mTransform = foldl rmTransform
-
--- Transform a seed using the given range mappings
-rmTransform :: Int -> [RangeMapping] -> Int
-rmTransform s [] = s
-rmTransform s (rm:rms) = case rmApply rm s of
-    Just s -> s
-    Nothing -> rmTransform s rms
-
--- Apply the given range mapping to the seed if it lies in the source range.
-rmApply :: RangeMapping -> Int -> Maybe Int
-rmApply RangeMapping { from, to } s = case offsetInRange from s of
-    Nothing -> Nothing
-    Just o -> Just (start to + o)
-
--- If the given seed falls in the given range, then return its offset from the
--- start of the range.
-offsetInRange :: Range -> Int -> Maybe Int
-offsetInRange Range { start, len } x =
-    if x >= start && x <= (start + len) then Just (x - start) else Nothing
-
-p1 :: Almanac -> Int
-p1 Almanac { seeds, maps } = solve (identityRanges seeds) maps
-
-p2 :: Almanac -> Int
+p1, p2 :: Almanac -> Int
+p1 Almanac { seeds, maps } = solve (map (`Range` 1) seeds) maps
 p2 Almanac { seeds, maps } = solve (seedRanges seeds) maps
-
-identityRanges :: [Int] -> [Range]
-identityRanges [] = []
-identityRanges (x:rest) = Range x 1 : identityRanges rest
 
 seedRanges :: [Int] -> [Range]
 seedRanges [] = []
 seedRanges (x:y:rest) = Range x y : seedRanges rest
 
 solve :: [Range] -> [Map] -> Int
-solve rs maps = minimum . map start . filter (\r -> len r /= 0) $
-    foldl transformRanges rs maps
+solve rs maps = minimum . map start $ foldl transformRanges rs maps
 
--- Transform seed ranges under the given range map. This may result in more
--- ranges than we started with.
 transformRanges :: [Range] -> Map -> [Range]
 transformRanges rs m = concatMap (`transformRange` m) rs
 
@@ -100,12 +65,8 @@ intersections r@Range { start = s, len = n } r'@Range { start = s', len = n' }
 -- within, or is completely outside).
 mapRange :: RangeMapping -> Range -> Maybe Range
 mapRange RangeMapping { from, to } r@Range { start = s, len = n }
-  | s >= start from && s <= (start from + len from) = Just $ Range (s - start from + start to) n
+  | inRange from s = Just $ Range (s - start from + start to) n
   | otherwise = Nothing
 
-p2Brute :: Almanac -> Int
-p2Brute a = p1 $ a { seeds = expand (seeds a) }
-
-expand :: [Int] -> [Int]
-expand [] = []
-expand (x:y:zs) = [x..(x+y)] ++ expand zs
+inRange :: Range -> Int -> Bool
+inRange r i = i >= start r && i <= (start r + len r)
