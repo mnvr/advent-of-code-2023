@@ -15,11 +15,13 @@ cardCounts = foldl (\as c -> incr as c : as) [] where
   incr as c = case lookup c as of Nothing -> (c, 1); Just i -> (c, i + 1)
 
 mkHandType :: String -> HandType
-mkHandType _ = Five
--- mkCardType s = case length u of
-    --   1 -> Five
-    --   2 ->
-    -- where u = nub s
+mkHandType s = case length u of
+      1 -> Five
+      2 -> Four -- or Full
+      3 -> Two -- or Three
+      4 -> One
+      5 -> High
+    where u = nub s
 
 parseHands :: String -> [Hand]
 parseHands = map (first (\x -> (x, mkHandType x)) . fmap read . span (/= ' ')) . lines
