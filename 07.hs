@@ -37,5 +37,10 @@ compareHands ((s,t), _) ((s',t'), _) = let ot = compare t t' in
 
 labelStrength = ['A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2']
 
+enumerate :: [a] -> [(Int, a)]
+enumerate = zip [0..]
+
 -- p1 :: [Hand] -> []
-p1 = sortBy (flip compareHands)
+p1 = sum . map score . enumerate . sorted
+  where sorted  = sortBy (flip compareHands)
+        score (i, (_, j)) = j
