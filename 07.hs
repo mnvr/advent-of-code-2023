@@ -1,22 +1,31 @@
 import Data.List (sortBy, nub)
 import Data.Bifunctor (first)
+import Data.Monoid -- (Sum)
+
 main :: IO ()
-main = interact $ (++ "\n") . show . p1 . parseCards
+main = interact $ (++ "\n") . show . p1 . parseHands
 
-type Card = ((String, CardType), Int)
+type Hand = ((String, HandType), Int)
 
-data CardType = Five | Four | Full | Three | Two | One | High deriving Show
+data HandType = Five | Four | Full | Three | Two | One | High deriving Show
 
-mkCardType :: String -> CardType
-mkCardType s = High
+cardCounts :: String -> [(Char, Int)]
+cardCounts = foldl (\as c -> fmap (+1) ((lookup c as) <> Just (Sum 1)) : as) []
 
-parseCards :: String -> [Card]
-parseCards = map (first (\x -> (x, mkCardType x)) . fmap read . span (/= ' ')) . lines
+mkHandType :: String -> HandType
+mkHandType _ = Five
+-- mkCardType s = case length u of
+    --   1 -> Five
+    --   2 ->
+    -- where u = nub s
 
-compareCards :: Card -> Card -> Ordering
-compareCards (d, _) (d', _) = GT
+parseHands :: String -> [Hand]
+parseHands = map (first (\x -> (x, mkHandType x)) . fmap read . span (/= ' ')) . lines
 
-p1 :: [Card] -> [Card]
+compareHands :: Hand ->Hand -> Ordering
+compareHands (d, _) (d', _) = GT
+
+p1 :: [Hand] -> [Hand]
 -- p1 = sortBy compareCards
 -- p1 xs = map (first . first nub) xs
 p1 xs = xs
