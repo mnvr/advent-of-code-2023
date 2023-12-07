@@ -33,20 +33,42 @@ holdFor rt t = remainingTime * speed
   where speed = t
         remainingTime = rt - t
 
--- Unoptimized versions.
+-- Binary search
 
+p2 :: Races -> Int
+p2 (Races [rt] [d]) = last rt - firstB 1 + 1
+  where
+    check t = (rt `holdFor` t) > d
+    first t = if check t then countdown t else first (2 * t)
+    countdown t = if check (t - 1) then countdown (t - 1) else t
+    last t
+      | check t = countup t
+      | odd t = if check (t - 1) then t else last (t `div` 2)
+      | otherwise = last (t `div` 2)
+    countup t = if check (t + 1) then countup (t + 1) else t
+    firstB lb = first' lb (firstBound lb)
+    firstBound t = if check t then t else firstBound (2 * t)
+    first' p q -- (lb, rb)
+      -- | p == lb = error (show (p, lb))
+      | p == q = p
+      -- | p + 1 == q = if check p then p else q
+      | otherwise = let m = p + ((q - p) `div` 2)
+                    in if check m then first' p m else first' (m + 1) q
+
+-- Unoptimized versions.
+--
 -- These take longer than I'd expect. With runghc, they take 15 seconds. When
 -- complied with "-O2", both these take around 0.5 seconds.
 --
 -- This is not too surprising because runghc runs the code using the interpreter
 -- without any optimizations. But still, mildly interesting to find an example
 -- of such drastic difference between interpreted and optimized code.
---
--- Approaches: Finding (only) the first and last winning indices, either
--- normally or with binary search.
 
-p2 :: Races -> Int
-p2 (Races [rt] [d]) = last rt - first 1 + 1
+-- Finding (only) the first and last winning indices with a pseudo-binary search
+-- (binary search to the initial guess, but then linear countup/down).
+
+p2A :: Races -> Int
+p2A (Races [rt] [d]) = last rt - first 1 + 1
   where
     check t = (rt `holdFor` t) > d
     first t = if check t then countdown t else first (2 * t)
@@ -57,17 +79,7 @@ p2 (Races [rt] [d]) = last rt - first 1 + 1
       | otherwise = last (t `div` 2)
     countup t = if check (t + 1) then countup (t + 1) else t
 
--- Unoptimized versions.
-
--- These take longer than I'd expect. With runghc, they take 15 seconds. It is
--- faster after compiling with GHC - it gets down to 1 second. With "-O2", it
--- becomes 0.4 second, about as fast as one would expect.
---
--- This is not too surprising, the relevant optimizations wouldn't have been
--- kicking in when running under runghc, but still, interesting to find an
--- example of this drastic difference between runghc'd and optimized code.
---
--- Fusing the find and map (p2b) doesn't seem to have helped either.
+-- Finding (only) the first and last winning indices, sequentially.
 
 p2B :: Races -> Int
 p2B (Races [t] [d]) = case (firstWayToWinB t d, lastWayToWinB t d) of
