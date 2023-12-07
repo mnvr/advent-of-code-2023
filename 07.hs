@@ -1,6 +1,5 @@
 import Data.List (sortBy, nub, elemIndex, find)
 import Data.Bifunctor (first)
-import Data.Monoid -- (Sum)
 import Control.Arrow ((&&&))
 import Data.Maybe (fromMaybe, fromJust)
 
@@ -35,14 +34,13 @@ compareHands ((s,t), _) ((s',t'), _) = let ot = compare t t' in
     where compareLabel c c' = compare (labelIndex c) (labelIndex c')
           labelIndex c = fromJust (elemIndex c labelStrength)
 
+labelStrength :: [Char]
 labelStrength = ['A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2']
 
 enumerate :: [a] -> [(Int, a)]
 enumerate = zip [0..]
 
--- p1 :: [Hand] -> []
--- p1 = enumerate . map (id &&& cardCounts . fst . fst) . sorted
--- p1 = enumerate . sorted
+p1 :: [Hand] -> Int
 p1 = sum . map score . enumerate . sorted
   where sorted  = sortBy (flip compareHands)
         score (i, (_, j)) = (i + 1) * j
