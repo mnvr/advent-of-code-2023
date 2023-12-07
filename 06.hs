@@ -4,7 +4,7 @@ import Data.List (find)
 
 main :: IO ()
 main = interact $ (++ "\n") . show .
-  ((,) <$> p1 . parseRaces <*> p2A . parseAsSingleRace)
+  ((,) <$> p1 . parseRaces <*> p2B . parseAsSingleRace)
 
 data Races = Races { times:: [Int], distances :: [Int] } deriving Show
 
@@ -43,19 +43,6 @@ holdFor rt t = remainingTime * speed
 -- kicking in when running under runghc, but still, interesting to find an
 -- example of this drastic difference between runghc'd and optimized code.
 --
--- The initial version was p2A (more below).
-
-p2A :: Races -> Int
-p2A (Races [t] [d]) = case (firstWayToWinB t d, lastWayToWinB t d) of
-    (Just f, Just l) -> l - f + 1
-    _ -> 0
-
-firstWayToWinA :: Int -> Int -> Maybe Int
-firstWayToWinA rt d = find (> d) $ map (rt `holdFor`) [0..rt]
-
-lastWayToWinA :: Int -> Int -> Maybe Int
-lastWayToWinA rt d = find (> d) $ map (rt `holdFor`) (reverse [0..rt])
-
 -- Fusing the find and map (p2b) doesn't seem to have helped either.
 
 p2B :: Races -> Int
