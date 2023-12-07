@@ -13,7 +13,7 @@ data HandType = Five | Four | Full | Three | Two | One | High deriving (Show, Eq
 
 cardCounts :: String -> [(Char, Int)]
 cardCounts = foldl (\as c -> incr as c : as) [] where
-  incr as c = case lookup c as of Nothing -> ('c', 1); Just i -> ('c', i + 1)
+  incr as c = case lookup c as of Nothing -> (c, 1); Just i -> (c, i + 1)
 
 maxCardCount :: String -> Int
 maxCardCount = maximum . map snd . cardCounts
@@ -41,6 +41,8 @@ enumerate :: [a] -> [(Int, a)]
 enumerate = zip [0..]
 
 -- p1 :: [Hand] -> []
+-- p1 = enumerate . map (id &&& cardCounts . fst . fst) . sorted
+-- p1 = enumerate . sorted
 p1 = sum . map score . enumerate . sorted
   where sorted  = sortBy (flip compareHands)
-        score (i, (_, j)) = j
+        score (i, (_, j)) = (i + 1) * j
