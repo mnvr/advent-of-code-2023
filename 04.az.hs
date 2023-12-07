@@ -5,23 +5,25 @@ import Data.Bifunctor
 import Text.Read (readMaybe)
 import Data.Char (isSpace)
 import Data.Maybe (catMaybes)
+import Data.List (intersect)
 
 main :: IO ()
 main = interact $ (++ "\n") . show . ((,) <$> p1 <*> p2) . parseCards
 
--- nums :: String -> [Int]
-nums =  catMaybes . nums'
-nums' :: String -> [Maybe Int]
-nums' [] = []
-nums' s = let (a, b) = break isSpace s in (readMaybe a :: Maybe Int) : nums' (dropWhile isSpace b)
+type Card = ([Int], [Int])
 
--- parseCards :: String -> [([Int], [Int])]
+parseCards :: String -> [Card]
 parseCards s = map (bimap nums nums . span (/= '|')) (lines s)
 
+nums :: String -> [Int]
+nums =  catMaybes . nums'
+nums' [] = []
+nums' s = let (a, b) = break isSpace s in readMaybe a : nums' (dropWhile isSpace b)
 
-  -- map parseCard $ lines s
-  -- where parseCard s' = bimap nums nums $ bimap tail tail $ span (/= '|') $ dropWhile (/= ':') s'
-  --       nums s' = id s'
+p1 :: [Card] -> [Int]
+p1 = map matches
 
-p1 = id
+matches :: ([Int], [Int]) -> Int
+matches (xs, ys) = length $ intersect xs ys
+
 p2 = p1
