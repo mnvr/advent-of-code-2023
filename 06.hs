@@ -36,7 +36,7 @@ holdFor rt t = remainingTime * speed
 -- Binary search
 
 p2 :: Races -> Int
-p2 (Races [rt] [d]) = last rt - firstB 1 + 1
+p2 (Races [rt] [d]) = lastB rt - firstB 1 + 1
   where
     check t = (rt `holdFor` t) > d
     first t = if check t then countdown t else first (2 * t)
@@ -47,13 +47,21 @@ p2 (Races [rt] [d]) = last rt - firstB 1 + 1
       | otherwise = last (t `div` 2)
     countup t = if check (t + 1) then countup (t + 1) else t
     firstB lb = first' lb (firstBound lb)
-    firstBound t = if check t then t else firstBound (2 * t)
+    firstBound t = if check t then t else firstBound (t * 2)
     first' p q -- (lb, rb)
       -- | p == lb = error (show (p, lb))
       | p == q = p
       -- | p + 1 == q = if check p then p else q
       | otherwise = let m = p + ((q - p) `div` 2)
                     in if check m then first' p m else first' (m + 1) q
+    lastB ub = last' (lastBound ub) ub
+    lastBound t = 1 -- if check t then t else lastBound (t `div` 2)
+    last' p q -- (lb, rb)
+      -- | p == lb = error (show (p, lb))
+      | p == q = p
+      | p + 1 == q = if check q then q else p
+      | otherwise = let m = p + ((q - p) `div` 2)
+                    in if check m then last' m q else last' p (m - 1)
 
 -- Unoptimized versions.
 --
