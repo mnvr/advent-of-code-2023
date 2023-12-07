@@ -4,7 +4,7 @@ import Data.List (find)
 
 main :: IO ()
 main = interact $ (++ "\n") . show .
-  ((,) <$> p1 . parseRaces <*> p2B . parseAsSingleRace)
+  ((,) <$> p1 . parseRaces <*> p2 . parseAsSingleRace)
 
 data Races = Races { times:: [Int], distances :: [Int] } deriving Show
 
@@ -32,6 +32,30 @@ holdFor :: Int -> Int -> Int
 holdFor rt t = remainingTime * speed
   where speed = t
         remainingTime = rt - t
+
+-- Unoptimized versions.
+
+-- These take longer than I'd expect. With runghc, they take 15 seconds. When
+-- complied with "-O2", both these take around 0.5 seconds.
+--
+-- This is not too surprising because runghc runs the code using the interpreter
+-- without any optimizations. But still, mildly interesting to find an example
+-- of such drastic difference between interpreted and optimized code.
+--
+-- Approaches: Finding (only) the first and last winning indices, either
+-- normally or with binary search.
+
+p2 :: Races -> Int
+p2 (Races [rt] [d]) = last rt - first 1 + 1
+  where
+    check t = (rt `holdFor` t) > d
+    first t = if check t then countdown t else first (2 * t)
+    countdown t = if check (t - 1) then countdown (t - 1) else t
+    last t
+      | check t = countup t
+      | odd t = if check (t - 1) then t else last (t `div` 2)
+      | otherwise = last (t `div` 2)
+    countup t = if check (t + 1) then countup (t + 1) else t
 
 -- Unoptimized versions.
 
