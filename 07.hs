@@ -1,15 +1,16 @@
 import Data.List (sortBy, nub, elemIndex)
-import Data.Bifunctor (first)
 
 main :: IO ()
 main = interact $ (++ "\n") . show . p1 . parseHands
 
-type Hand = ((String, HandType), Int)
-
-data HandType = Five | Four | Full | Three | Two | One | High deriving (Show, Eq, Ord)
+data Hand = Hand { handCards :: String, handType :: HandType, handBet :: Int }
+    deriving (Show, Eq)
+data HandType = Five | Four | Full | Three | Two | One | High
+    deriving (Show, Eq, Ord)
 
 parseHands :: String -> [Hand]
-parseHands = map (first (\x -> (x, mkHandType x)) . fmap read . span (/= ' ')) . lines
+parseHands = map (mk . fmap read . span (/= ' ')) . lines
+  where mk (s, b) = Hand { handCards = s, handType = mkHandType s, handBet = b }
 
 mkHandType :: String -> HandType
 mkHandType s = case (length . nub) s of
@@ -27,7 +28,8 @@ maxCardCount :: String -> Int
 maxCardCount = maximum . map snd . cardCounts
 
 compareHands :: Hand -> Hand -> Ordering
-compareHands ((s,t), _) ((s',t'), _) =
+compareHands Hand { handCards = s,  handType = t  }
+             Hand { handCards = s', handType = t' } =
     let o = compare t t' in if o == EQ then compareCards s s' else o
 
 compareCards :: [Char] -> [Char] -> Ordering
@@ -41,4 +43,4 @@ p1 :: [Hand] -> Int
 p1 = winnings compareHands
 
 winnings :: (Hand -> Hand -> Ordering) -> [Hand] -> Int
-winnings cmp = sum . zipWith (*) [1..] . map snd . sortBy (flip cmp)
+winnings cmp = sum . zipWith (*) [1..] . map handBet . sortBy (flip cmp)
