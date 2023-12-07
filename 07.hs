@@ -1,4 +1,5 @@
 import Data.List (sortBy, nub, elemIndex)
+import Data.Maybe (fromJust)
 
 main :: IO ()
 main = interact $ (++ "\n") . show . p1 . parseHands
@@ -20,6 +21,9 @@ mkHandType s = case (length . nub) s of
       4 -> One
       5 -> High
 
+handValue :: String -> Int
+handValue = foldl1 (\v i -> v * 100 + i) . map (fromJust . (`elemIndex` labelStrength))
+
 cardCounts :: String -> [(Char, Int)]
 cardCounts = foldl (\as c -> incr as c : as) [] where
   incr as c = case lookup c as of Nothing -> (c, 1); Just i -> (c, i + 1)
@@ -30,11 +34,7 @@ maxCardCount = maximum . map snd . cardCounts
 compareHands :: Hand -> Hand -> Ordering
 compareHands Hand { handCards = s,  handType = t  }
              Hand { handCards = s', handType = t' } =
-    let o = compare t t' in if o == EQ then compareCards s s' else o
-
-compareCards :: [Char] -> [Char] -> Ordering
-compareCards s s' = compare (labels s) (labels s')
-  where labels = map (`elemIndex` labelStrength)
+    let o = compare t t' in if o == EQ then compare (handValue s) (handValue s') else o
 
 labelStrength :: [Char]
 labelStrength = ['A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2']
