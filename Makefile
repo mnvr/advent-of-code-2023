@@ -70,5 +70,17 @@ o:
 	cat $$in | time -h ./out/$$n && \
 	echo "(`cat answers/$$n-a`,`cat answers/$$n-b`)"
 
+o2:
+	@dim='\033[2;80m'; reset='\033[0m'; \
+	n=`ls -t *.hs | head -1 | cut -f1 -d.`; \
+	in="inputs/$$n"; \
+	hs=`ls -t *.hs | head -1`; \
+	mkdir -p out && \
+	echo "$$dim""ghc -O2 -outputdir out -o out/$$n $$hs""$$reset" && \
+	echo "$$dim""cat $$in | time ./out/$$n""$$reset" && \
+	ghc -O -outputdir out -o out/$$n $$hs && \
+	cat $$in | time -h ./out/$$n && \
+	echo "(`cat answers/$$n-a`,`cat answers/$$n-b`)"
+
 clean:
 	rm -rf out

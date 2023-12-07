@@ -20,7 +20,7 @@ Other commands:
 -   `make verify` - Run `make test`, but for all days so far, in reverse.
 -   `make o` - same as `make test`, but first compile the .hs file using GHC
     with optimizations enabled, and also print timings. To remove these, use
-    `make clean`.
+    `make clean`. There's also a `make o2` variant of this.
 
 All of these are wrappers around the basic pattern of
 
