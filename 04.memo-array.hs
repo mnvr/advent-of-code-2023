@@ -2,7 +2,7 @@
 
 import Control.Monad.State
 import Data.Map qualified as M
-import Text.Parsec hiding (State)
+import Text.Parsec
 import Data.Array qualified as A
 import Data.Array ((!), (//))
 

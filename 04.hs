@@ -2,7 +2,7 @@
 
 import Control.Monad.State
 import Data.Map qualified as M
-import Text.Parsec hiding (State)
+import Text.Parsec
 
 -- Use Parsec to parse, and the State monad to memoize
 --
@@ -58,7 +58,7 @@ _winsRec cards i = case wins cards i of
     r' <- let f prev y = (: prev) <$> winsRec cards y in foldM f [] ys
     pure $ concat (ys : r')
 
-allWins :: [Card] -> State (M.Map Int [Int]) [Int]
+allWins :: MonadState (M.Map Int [Int]) m => [Card] -> m [Int]
 allWins cards = foldM f [] [0..length cards - 1]
   where f w i = winsRec cards i >>= \extra ->
          pure ((1 + length extra) : w)
