@@ -3,8 +3,8 @@
 import Control.Monad.State
 import Data.Map qualified as M
 import Text.Parsec
-import Control.Monad.ST -- qualified as ST
-import Data.Array.ST -- qualified as SA
+import Control.Monad.ST
+import Data.Array.ST
 
 -- ST stands for "State Thread"
 --
@@ -43,22 +43,22 @@ wins cards i = case matches (cards !! i) of
     0 -> []
     n -> [(i+1)..(i+n)]
 
-memo :: (MArray a (Maybe b) m, Ix i) => a i (Maybe b) -> i -> m b -> m b
+memo :: Ix i => STArray s i (Maybe b) -> i -> ST s b -> ST s b
 memo memoTable i compute = readArray memoTable i >>= \case
   Just v -> pure v
   Nothing -> compute >>= \r -> writeArray memoTable i (Just r) >> pure r
 
-winsRec :: MArray a (Maybe [Int]) m => [Card] -> a Int (Maybe [Int]) -> Int -> m [Int]
+winsRec :: [Card] -> STArray s Int (Maybe [Int]) -> Int -> ST s [Int]
 winsRec cards memoTable i = memo memoTable i (_winsRec cards memoTable i)
 
-_winsRec :: MArray a (Maybe [Int]) m => [Card] -> a Int (Maybe [Int]) -> Int -> m [Int]
+_winsRec :: [Card] -> STArray s Int (Maybe [Int]) -> Int -> ST s [Int]
 _winsRec cards memoTable i = case wins cards i of
   [] -> pure []
   ys -> do
     r' <- let f prev y = (: prev) <$> winsRec cards memoTable y in foldM f [] ys
     pure $ concat (ys : r')
 
-allWins :: MArray a (Maybe [Int]) m => [Card] -> a Int (Maybe [Int]) -> m [Int]
+allWins :: [Card] -> STArray s Int (Maybe [Int]) -> ST s [Int]
 allWins cards mt = foldM f [] [0..length cards - 1]
   where f w i = winsRec cards mt i >>= \extra ->
          pure ((1 + length extra) : w)
