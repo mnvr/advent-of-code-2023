@@ -39,7 +39,7 @@ p2 = p2A
 -- Unoptimized versions.
 --
 -- These take longer than I'd expect. With runghc, they take 15 seconds. When
--- complied with "-O2", both these take around 0.5 seconds.
+-- complied with "-O", both these take around 0.5 seconds.
 --
 -- This is not too surprising because runghc runs the code using the interpreter
 -- without any optimizations. But still, mildly interesting to find an example
