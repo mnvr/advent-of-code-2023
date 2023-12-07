@@ -45,8 +45,6 @@ memo i compute = gets (! i) >>= \case
 winsRec :: MonadState (A.Array Int (Maybe [Int])) m => [Card] -> Int -> m [Int]
 winsRec cards i = memo i (_winsRec cards i)
 
--- Note - for recursive calls, this "actual" version must call the memoized, non
--- underscore version for the memoization to kick in.
 _winsRec :: MonadState (A.Array Int (Maybe [Int])) m => [Card] -> Int -> m [Int]
 _winsRec cards i = case wins cards i of
   [] -> pure []

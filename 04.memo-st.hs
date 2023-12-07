@@ -43,26 +43,24 @@ wins cards i = case matches (cards !! i) of
     0 -> []
     n -> [(i+1)..(i+n)]
 
--- memo :: (MonadState (M.Map k b) m, Ord k) => k -> m b -> m b
+memo :: (MArray a (Maybe b) m, Ix i) => a i (Maybe b) -> i -> m b -> m b
 memo memoTable i compute = readArray memoTable i >>= \case
   Just v -> pure v
   Nothing -> compute >>= \r -> writeArray memoTable i (Just r) >> pure r
 
--- winsRec :: MonadState (M.Map Int [Int]) m => [Card] -> Int -> m [Int]
+winsRec :: MArray a (Maybe [Int]) m => [Card] -> a Int (Maybe [Int]) -> Int -> m [Int]
 winsRec cards memoTable i = memo memoTable i (_winsRec cards memoTable i)
 
--- -- Note - for recursive calls, this "actual" version must call the memoized, non
--- -- underscore version for the memoization to kick in.
--- _winsRec :: MonadState (M.Map Int [Int]) f => [Card] -> Int -> f [Int]
+_winsRec :: MArray a (Maybe [Int]) m => [Card] -> a Int (Maybe [Int]) -> Int -> m [Int]
 _winsRec cards memoTable i = case wins cards i of
   [] -> pure []
   ys -> do
     r' <- let f prev y = (: prev) <$> winsRec cards memoTable y in foldM f [] ys
     pure $ concat (ys : r')
 
--- allWins :: MonadState (M.Map Int [Int]) m => [Card] -> m [Int]
-allWins cards memoTable = foldM f [] [0..length cards - 1]
-  where f w i = winsRec cards memoTable i >>= \extra ->
+allWins :: MArray a (Maybe [Int]) m => [Card] -> a Int (Maybe [Int]) -> m [Int]
+allWins cards mt = foldM f [] [0..length cards - 1]
+  where f w i = winsRec cards mt i >>= \extra ->
          pure ((1 + length extra) : w)
 
 p2 :: [Card] -> Int
