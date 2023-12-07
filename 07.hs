@@ -1,4 +1,4 @@
-import Data.List (sortBy, nub, elemIndex, sortOn)
+import Data.List (sortBy, nub, elemIndex, sortOn, delete)
 import Data.Maybe (fromJust)
 import Data.Ord (Down(Down))
 
@@ -43,3 +43,7 @@ p1 = winnings (\(s, _) -> HandAttr (handType s) (handValue labelStrength s))
 
 winnings :: (Hand -> HandAttr) -> [Hand] -> Int
 winnings mkAttr = sum . zipWith (*) [1..] . map snd . sortOn (Down . mkAttr)
+
+p2 :: [Hand] -> Int
+p2 = winnings (\(s, _) -> HandAttr (handType s) (handValue labelStrength s))
+  where labelStrengthJ = delete 'J' labelStrength ++ ['J']
