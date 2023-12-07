@@ -5,11 +5,10 @@ import Control.Arrow ((&&&))
 main :: IO ()
 main = interact $ (++ "\n") . show . (p1 &&& p2) . parseCards
 
-type Card = ([Int], [Int])
+type Card = ([String], [String])
 
 parseCards :: String -> [Card]
-parseCards = map (bimap nums nums . span (/= "|") . tail . words) . lines
-  where nums = map read . tail
+parseCards = map (bimap tail tail . span (/= "|") . tail . words) . lines
 
 p1 :: [Card] -> Int
 p1 = sum . map points
