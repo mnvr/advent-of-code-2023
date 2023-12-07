@@ -1,8 +1,9 @@
 import Data.Bifunctor (bimap, second)
 import Data.List (intersect)
+import Control.Arrow ((&&&))
 
 main :: IO ()
-main = interact $ (++ "\n") . show . ((,) <$> p1 <*> p2) . parseCards
+main = interact $ (++ "\n") . show . (p1 &&& p2) . parseCards
 
 type Card = ([Int], [Int])
 
