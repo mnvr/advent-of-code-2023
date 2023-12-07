@@ -1,26 +1,26 @@
-import Text.Parsec
-import Data.Char (isDigit)
+import Data.Char (isDigit, isSpace)
+import Data.Maybe (catMaybes)
+import Text.Read (readMaybe)
 
 main :: IO ()
 main = interact $ (++ "\n") . show .
   ((,) <$> p1 . parseRaces <*> p2 . parseAsSingleRace)
 
-data Races = Races { times:: [Int], distances :: [Int] } deriving Show
+type Races = ([Int], [Int])
 
 parseRaces :: String -> Races
-parseRaces s = case parse races "" s of
-    Left e -> error (show e)
-    Right v -> v
-  where races = Races <$> (nums <* newline) <*> nums
-        num = read <$> many1 digit
-        nums = many1 (between ignored ignored num)
-        ignored = skipMany (noneOf ('\n' : ['0'..'9']))
+parseRaces s = case map nums (lines s) of x:y:_ -> (x,y)
+
+nums :: String -> [Int]
+nums = catMaybes . ms where
+  ms [] = []
+  ms s = let (a, b) = break isSpace (dropWhile isSpace s) in readMaybe a : ms b
 
 parseAsSingleRace :: String -> Races
 parseAsSingleRace s = parseRaces $ filter (\c -> isDigit c || c == '\n') s
 
 p1 :: Races -> Int
-p1 Races { times, distances } = product $ zipWith waysToWin times distances
+p1 (times, distances) = product $ zipWith waysToWin times distances
 
 -- How many ways can we win a race of time t and record distance d?
 waysToWin :: Int -> Int -> Int
@@ -35,7 +35,7 @@ holdFor rt t = remainingTime * speed
 -- Binary search
 
 p2 :: Races -> Int
-p2 (Races [rt] [d]) = lastB rt - firstB 1 + 1
+p2 ([rt], [d]) = lastB rt - firstB 1 + 1
   where
     check t = (rt `holdFor` t) > d
     firstB lb = first' lb (firstBound lb)
