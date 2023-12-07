@@ -38,4 +38,4 @@ compareHands ((s,t), _) ((s',t'), _) = let ot = compare t t' in
 labelStrength = ['A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2']
 
 -- p1 :: [Hand] -> []
-p1 = sortBy compareHands
+p1 = sortBy (flip compareHands)
