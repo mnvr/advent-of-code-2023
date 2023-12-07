@@ -16,14 +16,17 @@ parseCards :: String -> [Card]
 parseCards s = map (bimap nums nums . span (/= '|')) (lines s)
 
 nums :: String -> [Int]
-nums =  catMaybes . nums'
+nums = catMaybes . nums'
 nums' [] = []
 nums' s = let (a, b) = break isSpace s in readMaybe a : nums' (dropWhile isSpace b)
 
-p1 :: [Card] -> [Int]
-p1 = map matches
+p1 :: [Card] -> Int
+p1 xs = sum $ map points xs
 
-matches :: ([Int], [Int]) -> Int
+matches :: Card -> Int
 matches (xs, ys) = length $ intersect xs ys
+
+points :: Card -> Int
+points card = case matches card of 0 -> 0; n -> 2 ^ (n - 1)
 
 p2 = p1
