@@ -34,9 +34,20 @@ holdFor rt t = remainingTime * speed
         remainingTime = rt - t
 
 p2 :: Races -> Int
-p2 (Races [t] [d]) = case (firstWayToWin t d, lastWayToWin t d) of
-    (Just f, Just l) -> l - f
+p2 (Races [t] [d]) = case boundaryWaysToWin t d of
+    (Just f, Just l, _) -> l - f
     _ -> 0
+
+boundaryWaysToWin :: Int -> Int -> (Maybe Int, Maybe Int, Int)
+boundaryWaysToWin rt d = f (Nothing, Nothing, 0)
+  where isWin t = (rt `holdFor` t) > d
+        check t = if (rt `holdFor` t) > d then Just t else Nothing
+        f (Just x, Nothing, i) = let i' = rt - i in
+          if isWin i' then (Just x, Just i', i) else f (Just x, Nothing, i + 1)
+        f (Nothing, Just y, i) = if isWin i then (Just i, Just y, i) else f (Nothing, Just y, i + 1)
+        f (Nothing, Nothing, i)
+          | isWin i = if isWin (rt - i) then (Just i, Just (rt - i), i) else f (Just i, Nothing, i + 1)
+          | otherwise = if isWin (rt - i) then (Just i, Just (rt - i), i) else f (Just i, Nothing, i + 1)
 
 -- Unoptimized versions.
 
@@ -49,6 +60,11 @@ p2 (Races [t] [d]) = case (firstWayToWin t d, lastWayToWin t d) of
 -- example of this drastic difference between runghc'd and optimized code.
 --
 -- Fusing the find and map doesn't seem to have helped either.
+
+p2' :: Races -> Int
+p2' (Races [t] [d]) = case (firstWayToWin t d, lastWayToWin t d) of
+    (Just f, Just l) -> l - f
+    _ -> 0
 
 firstWayToWin :: Int -> Int -> Maybe Int
 firstWayToWin rt d = find (\t -> (rt `holdFor` t) > d) [0..rt]
