@@ -1,7 +1,4 @@
-import Data.Bifunctor (bimap)
-import Text.Read (readMaybe)
-import Data.Char (isSpace)
-import Data.Maybe (catMaybes)
+import Data.Bifunctor (bimap, second)
 import Data.List (intersect)
 
 main :: IO ()
@@ -10,12 +7,8 @@ main = interact $ (++ "\n") . show . ((,) <$> p1 <*> p2) . parseCards
 type Card = ([Int], [Int])
 
 parseCards :: String -> [Card]
-parseCards s = map (bimap nums nums . span (/= '|')) (lines s)
-
-nums :: String -> [Int]
-nums = catMaybes . nums' where
-  nums' [] = []
-  nums' s = let (a, b) = break isSpace s in readMaybe a : nums' (dropWhile isSpace b)
+parseCards s = map (bimap nums nums . span (/= "|") . tail . words) (lines s)
+  where nums = map read . tail
 
 p1 :: [Card] -> Int
 p1 = sum . map points
