@@ -21,8 +21,9 @@ mkHandType s = case (length . nub) s of
       4 -> One
       5 -> High
 
-handValue :: String -> Int
-handValue = foldl1 (\v i -> v * 100 + i) . map (fromJust . (`elemIndex` labelStrength))
+handValue :: [Char] -> String -> Int
+handValue labelStrength =
+    foldl1 (\v i -> v * 100 + i) . map (fromJust . (`elemIndex` labelStrength))
 
 cardCounts :: String -> [(Char, Int)]
 cardCounts = foldl (\as c -> incr as c : as) [] where
@@ -31,16 +32,19 @@ cardCounts = foldl (\as c -> incr as c : as) [] where
 maxCardCount :: String -> Int
 maxCardCount = maximum . map snd . cardCounts
 
-compareHands :: Hand -> Hand -> Ordering
-compareHands Hand { handCards = s,  handType = t  }
+compareHands :: [Char] -> Hand -> Hand -> Ordering
+compareHands labelStrength
+             Hand { handCards = s,  handType = t  }
              Hand { handCards = s', handType = t' } =
-    let o = compare t t' in if o == EQ then compare (handValue s) (handValue s') else o
+    let o = compare t t'
+        hv = handValue labelStrength
+    in if o == EQ then compare (hv s) (hv s') else o
 
 labelStrength :: [Char]
 labelStrength = ['A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2']
 
 p1 :: [Hand] -> Int
-p1 = winnings compareHands
+p1 = winnings (compareHands labelStrength)
 
 winnings :: (Hand -> Hand -> Ordering) -> [Hand] -> Int
 winnings cmp = sum . zipWith (*) [1..] . map handBet . sortBy (flip cmp)
