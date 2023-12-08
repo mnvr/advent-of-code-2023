@@ -43,7 +43,12 @@ test:
 	cat $$in | runghc $$hs | tee out/actual && \
 	echo "(`cat answers/$$n-a`,`cat answers/$$n-b`)" | tee out/expected && \
 	diff --color=always --unified out/expected out/actual || \
-	echo "$$bold""ERROR: The program's output did not match the expected output""$$reset"
+	echo "$$bold""ERROR: The program's output did not match the expected output""$$reset" && \
+	ts=`cat out/time | grep real | cut -d ' ' -f2`; \
+	ch=`wc -m < $$hs | tr -d ' '`; \
+	nl=`wc -l < $$hs | tr -d ' '`; \
+	cs=`test $$ch -lt 999 && echo "$$ch chars "`; \
+	echo $$hs $$cs$$nl lines $$ts s
 
 watch:
 	@dim='\033[2;80m'; reset='\033[0m'; \
