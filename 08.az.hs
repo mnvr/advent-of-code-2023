@@ -2,9 +2,9 @@ import Data.Bifunctor (bimap, second)
 import Control.Arrow ((&&&))
 import Data.Map qualified as M
 
-main = interact $ (++ "\n") . show . (p1 &&& p2) . parse
+main = interact $ (++ "\n") . show . (p1 &&& p2) . प
 
-parse = bimap head (M.fromList . map network) . splitAt 2. lines
+प = bimap head (M.fromList . map network) . splitAt 2. lines
   where network = second (pair . drop 3) . label
         pair = second (fst . label . drop 2) . label . tail
         label = splitAt 3
