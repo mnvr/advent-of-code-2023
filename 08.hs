@@ -1,4 +1,4 @@
-import Data.Bifunctor (bimap, Bifunctor (second))
+import Data.Bifunctor (bimap, second)
 import Data.Maybe (fromJust)
 
 main :: IO ()
@@ -15,5 +15,7 @@ parse = bimap head (map network) . splitAt 2. lines
 p1 :: (String, Network) -> Int
 p1 (instructions, network) = next instructions "AAA" 0
   where next [] node c = if node == "ZZZ" then c else next instructions node c
-        next (i:is) node c = next is (apply i (fromJust (lookup node network))) (c + 1)
-        apply i = if i == 'L' then fst else snd
+        next (i:is) node c = next is (move i $ fromJust $ lookup node network) (c + 1)
+
+move :: Char -> (String, String) -> String
+move i = if i == 'L' then fst else snd
