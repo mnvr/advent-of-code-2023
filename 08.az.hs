@@ -13,9 +13,7 @@ p1 = pathLength "AAA"
 
 pathLength node (is, network) = length $ path (cycle is) node
   where path _ [_, _, 'Z'] = []
-        path (i:is) node = () : path is (move i $ network M.! node)
-
-move i = if i == 'L' then fst else snd
+        path (i:is) node = () : path is ((if i == 'L' then fst else snd) $ network M.! node)
 
 p2 input@(_, network) = foldl1 lcm $ map (`pathLength` input) startNodes
   where startNodes = filter ((== 'A') . last) $ M.keys network
