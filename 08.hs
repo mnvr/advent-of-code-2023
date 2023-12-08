@@ -27,7 +27,7 @@ p2 :: (String, Network) -> Int
 p2 (instructions, network) = next instructions startNodes 0
   where next :: String -> [String] -> Int -> Int
         next [] nodes c = if all isEnd nodes then c else next instructions nodes c
-        next (i:is) nodes c = next is (map next' nodes) (c + 1)
+        next (i:is) nodes c = trace ("next " ++ [i] ++ ":" ++ show (length is) ++ " " ++ show (length nodes) ++ " " ++ show c ++ "     " ++ show nodes) $ if all isEnd nodes then c else next is (map next' nodes) (c + 1)
           where next' node = move i $ fromJust $ lookup node network
         startNodes = filter isStart $ map fst network
         isStart = (== 'A') . last
