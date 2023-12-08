@@ -20,17 +20,13 @@ p1 :: (Instructions, Network) -> Int
 p1 = pathLength "AAA"
 
 pathLength :: Node -> (Instructions, Network) -> Int
-pathLength node (is, network) = length $ path is node
-  where path [] node = if isEnd node then [] else path is node
+pathLength node (is, network) = length $ path (cycle is) node
+  where path _ [_, _, 'Z'] = []
         path (i:is) node = () : path is (move i $ fromJust $ lookup node network)
 
 move :: Char -> (Node, Node) -> Node
 move i = if i == 'L' then fst else snd
 
-isStart, isEnd :: Node -> Bool
-isStart = (== 'A') . last
-isEnd = (== 'Z') . last
-
 p2 :: (Instructions, Network) -> Int
 p2 input@(_, network) = foldl1 lcm $ map (`pathLength` input) startNodes
-  where startNodes = filter isStart $ map fst network
+  where startNodes = filter ((== 'A') . last) $ map fst network
