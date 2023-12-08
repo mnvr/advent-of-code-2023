@@ -34,13 +34,16 @@ run:
 
 test:
 	@dim='\033[2;80m'; reset='\033[0m'; \
+	bold='\033[1;1m'; \
 	n=`ls -t *.hs | head -1 | cut -f1 -d.`; \
 	in="inputs/$$n"; \
 	hs=`ls -t *.hs | head -1`; \
 	echo "$$dim""cat $$in | runghc $$hs""$$reset" && \
 	echo "$$dim"'echo "(`cat answers/'$$n'-a`,`cat answers/'$$n'-b`)"'"$$reset" && \
-	cat $$in | runghc $$hs && \
-	echo "(`cat answers/$$n-a`,`cat answers/$$n-b`)"
+	cat $$in | runghc $$hs | tee out/actual && \
+	echo "(`cat answers/$$n-a`,`cat answers/$$n-b`)" | tee out/expected && \
+	diff --color=always --unified out/expected out/actual || \
+	echo "$$bold""ERROR: The program's output did not match the expected output""$$reset"
 
 watch:
 	@dim='\033[2;80m'; reset='\033[0m'; \

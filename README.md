@@ -14,7 +14,8 @@ Other commands:
 
 -   `make read` – interactively run, reading input from stdin.
 -   `make run` – run on the actual input.
--   `make test` – same as `make run`, but also print the latest expected answer.
+-   `make test` – same as `make run`, but also print the latest expected answer,
+    and raise an error if it doesn't match the expected answer.
 -   `make watch` – same as `make`, but start a fswatch to automatically re-run
     it whenever the .hs file is changed.
 -   `make verify` - Run `make test`, but for all days so far, in reverse.
