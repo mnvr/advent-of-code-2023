@@ -1,6 +1,6 @@
 default: example
 
-.PHONY: example read run test watch verify o clean
+.PHONY: example read run test watch verify o o2 stats clean
 
 # For printing colored strings, we use escape sequences
 #
@@ -84,6 +84,18 @@ o2:
 	ghc -O -outputdir out -o out/$$n $$hs && \
 	cat $$in | time -h ./out/$$n && \
 	echo "(`cat answers/$$n-a`,`cat answers/$$n-b`)"
+
+stats:
+	@dim='\033[2;80m'; reset='\033[0m'; \
+	n=`ls -t *.hs | head -1 | cut -f1 -d.`; \
+	in=`ls -t examples/$$n* | head -1`; \
+	hs=`ls -t *.hs | head -1`; \
+	echo "$$dim""cat $$in | command time -p -o out/time runghc $$hs""$$reset" && \
+	cat $$in | runghc $$hs && \
+	ts=`cat out/time | grep real | cut -d ' ' -f2`; \
+	ch=`wc -m < $$hs | tr -d ' '`; \
+	nl=`wc -l < $$hs | tr -d ' '`; \
+	echo $$hs $$ch chars $$nl lines $$ts s
 
 clean:
 	rm -rf out
