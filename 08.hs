@@ -20,10 +20,9 @@ p1 :: (Instructions, Network) -> Int
 p1 = pathLength "AAA"
 
 pathLength :: Node -> (Instructions, Network) -> Int
-pathLength node (instructions, network) = next instructions node 0
-  where next [] node c = if isEnd node then c else next instructions node c
-        next (i:is) node c = next is m (c + 1)
-            where m = move i $ fromJust $ lookup node network
+pathLength node (is, network) = length $ path is node
+  where path [] node = if isEnd node then [] else path is node
+        path (i:is) node = () : path is (move i $ fromJust $ lookup node network)
 
 move :: Char -> (Node, Node) -> Node
 move i = if i == 'L' then fst else snd
