@@ -24,8 +24,9 @@ move i = if i == 'L' then fst else snd
 p2 :: (String, Network) -> Int
 p2 (instructions, network) = next instructions startNodes 0
   where next :: String -> [String] -> Int -> Int
-        next [] nodes c = if allTerminal nodes then c else next instructions nodes c
+        next [] nodes c = if all isEnd nodes then c else next instructions nodes c
         next (i:is) nodes c = next is (map next' nodes) (c + 1)
           where next' node = move i $ fromJust $ lookup node network
-        startNodes = filter ((== 'A') . last) $ map fst network
-        allTerminal = all ((== 'Z') . last)
+        startNodes = filter isStart $ map fst network
+        isStart = (== 'A') . last
+        isEnd = (== 'Z') . last
