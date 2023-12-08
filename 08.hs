@@ -1,5 +1,4 @@
 import Data.Bifunctor (bimap, second)
-import Data.Maybe (fromJust)
 import Control.Arrow ((&&&))
 import Data.Map qualified as M
 
@@ -23,7 +22,7 @@ p1 = pathLength "AAA"
 pathLength :: Node -> (Instructions, Network) -> Int
 pathLength node (is, network) = length $ path (cycle is) node
   where path _ [_, _, 'Z'] = []
-        path (i:is) node = () : path is (move i $ fromJust $ M.lookup node network)
+        path (i:is) node = () : path is (move i $ network M.! node)
 
 move :: Char -> (Node, Node) -> Node
 move i = if i == 'L' then fst else snd
