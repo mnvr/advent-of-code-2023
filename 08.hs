@@ -22,6 +22,10 @@ move :: Char -> (String, String) -> String
 move i = if i == 'L' then fst else snd
 
 p2 :: (String, Network) -> Int
-p2 (instructions, network) = next instructions "AAA" 0
-  where next [] node c = if node == "ZZZ" then c else next instructions node c
-        next (i:is) node c = next is (move i $ fromJust $ lookup node network) (c + 1)
+p2 (instructions, network) = next instructions startNodes 0
+  where next :: String -> [String] -> Int -> Int
+        next [] nodes c = if allTerminal nodes then c else next instructions nodes c
+        next (i:is) nodes c = next is (map next' nodes) (c + 1)
+          where next' node = move i $ fromJust $ lookup node network
+        startNodes = filter ((== 'A') . last) $ map fst network
+        allTerminal = all ((== 'Z') . last)
