@@ -4,11 +4,13 @@ import Data.Map qualified as M
 
 main=interact$(++"\n").show.(स&&&ग).प
 
-प=bimap head(M.fromList.map ऋ).splitAt 2.lines
-ऋ=second(द.drop 3).त
-द=second(fst.त.drop 2).त.tail
-त=splitAt 3
+प=bimap head(M.fromList.map ऋ).क 2.lines
+ऋ=इ(द.drop 3).त
+द=इ(fst.त.drop 2).त.tail
+त=क 3
 स=म"AAA"
+इ=second
+क=splitAt
 
 म न(ष,ऋ)=length$य(cycle ष)न ऋ
 य _[_,_,'Z']_=[]
