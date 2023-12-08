@@ -95,7 +95,8 @@ stats:
 	ts=`cat out/time | grep real | cut -d ' ' -f2`; \
 	ch=`wc -m < $$hs | tr -d ' '`; \
 	nl=`wc -l < $$hs | tr -d ' '`; \
-	echo $$hs $$ch chars $$nl lines $$ts s
+	cs=`test $$ch -lt 999 && echo "$$ch chars "`; \
+	echo $$hs $$cs$$nl lines $$ts s
 
 clean:
 	rm -rf out
