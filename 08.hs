@@ -1,9 +1,11 @@
 import Data.Bifunctor (bimap, second)
 import Data.Maybe (fromJust)
 import Control.Arrow ((&&&))
+import Debug.Trace (trace)
 
 main :: IO ()
-main = interact $ (++ "\n") . show . (p1 &&& p2) . parse
+-- main = interact $ (++ "\n") . show . (p1 &&& p2) . parse
+main = interact $ (++ "\n") . show . p2 . parse
 
 type Network = [(String, (String, String))]
 
