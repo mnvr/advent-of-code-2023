@@ -1,19 +1,19 @@
-import Data.Bifunctor (bimap, second)
+import Data.Bifunctor
 import Control.Arrow ((&&&))
 import Data.Map qualified as M
 
-main = interact $ (++ "\n") . show . (p1 &&& p2) . प
+main = interact $ (++ "\n") . show . (स &&& ग) . प
 
-प = bimap head (M.fromList . map network) . splitAt 2. lines
-  where network = second (pair . drop 3) . label
-        pair = second (fst . label . drop 2) . label . tail
-        label = splitAt 3
+प = bimap head (M.fromList . map ऋ) . splitAt 2. lines
+  where ऋ = second (द . drop 3) . त
+        द = second (fst . त . drop 2) . त . tail
+        त = splitAt 3
 
-p1 = pathLength "AAA"
+स = म "AAA"
 
-pathLength node (is, network) = length $ path (cycle is) node
-  where path _ [_, _, 'Z'] = []
-        path (i:is) node = () : path is ((if i == 'L' then fst else snd) $ network M.! node)
+म न (ष, ऋ) = length $ य (cycle ष) न
+  where य _ [_, _, 'Z'] = []
+        य (i:ष) न = () : य ष ((if i == 'L' then fst else snd) $ ऋ M.! न)
 
-p2 input@(_, network) = foldl1 lcm $ map (`pathLength` input) startNodes
-  where startNodes = filter ((== 'A') . last) $ M.keys network
+ग input@(_, ऋ) = foldl1 lcm $ map (`म` input) ए
+  where ए = filter ((== 'A') . last) $ M.keys ऋ
