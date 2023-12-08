@@ -12,8 +12,8 @@ parse = bimap head (map network) . splitAt 2. lines
         pair = second (fst . label . drop 2) . label . tail
         label = splitAt 3
 
+p1 :: (String, Network) -> Int
 p1 (instructions, network) = next instructions "AAA" 0
-  where next :: String -> String -> Int -> Int
-        next [] node c = if node == "ZZZ" then c else next instructions node c
+  where next [] node c = if node == "ZZZ" then c else next instructions node c
         next (i:is) node c = next is (apply i (fromJust (lookup node network))) (c + 1)
         apply i = if i == 'L' then fst else snd
