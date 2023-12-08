@@ -1,8 +1,6 @@
 import Data.Bifunctor (bimap, second)
 import Data.Maybe (fromJust)
 import Control.Arrow ((&&&))
-import Debug.Trace (trace)
-import Data.List (find)
 
 main :: IO ()
 main = interact $ (++ "\n") . show . (p1 &&& p2) . parse
@@ -34,11 +32,6 @@ isStart, isEnd :: Node -> Bool
 isStart = (== 'A') . last
 isEnd = (== 'Z') . last
 
--- p2 :: (String, Network) -> Int
-p2 input@(instructions, network) = foldl1 lcm $ map (flip pathLength $ input) startNodes
-  --next instructions startNodes 0
-  where --next :: String -> [String] -> Int -> Int
-        --next [] nodes c = next instructions nodes c-- if any isEnd nodes then c else next instructions nodes c
-        --next (i:is) nodes c = trace ("next " ++ [i] ++ ":" ++ show (length is) ++ " " ++ show (length nodes) ++ " " ++ show c ++ "     " ++ show nodes) $ if any isEnd nodes then c --else next is (map next' nodes) (c + 1)
-        --  where next' node = move i $ fromJust $ lookup node network
-        startNodes = filter isStart $ map fst network
+p2 :: (Instructions, Network) -> Int
+p2 input@(_, network) = foldl1 lcm $ map (`pathLength` input) startNodes
+  where startNodes = filter isStart $ map fst network
