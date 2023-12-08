@@ -1,4 +1,4 @@
-import Data.Bifunctor (bimap, second)
+import Data.Bifunctor (bimap)
 import Control.Arrow ((&&&))
 import Data.Map qualified as M
 
@@ -11,8 +11,8 @@ type Network = M.Map Node (Node, Node)
 
 parse :: String -> (Instructions, Network)
 parse = bimap head (M.fromList . map network) . splitAt 2. lines
-  where network = second (pair . drop 3) . label
-        pair = second (fst . label . drop 2) . label . tail
+  where network = fmap (pair . drop 3) . label
+        pair = fmap (fst . label . drop 2) . label . tail
         label = splitAt 3
 
 p1 :: (Instructions, Network) -> Int
