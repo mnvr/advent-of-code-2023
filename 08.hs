@@ -1,8 +1,9 @@
 import Data.Bifunctor (bimap, second)
 import Data.Maybe (fromJust)
+import Control.Arrow ((&&&))
 
 main :: IO ()
-main = interact $ (++ "\n") . show . p1 . parse
+main = interact $ (++ "\n") . show . (p1 &&& p2) . parse
 
 type Network = [(String, (String, String))]
 
@@ -19,3 +20,8 @@ p1 (instructions, network) = next instructions "AAA" 0
 
 move :: Char -> (String, String) -> String
 move i = if i == 'L' then fst else snd
+
+p2 :: (String, Network) -> Int
+p2 (instructions, network) = next instructions "AAA" 0
+  where next [] node c = if node == "ZZZ" then c else next instructions node c
+        next (i:is) node c = next is (move i $ fromJust $ lookup node network) (c + 1)
