@@ -1,4 +1,4 @@
-import Data.List (sortOn, nub, elemIndex, delete, minimumBy)
+import Data.List (sortOn, elemIndex, delete, minimumBy, sort, group)
 import Data.Maybe (fromJust)
 import Data.Ord (Down(Down))
 import Data.Function (on)
@@ -19,19 +19,14 @@ data HandType = Five | Four | Full | Three | Two | One | High
     deriving (Show, Eq, Ord)
 
 handType :: Hand -> HandType
-handType (s, _) = case (length . nub) s of
-      1 -> Five
-      2 -> if maxCardCount s == 4 then Four else Full
-      3 -> if maxCardCount s == 3 then Three else Two
-      4 -> One
-      5 -> High
-
-maxCardCount :: String -> Int
-maxCardCount = maximum . map snd . cardCounts
-
-cardCounts :: String -> [(Char, Int)]
-cardCounts = foldl (\as c -> incr as c : as) [] where
-  incr as c = case lookup c as of Nothing -> (c, 1); Just i -> (c, i + 1)
+handType (s, _) = case (sort . map length . group . sort) s of
+      [5] -> Five
+      [1,4] -> Four
+      [2,3] -> Full
+      [1,1,3] -> Three
+      [1,2,2] -> Two
+      [1,1,1,2] -> One
+      _ -> High
 
 handValue :: [Char] -> Hand -> Int
 handValue labelStrength (s, _) =
