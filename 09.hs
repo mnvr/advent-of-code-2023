@@ -12,7 +12,7 @@ p1 :: [[Int]] -> Int
 p1 = sum . map (foldr (\ds d -> last ds + d) 0 . dxs)
 
 p2 :: [[Int]] -> Int
-p2 = sum . map (foldl (\d (x:_) -> x - d) 0 . reverse . dxs)
+p2 = p1 . map reverse
 
 dxs :: [Int] -> [[Int]]
 dxs xs = if all (==0) xs then [xs] else xs : dxs (dx xs)
