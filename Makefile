@@ -87,7 +87,7 @@ verify-o2:
 	pc='◍◌'; \
 	pc="$$pc$$pc$$pc$$pc$$pc$$pc$$pc$$pc$$pc$$pc"; \
 	mkdir -p out && \
-	ls -r 0*.hs | cut -f1 -d. | uniq | while read n; do \
+	ls -r 01.hs 02.hs | cut -f1 -d. | uniq | while read n; do \
 	  in="inputs/$$n"; \
       hs="$$n.hs"; \
 	  pghc="ghc -O2 -outputdir out -o out/$$n $$hs" \
@@ -95,9 +95,18 @@ verify-o2:
 	  export pi=`expr 1 + $$pi`; \
 	  psuffix="   $$pprog"; \
       printf "$(tclear)$(tstart)$$pprefix  $(tdim)$$pghc$(treset)$$psuffix" && \
-      sleep 0.1 || echo ghc -O2 -outputdir out -o out/$$n $$hs; \
+      ghc -O2 -outputdir out -o out/$$n $$hs >/dev/null 2>&1 ; \
 	done && \
-	echo "$(tclear)$(tstart)$$pprefix done"
+	echo "$(tclear)$(tstart)$$pprefix done" && \
+	ls -r 01.hs 02.hs | cut -f1 -d. | uniq | while read n; do \
+	  in="inputs/$$n"; \
+	  cat $$in | command time -p -o out/time ./out/$$n | tee out/actual && \
+	  echo "(`cat answers/$$n-a`,`cat answers/$$n-b`)" > out/expected && \
+	  if diff --color=always --unified out/expected out/actual; then true; else \
+	  echo "$(tbold)""ERROR: The program's output did not match the expected output""$(treset)" && exit 1; fi && \
+	  echo "(`cat answers/$$n-a`,`cat answers/$$n-b`)""$(tgreen)"' *'"$(treset)"; \
+	done && \
+	echo "done"
 
 verify-all:
 	@ls -r *.hs | cut -f1 -d. | uniq | while read n; do \
