@@ -7,7 +7,7 @@ parse :: String -> [[Int]]
 parse = map (map read . words) . lines
 
 p1 :: [[Int]] -> Int
-p1 = sum . map (foldr (\ds d -> last ds + d) 0 . dxs)
+p1 = sum . map (sum . map last . dxs)
 
 p2 :: [[Int]] -> Int
 p2 = p1 . map reverse
