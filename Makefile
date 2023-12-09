@@ -1,6 +1,6 @@
 default: example
 
-.PHONY: example test o o2 verify clean
+.PHONY: example test o o2 verify min clean
 
 # For printing colored strings, we use escape sequences
 #
@@ -74,6 +74,11 @@ verify:
 	  cat $$in | runghc $$hs && \
 	  echo "(`cat answers/$$n-a`,`cat answers/$$n-b`)" ;\
 	done
+
+min:
+	@hs=`ls -t *.hs | grep -v '.min.hs' | head -1`; \
+	echo "$(tdim)""./tools/min.sh $$hs""$(treset)" && \
+	./tools/min.sh $$hs
 
 clean:
 	rm -rf out

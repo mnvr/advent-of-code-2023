@@ -19,7 +19,18 @@ else
 fi
 
 cat $1 | \
-  sed '/::/d;/^--/d' |
-  > "$out"
+  sed '/^--/d' | \
+  # This :: rule doesn't handle records
+  sed '/::/d' | \
+  sed 's/ =/=/g' | \
+  sed 's/= /=/g' | \
+  sed 's/ \. /./g' | \
+  sed 's/ \$ /$/g' | \
+  sed 's/ (/(/g' | \
+  sed 's/) /)/g' | \
+  sed 's/ "/"/g' | \
+  sed 's/" /"/g' | \
+  sed '/^$/d' | \
+  tee > "$out"
 
 wc -ml "$out"
