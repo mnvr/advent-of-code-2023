@@ -82,6 +82,8 @@ verify:
 	  echo "(`cat answers/$$n-a`,`cat answers/$$n-b`)" ;\
 	done
 
+awk_stats = awk 'BEGIN { a=9999 } { i=$$1; if(i<a)a=i; if(i>b)b=i; c+=1; s+=i; } END { print "\tmin",a,"\tmax",b,"\tsum",s,"\tavg",s/c }'
+
 verify-o2:
 	@export pi=1; \
 	pprefix="Precompiling..." ; \
@@ -114,7 +116,9 @@ verify-o2:
 	  echo "$$ch $$nl $$ts" >> out/stats ; \
 	done && \
 	echo "done" && \
-	cat out/stats | awk '{ c+=$$1; l+=$$2; t+=$$3 } END { print c,l,t }'
+	printf "chars" && cat out/stats | cut -d ' ' -f 1 | $(awk_stats) && \
+	printf "lines" && cat out/stats | cut -d ' ' -f 2 | $(awk_stats) && \
+	printf "time " && cat out/stats | cut -d ' ' -f 3 | $(awk_stats)
 
 verify-all:
 	@ls -r *.hs | cut -f1 -d. | uniq | while read n; do \
