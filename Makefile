@@ -42,7 +42,7 @@ test:
 	@$(latest) \
 	echo "$(tdim)""cat $$in | runghc $$hs""$(treset)" && \
 	echo "$(tdim)"'echo "(`cat answers/'$$n'-a`,`cat answers/'$$n'-b`)"'"$(treset)" && \
-	cat $$in | runghc $$hs | tee out/actual && \
+	cat $$in | command time -p -o out/time runghc $$hs | tee out/actual && \
 	$(check) && \
 	$(stats)
 
