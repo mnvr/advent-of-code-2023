@@ -1,6 +1,6 @@
 default: example
 
-.PHONY: example test o o2 verify verify-all min clean
+.PHONY: example test o o2 verify run-all min clean
 
 # For printing colored strings, we use escape sequences
 #
@@ -16,7 +16,7 @@ tdim = \033[2;80m
 treset = \033[0m
 tbold = \033[1;1m
 tgreen = \033[0;32m
-tlblue = \033[1;34m
+tlpurple = \033[1;35m
 
 # Clear the current line
 tclear = \033[2K
@@ -75,24 +75,15 @@ o2:
 	$(check) && \
 	$(stats)
 
-verify:
-	@ls -r *.hs | cut -f1 -d. | uniq | while read n; do \
-	  in="inputs/$$n"; \
-      hs="$$n.hs"; \
-	  cat $$in | runghc $$hs && \
-	  echo "(`cat answers/$$n-a`,`cat answers/$$n-b`)" ;\
-	done
-
 awk_stats = awk 'BEGIN { a=9999 } { i=$$1; if(i<a)a=i; if(i>b)b=i; c+=1; s+=i; } END { print " min " a " avg " s/c " max " b " sum " s }'
 
-verify-o2:
+verify:
 	@export pi=1; \
 	pprefix="Precompiling..." ; \
-	pc='▓▒░'; \
 	pc='◍◌'; \
 	pc="$$pc$$pc$$pc$$pc$$pc$$pc$$pc$$pc$$pc$$pc$$pc$$pc$$pc$$pc$$pc$$pc"; \
 	mkdir -p out && \
-	ls -r 01.hs 02.hs | cut -f1 -d. | uniq | while read n; do \
+	ls -r *.hs | cut -f1 -d. | uniq | while read n; do \
 	  in="inputs/$$n"; \
       hs="$$n.hs"; \
 	  pghc="ghc -O2 -outputdir out -o out/$$n $$hs" \
@@ -104,7 +95,7 @@ verify-o2:
 	done && \
 	echo "$(tclear)$(tstart)$$pprefix done" && \
 	rm -f "out/stats" && \
-	ls -r 01.hs 02.hs | cut -f1 -d. | uniq | while read n; do \
+	ls -r *.hs | cut -f1 -d. | uniq | while read n; do \
 	  in="inputs/$$n"; \
 	  hs="$$n.hs"; \
 	  output=`cat $$in | command time -p -o out/time ./out/$$n | tee out/actual | tr '\n' ' '` && \
@@ -118,9 +109,9 @@ verify-o2:
 	done && \
 	printf "ch" && cat out/stats | cut -d ' ' -f 1 | $(awk_stats) && \
 	printf "nl" && cat out/stats | cut -d ' ' -f 2 | $(awk_stats) && \
-	printf "$(tlblue)ts" && cat out/stats | cut -d ' ' -f 3 | $(awk_stats) && printf "$(treset)"
+	printf "$(tlpurple)ts" && cat out/stats | cut -d ' ' -f 3 | $(awk_stats) && printf "$(treset)"
 
-verify-all:
+run-all:
 	@ls -r *.hs | cut -f1 -d. | uniq | while read n; do \
 	  in="inputs/$$n"; \
       for hs in $$n*.hs; do \
