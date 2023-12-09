@@ -16,7 +16,8 @@ Other commands:
     answers.
 -   `make o` - same as `make test`, but first compile the .hs file using GHC
     with optimizations enabled. There's also a `make o2` variant of this.
--   `make verify` - Run `make test`, but for all days so far, in reverse.
+-   `make verify` - Run `make test`, but for all days so far, in reverse. Print
+    nice and pretty stats about all the days too.
 -   `make clean` - Clean temporary files (written to `out/`).
 
 All of these are wrappers around the basic pattern of
