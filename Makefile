@@ -17,6 +17,11 @@ treset = \033[0m
 tbold = \033[1;1m
 tgreen = \033[0;32m
 
+# Clear the current line
+tclear = \033[2K
+# Go to the start of the current line
+tstart = \033[0G
+
 latest = n=`ls -t *.hs | head -1 | cut -f1 -d.`; \
 	eg=`ls -t examples/$$n* | head -1`; \
 	in="inputs/$$n"; \
@@ -76,14 +81,22 @@ verify:
 	done
 
 verify-o2:
-	@echo "Precompiling..." && mkdir -p out && \
-	ls -r 01*.hs | cut -f1 -d. | uniq | while read n; do \
+	@export pi=1; \
+	pprefix="Precompiling..." ; \
+	pc='\|/-'; \
+	pc="$$pc$$pc$$pc$$pc$$pc$$pc$$pc$$pc$$pc$$pc"; \
+	mkdir -p out && \
+	ls -r 0*.hs | cut -f1 -d. | uniq | while read n; do \
 	  in="inputs/$$n"; \
       hs="$$n.hs"; \
-      echo "$(tdim)""ghc -O2 -outputdir out -o out/$$n $$hs""$(treset)" && \
-      ghc -O2 -outputdir out -o out/$$n $$hs; \
+	  pghc="ghc -O2 -outputdir out -o out/$$n $$hs" \
+	  pprog=`echo $$pc | cut -c $$pi`; \
+	  export pi=`expr 1 + $$pi`; \
+	  psuffix="   $$pprog"; \
+      printf "$(tclear)$(tstart)$$pprefix  $(tdim)$$pghc$(treset)$$psuffix" && \
+      sleep 0.1 || echo ghc -O2 -outputdir out -o out/$$n $$hs; \
 	done && \
-	echo yes
+	echo "$(tclear)$(tstart)$$pprefix done"
 
 verify-all:
 	@ls -r *.hs | cut -f1 -d. | uniq | while read n; do \
