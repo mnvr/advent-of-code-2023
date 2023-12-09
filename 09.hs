@@ -4,13 +4,13 @@ import Data.Char (isSpace)
 import Data.Bifunctor (bimap)
 
 main :: IO ()
-main = interact $ (++ "\n") . show . parse
+main = interact $ (++ "\n") . show . p1 . parse
 
-readInt :: String -> Int
-readInt = read
--- nums :: String -> ([Int], String)
+nums :: String -> [Int]
 nums [] = []
-nums s = (uncurry (:))<$> bimap readInt nums $ break isSpace (dropWhile isSpace s)
+nums s = uncurry (:) <$> bimap read nums $ break isSpace (dropWhile isSpace s)
 
--- parse :: String -> [Int]
+parse :: String -> [Int]
 parse = nums . head . lines
+
+p1 = id
