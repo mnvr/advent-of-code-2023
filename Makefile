@@ -42,8 +42,8 @@ test:
 	echo "$$dim"'echo "(`cat answers/'$$n'-a`,`cat answers/'$$n'-b`)"'"$$reset" && \
 	cat $$in | runghc $$hs | tee out/actual && \
 	echo "(`cat answers/$$n-a`,`cat answers/$$n-b`)" > out/expected && \
-	diff --color=always --unified out/expected out/actual || \
-	echo "$$bold""ERROR: The program's output did not match the expected output""$$reset" && \
+	if diff --color=always --unified out/expected out/actual; then true; else \
+	echo "$$bold""ERROR: The program's output did not match the expected output""$$reset" && exit 1; fi && \
 	echo "(`cat answers/$$n-a`,`cat answers/$$n-b`)""$$green"' *'"$$reset" && \
 	ts=`cat out/time | grep real | cut -d ' ' -f2`; \
 	ch=`wc -m < $$hs | tr -d ' '`; \
