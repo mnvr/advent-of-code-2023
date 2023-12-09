@@ -33,9 +33,11 @@ check = echo "(`cat answers/$$n-a`,`cat answers/$$n-b`)" > out/expected && \
 	echo "$(tbold)""ERROR: The program's output did not match the expected output""$(treset)" && exit 1; fi && \
 	echo "(`cat answers/$$n-a`,`cat answers/$$n-b`)""$(tgreen)"' *'"$(treset)"
 
-stats = ts=`cat out/time | grep real | cut -d ' ' -f2`; \
+stats_set = ts=`cat out/time | grep real | cut -d ' ' -f2`; \
 	ch=`wc -m < $$hs | tr -d ' '`; \
 	nl=`wc -l < $$hs | tr -d ' '`; \
+
+stats = $(stats_set) \
 	cs=`test $$ch -lt 999 && echo "$$ch chars "`; \
 	echo "$(tdim)"$$hs $$cs$$nl lines"$(treset)" $$ts s
 
@@ -98,6 +100,7 @@ verify-o2:
       ghc -O2 -outputdir out -o out/$$n $$hs >/dev/null 2>&1 ; \
 	done && \
 	echo "$(tclear)$(tstart)$$pprefix done" && \
+	rm -f "out/stats" && \
 	ls -r 01.hs 02.hs | cut -f1 -d. | uniq | while read n; do \
 	  in="inputs/$$n"; \
 	  hs="$$n.hs"; \
@@ -105,9 +108,10 @@ verify-o2:
 	  echo "(`cat answers/$$n-a`,`cat answers/$$n-b`)" > out/expected && \
 	  if diff --color=always --unified out/expected out/actual; then true; else \
 	  echo "$(tbold)""ERROR: The program's output did not match the expected output""$(treset)" && exit 1; fi && \
-	  true && \
-	  printf "$(tgreen)$$output$(treset)" && \
-	  $(stats); \
+	  $(stats_set) \
+	  cs=`if test $$ch -lt 999; then echo "$$ch chars"; else echo ">1k chars"; fi`; \
+	  echo "$$hs $$cs $$nl lines $$ts s\t$(tgreen)$$output$(treset)" && \
+	  echo "$$ch $$nl $$ts" >> out/stats ; \
 	done && \
 	echo "done"
 
