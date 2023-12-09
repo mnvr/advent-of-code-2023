@@ -15,7 +15,5 @@ p2 :: [[Int]] -> Int
 p2 = p1 . map reverse
 
 dxs :: [Int] -> [[Int]]
-dxs xs = if all (==0) xs then [xs] else xs : dxs (dx xs)
-
-dx :: [Int] -> [Int]
-dx xs = zipWith (-) (drop 1 $ xs) xs
+dxs xs = if all (== 0) xs then [xs] else xs : dxs dx
+  where dx = zipWith (-) (drop 1 $ xs) xs
