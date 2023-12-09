@@ -14,7 +14,7 @@ parse :: String -> [Int]
 parse = nums . head . lines
 
 p1 :: [Int] -> [[Int]]
-p1 xs = foldr (\ds yss -> (ds ++ [0]) : yss) [] $ dxs xs
+p1 xs = fst $ foldr (\ds (yss, d) -> ((ds ++ [last ds + d]) : yss, last ds + d)) ([], 0) $ dxs xs
 
 dxs xs = if az xs then [xs] else let d = dx xs in xs : dxs d
   where az = all (==0)
