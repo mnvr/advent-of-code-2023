@@ -75,18 +75,28 @@ verify:
 	  echo "(`cat answers/$$n-a`,`cat answers/$$n-b`)" ;\
 	done
 
+verify-o2:
+	@echo "Precompiling..." && mkdir -p out && \
+	ls -r 01*.hs | cut -f1 -d. | uniq | while read n; do \
+	  in="inputs/$$n"; \
+      hs="$$n.hs"; \
+      echo "$(tdim)""ghc -O2 -outputdir out -o out/$$n $$hs""$(treset)" && \
+      ghc -O2 -outputdir out -o out/$$n $$hs; \
+	done && \
+	echo yes
+
 verify-all:
 	@ls -r *.hs | cut -f1 -d. | uniq | while read n; do \
 	  in="inputs/$$n"; \
       for hs in $$n*.hs; do \
       echo "$(tdim)""cat $$in | runghc $$hs""$(treset)" && \
 	  cat $$in | runghc $$hs && \
-	  echo "(`cat answers/$$n-a`,`cat answers/$$n-b`)" ;\
+	  echo "(`cat answers/$$n-a`,`cat answers/$$n-b`)" ; \
 	  done; \
 	done
 
 min:
-	@hs=`ls -t *.hs | grep -v '.min.hs' | head -1`; \
+	@hs=`ls -t *.hs | grep -v '.min.hs' | head -1`; mkdir -p out && \
 	echo "$(tdim)""./tools/min.sh $$hs""$(treset)" && \
 	./tools/min.sh $$hs
 
