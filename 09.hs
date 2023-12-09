@@ -1,5 +1,3 @@
-import Data.Char (isSpace)
-import Data.Bifunctor (bimap)
 import Control.Arrow ((&&&))
 
 main :: IO ()
