@@ -87,7 +87,7 @@ verify-o2:
 	pprefix="Precompiling..." ; \
 	pc='▓▒░'; \
 	pc='◍◌'; \
-	pc="$$pc$$pc$$pc$$pc$$pc$$pc$$pc$$pc$$pc$$pc"; \
+	pc="$$pc$$pc$$pc$$pc$$pc$$pc$$pc$$pc$$pc$$pc$$pc$$pc$$pc$$pc$$pc$$pc"; \
 	mkdir -p out && \
 	ls -r 01.hs 02.hs | cut -f1 -d. | uniq | while read n; do \
 	  in="inputs/$$n"; \
@@ -113,7 +113,8 @@ verify-o2:
 	  echo "$$hs $$cs $$nl lines $$ts s\t$(tgreen)$$output$(treset)" && \
 	  echo "$$ch $$nl $$ts" >> out/stats ; \
 	done && \
-	echo "done"
+	echo "done" && \
+	cat out/stats | awk '{ c+=$$1; l+=$$2; t+=$$3 } END { print c,l,t }'
 
 verify-all:
 	@ls -r *.hs | cut -f1 -d. | uniq | while read n; do \
