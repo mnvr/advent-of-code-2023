@@ -13,8 +13,11 @@ nums s = uncurry (:) <$> bimap read nums $ break isSpace (dropWhile isSpace s)
 parse :: String -> [Int]
 parse = nums . head . lines
 
-p1 xs = if az xs then [xs] else let d = dxs xs in xs : p1 d
+p1 :: [Int] -> [[Int]]
+p1 xs = foldr (\ds yss -> (ds ++ [0]) : yss) [] $ dxs xs
+
+dxs xs = if az xs then [xs] else let d = dx xs in xs : dxs d
   where az = all (==0)
 
-dxs :: [Int] -> [Int]
-dxs xs = zipWith (-) (drop 1 $ xs) xs
+dx :: [Int] -> [Int]
+dx xs = zipWith (-) (drop 1 $ xs) xs
