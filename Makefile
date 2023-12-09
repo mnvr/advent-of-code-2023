@@ -83,7 +83,8 @@ verify:
 verify-o2:
 	@export pi=1; \
 	pprefix="Precompiling..." ; \
-	pc='⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏'; \
+	pc='▓▒░'; \
+	pc='◍◌'; \
 	pc="$$pc$$pc$$pc$$pc$$pc$$pc$$pc$$pc$$pc$$pc"; \
 	mkdir -p out && \
 	ls -r 0*.hs | cut -f1 -d. | uniq | while read n; do \
