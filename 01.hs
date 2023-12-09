@@ -7,7 +7,7 @@ main = interact $ (++ "\n") . show . (\z -> (p1 z, p2 z)) . lines
         p2 = sum . map parse2
 
 parse1 :: String -> Int
-parse1 s = head xs * 10 + last xs
+parse1 s = let z@(h:_) = xs in h * 10 + last z
     where xs = map digitToInt $ filter isDigit s
 
 parse2 :: String -> Int

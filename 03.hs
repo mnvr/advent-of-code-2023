@@ -14,12 +14,12 @@ data PartDigit = PartDigit { pdChar :: Char, pdSymbols :: [Cell] }
 data Cell = Cell { cc :: Char, cy :: Int, cx :: Int } deriving (Ord, Eq)
 
 makeGrid :: String -> Grid
-makeGrid s = Grid { rows = ls, my = length ls - 1, mx = length (head ls) - 1 }
-    where ls = lines s
+makeGrid s = Grid { rows = ls, my = length ls - 1, mx = length h - 1 }
+    where ls@(h:_) = lines s
 
 region :: Grid -> Int -> Int -> [Cell]
 region grid y x = catMaybes $
-  tail [cell grid (y + u) (x + v) | u <- [0,-1,1], v <- [0,-1,1]]
+  drop 1 [cell grid (y + u) (x + v) | u <- [0,-1,1], v <- [0,-1,1]]
 
 cell :: Grid -> Int -> Int -> Maybe Cell
 cell grid y x | outOfBounds grid y x = Nothing

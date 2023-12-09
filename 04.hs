@@ -8,7 +8,8 @@ main = interact $ (++ "\n") . show . (p1 &&& p2) . parseCards
 type Card = ([String], [String])
 
 parseCards :: String -> [Card]
-parseCards = map (bimap tail tail . span (/= "|") . tail . words) . lines
+parseCards = map (bimap t t . span (/= "|") . t . words) . lines
+  where t = drop 1
 
 p1 :: [Card] -> Int
 p1 = sum . map points

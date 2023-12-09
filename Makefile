@@ -1,6 +1,6 @@
 default: example
 
-.PHONY: example test o o2 verify min clean
+.PHONY: example test o o2 verify verify-all min clean
 
 # For printing colored strings, we use escape sequences
 #
@@ -73,6 +73,16 @@ verify:
       hs="$$n.hs"; \
 	  cat $$in | runghc $$hs && \
 	  echo "(`cat answers/$$n-a`,`cat answers/$$n-b`)" ;\
+	done
+
+verify-all:
+	@ls -r *.hs | cut -f1 -d. | uniq | while read n; do \
+	  in="inputs/$$n"; \
+      for hs in $$n*.hs; do \
+      echo "$(tdim)""cat $$in | runghc $$hs""$(treset)" && \
+	  cat $$in | runghc $$hs && \
+	  echo "(`cat answers/$$n-a`,`cat answers/$$n-b`)" ;\
+	  done; \
 	done
 
 min:

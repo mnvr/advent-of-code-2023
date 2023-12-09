@@ -10,9 +10,9 @@ type Node = String
 type Network = M.Map Node (Node, Node)
 
 parse :: String -> (Instructions, Network)
-parse = bimap head (M.fromList . map network) . splitAt 2. lines
+parse = bimap (\(h:_)->h) (M.fromList . map network) . splitAt 2. lines
   where network = fmap (pair . drop 3) . label
-        pair = fmap (fst . label . drop 2) . label . tail
+        pair = fmap (fst . label . drop 2) . label . drop 1
         label = splitAt 3
 
 p1 :: (Instructions, Network) -> Int

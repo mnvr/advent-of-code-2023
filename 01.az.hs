@@ -15,6 +15,6 @@ parse :: String -> Int
 parse s = read $ [id, reverse] >>= (\f -> first (f s) f)
 
 first :: String -> (String -> String) -> String
-first s f = if isDigit (head s) then take 1 s else
-    maybe (first (tail s) f) (show . (+1)) (findIndex (`isPrefixOf` s) (map f
+first s@(h:_) f = if isDigit h then [h] else
+    maybe (first (drop 1 s) f) (show . (+1)) (findIndex (`isPrefixOf` s) (map f
              ["one", "two", "three", "four", "five", "six", "seven", "eight", "nine"]))

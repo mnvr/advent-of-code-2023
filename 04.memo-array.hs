@@ -1,6 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 
 import Control.Monad.State
+import Control.Monad
 import Data.Map qualified as M
 import Text.Parsec
 import Data.Array qualified as A
