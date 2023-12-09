@@ -20,7 +20,8 @@ tgreen = \033[0;32m
 latest = n=`ls -t *.hs | head -1 | cut -f1 -d.`; \
 	eg=`ls -t examples/$$n* | head -1`; \
 	in="inputs/$$n"; \
-	hs=`ls -t *.hs | head -1`;
+	hs=`ls -t *.hs | head -1`; \
+	mkdir -p out
 
 check = echo "(`cat answers/$$n-a`,`cat answers/$$n-b`)" > out/expected && \
 	if diff --color=always --unified out/expected out/actual; then true; else \
@@ -31,15 +32,15 @@ stats = ts=`cat out/time | grep real | cut -d ' ' -f2`; \
 	ch=`wc -m < $$hs | tr -d ' '`; \
 	nl=`wc -l < $$hs | tr -d ' '`; \
 	cs=`test $$ch -lt 999 && echo "$$ch chars "`; \
-	echo "$(tdim)"$$hs $$cs$$nl lines $$ts s"$(treset)"
+	echo "$(tdim)"$$hs $$cs$$nl lines"$(treset)" $$ts s
 
 example:
-	@$(latest) \
+	@$(latest) && \
 	echo "$(tdim)""cat $$eg | runghc $$hs""$(treset)" && \
 	cat $$eg | runghc $$hs
 
 test:
-	@$(latest) \
+	@$(latest) && \
 	echo "$(tdim)""cat $$in | runghc $$hs""$(treset)" && \
 	echo "$(tdim)"'echo "(`cat answers/'$$n'-a`,`cat answers/'$$n'-b`)"'"$(treset)" && \
 	cat $$in | command time -p -o out/time runghc $$hs | tee out/actual && \
@@ -47,26 +48,24 @@ test:
 	$(stats)
 
 o:
-	@n=`ls -t *.hs | head -1 | cut -f1 -d.`; \
-	in="inputs/$$n"; \
-	hs=`ls -t *.hs | head -1`; \
-	mkdir -p out && \
+	@$(latest) && \
 	echo "$(tdim)""ghc -O -outputdir out -o out/$$n $$hs""$(treset)" && \
-	echo "$(tdim)""cat $$in | time ./out/$$n""$(treset)" && \
+	echo "$(tdim)""cat $$in | ./out/$$n""$(treset)" && \
+	echo "$(tdim)"'echo "(`cat answers/'$$n'-a`,`cat answers/'$$n'-b`)"'"$(treset)" && \
 	ghc -O -outputdir out -o out/$$n $$hs && \
-	cat $$in | time -h ./out/$$n && \
-	echo "(`cat answers/$$n-a`,`cat answers/$$n-b`)"
+	cat $$in | command time -p -o out/time ./out/$$n | tee out/actual && \
+	$(check) && \
+	$(stats)
 
 o2:
-	@n=`ls -t *.hs | head -1 | cut -f1 -d.`; \
-	in="inputs/$$n"; \
-	hs=`ls -t *.hs | head -1`; \
-	mkdir -p out && \
+	@$(latest) && \
 	echo "$(tdim)""ghc -O2 -outputdir out -o out/$$n $$hs""$(treset)" && \
-	echo "$(tdim)""cat $$in | time ./out/$$n""$(treset)" && \
-	ghc -O -outputdir out -o out/$$n $$hs && \
-	cat $$in | time -h ./out/$$n && \
-	echo "(`cat answers/$$n-a`,`cat answers/$$n-b`)"
+	echo "$(tdim)""cat $$in | ./out/$$n""$(treset)" && \
+	echo "$(tdim)"'echo "(`cat answers/'$$n'-a`,`cat answers/'$$n'-b`)"'"$(treset)" && \
+	ghc -O2 -outputdir out -o out/$$n $$hs && \
+	cat $$in | command time -p -o out/time ./out/$$n | tee out/actual && \
+	$(check) && \
+	$(stats)
 
 verify:
 	@ls -r *.hs | cut -f1 -d. | uniq | while read n; do \
