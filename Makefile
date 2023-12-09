@@ -17,29 +17,34 @@ treset = \033[0m
 tbold = \033[1;1m
 tgreen = \033[0;32m
 
-example:
-	@n=`ls -t *.hs | head -1 | cut -f1 -d.`; \
-	in=`ls -t examples/$$n* | head -1`; \
-	hs=`ls -t *.hs | head -1`; \
-	echo "$(tdim)""cat $$in | runghc $$hs""$(treset)" && \
-	cat $$in | runghc $$hs
-
-test:
-	@n=`ls -t *.hs | head -1 | cut -f1 -d.`; \
+latest = n=`ls -t *.hs | head -1 | cut -f1 -d.`; \
+	eg=`ls -t examples/$$n* | head -1`; \
 	in="inputs/$$n"; \
-	hs=`ls -t *.hs | head -1`; \
-	echo "$(tdim)""cat $$in | runghc $$hs""$(treset)" && \
-	echo "$(tdim)"'echo "(`cat answers/'$$n'-a`,`cat answers/'$$n'-b`)"'"$(treset)" && \
-	cat $$in | runghc $$hs | tee out/actual && \
-	echo "(`cat answers/$$n-a`,`cat answers/$$n-b`)" > out/expected && \
+	hs=`ls -t *.hs | head -1`;
+
+check = echo "(`cat answers/$$n-a`,`cat answers/$$n-b`)" > out/expected && \
 	if diff --color=always --unified out/expected out/actual; then true; else \
 	echo "$(tbold)""ERROR: The program's output did not match the expected output""$(treset)" && exit 1; fi && \
-	echo "(`cat answers/$$n-a`,`cat answers/$$n-b`)""$(tgreen)"' *'"$(treset)" && \
-	ts=`cat out/time | grep real | cut -d ' ' -f2`; \
+	echo "(`cat answers/$$n-a`,`cat answers/$$n-b`)""$(tgreen)"' *'"$(treset)"
+
+stats = ts=`cat out/time | grep real | cut -d ' ' -f2`; \
 	ch=`wc -m < $$hs | tr -d ' '`; \
 	nl=`wc -l < $$hs | tr -d ' '`; \
 	cs=`test $$ch -lt 999 && echo "$$ch chars "`; \
 	echo "$(tdim)"$$hs $$cs$$nl lines $$ts s"$(treset)"
+
+example:
+	@$(latest) \
+	echo "$(tdim)""cat $$eg | runghc $$hs""$(treset)" && \
+	cat $$eg | runghc $$hs
+
+test:
+	@$(latest) \
+	echo "$(tdim)""cat $$in | runghc $$hs""$(treset)" && \
+	echo "$(tdim)"'echo "(`cat answers/'$$n'-a`,`cat answers/'$$n'-b`)"'"$(treset)" && \
+	cat $$in | runghc $$hs | tee out/actual && \
+	$(check) && \
+	$(stats)
 
 o:
 	@n=`ls -t *.hs | head -1 | cut -f1 -d.`; \
