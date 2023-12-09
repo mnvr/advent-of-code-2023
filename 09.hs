@@ -6,11 +6,7 @@ main :: IO ()
 main = interact $ (++ "\n") . show . (p1 &&& p2) . parse
 
 parse :: String -> [[Int]]
-parse = map nums . lines
-
-nums :: String -> [Int]
-nums [] = []
-nums s = uncurry (:) <$> bimap read nums $ break isSpace (dropWhile isSpace s)
+parse = map (map read . words) . lines
 
 p1 :: [[Int]] -> Int
 p1 = sum . map (foldr (\ds d -> last ds + d) 0 . dxs)
