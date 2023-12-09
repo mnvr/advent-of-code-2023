@@ -10,7 +10,7 @@ readInt :: String -> Int
 readInt = read
 -- nums :: String -> ([Int], String)
 nums [] = []
-nums s = let (a, b) = bimap readInt nums $ break isSpace (dropWhile isSpace s) in a:b
+nums s = (uncurry (:))<$> bimap readInt nums $ break isSpace (dropWhile isSpace s)
 
 -- parse :: String -> [Int]
 parse = nums . head . lines
