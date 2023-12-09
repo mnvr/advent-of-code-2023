@@ -16,6 +16,7 @@ tdim = \033[2;80m
 treset = \033[0m
 tbold = \033[1;1m
 tgreen = \033[0;32m
+tlblue = \033[1;34m
 
 # Clear the current line
 tclear = \033[2K
@@ -82,7 +83,7 @@ verify:
 	  echo "(`cat answers/$$n-a`,`cat answers/$$n-b`)" ;\
 	done
 
-awk_stats = awk 'BEGIN { a=9999 } { i=$$1; if(i<a)a=i; if(i>b)b=i; c+=1; s+=i; } END { print "\tmin",a,"\tmax",b,"\tsum",s,"\tavg",s/c }'
+awk_stats = awk 'BEGIN { a=9999 } { i=$$1; if(i<a)a=i; if(i>b)b=i; c+=1; s+=i; } END { print " min " a " avg " s/c " max " b " sum " s }'
 
 verify-o2:
 	@export pi=1; \
@@ -115,10 +116,9 @@ verify-o2:
 	  echo "$$hs $$cs $$nl lines $$ts s\t$(tgreen)$$output$(treset)" && \
 	  echo "$$ch $$nl $$ts" >> out/stats ; \
 	done && \
-	echo "done" && \
-	printf "chars" && cat out/stats | cut -d ' ' -f 1 | $(awk_stats) && \
-	printf "lines" && cat out/stats | cut -d ' ' -f 2 | $(awk_stats) && \
-	printf "time " && cat out/stats | cut -d ' ' -f 3 | $(awk_stats)
+	printf "ch" && cat out/stats | cut -d ' ' -f 1 | $(awk_stats) && \
+	printf "nl" && cat out/stats | cut -d ' ' -f 2 | $(awk_stats) && \
+	printf "$(tlblue)ts" && cat out/stats | cut -d ' ' -f 3 | $(awk_stats) && printf "$(treset)"
 
 verify-all:
 	@ls -r *.hs | cut -f1 -d. | uniq | while read n; do \
