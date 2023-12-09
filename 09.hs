@@ -2,9 +2,10 @@
 
 import Data.Char (isSpace)
 import Data.Bifunctor (bimap)
+import Control.Arrow ((&&&))
 
 main :: IO ()
-main = interact $ (++ "\n") . show . p2a . parse
+main = interact $ (++ "\n") . show . (p1 &&& p2) . parse
 
 parse :: String -> [[Int]]
 parse = map nums . lines
@@ -16,17 +17,8 @@ nums s = uncurry (:) <$> bimap read nums $ break isSpace (dropWhile isSpace s)
 p1 :: [[Int]] -> Int
 p1 = sum . map (foldr (\ds d -> last ds + d) 0 . dxs)
 
-p2a :: [[Int]] -> Int
-p2a = map (foldl (\d ds -> head ds - d) 0 . reverse . dxs)
-
--- p2 :: [[Int]] -> Int
--- p2 xss = sum $ map p2' xss
-p2 xss = map p2' xss
-
--- p2' :: [Int] -> Int
--- p2' :: [Int] -> [[Int]]
-p2' xs = fst $ foldl (\(d, yss) ds -> (head ds - d, yss ++ [ds])) (0,[]) $ dxs xs
---foldl (\(d, yss) ds -> (d + head ds, (d + head ds : yss))) (0, []) $ dxs xs
+p2 :: [[Int]] -> Int
+p2 = sum . map (foldl (\d ds -> head ds - d) 0 . reverse . dxs)
 
 dxs :: [Int] -> [[Int]]
 dxs xs = if all (==0) xs then [xs] else xs : dxs (dx xs)
