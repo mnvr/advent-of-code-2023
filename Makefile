@@ -100,11 +100,14 @@ verify-o2:
 	echo "$(tclear)$(tstart)$$pprefix done" && \
 	ls -r 01.hs 02.hs | cut -f1 -d. | uniq | while read n; do \
 	  in="inputs/$$n"; \
-	  cat $$in | command time -p -o out/time ./out/$$n | tee out/actual && \
+	  hs="$$n.hs"; \
+	  output=`cat $$in | command time -p -o out/time ./out/$$n | tee out/actual | tr '\n' ' '` && \
 	  echo "(`cat answers/$$n-a`,`cat answers/$$n-b`)" > out/expected && \
 	  if diff --color=always --unified out/expected out/actual; then true; else \
 	  echo "$(tbold)""ERROR: The program's output did not match the expected output""$(treset)" && exit 1; fi && \
-	  echo "(`cat answers/$$n-a`,`cat answers/$$n-b`)""$(tgreen)"' *'"$(treset)"; \
+	  true && \
+	  printf "$(tgreen)$$output$(treset)" && \
+	  $(stats); \
 	done && \
 	echo "done"
 
