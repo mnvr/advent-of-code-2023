@@ -75,12 +75,13 @@ o2:
 	$(check) && \
 	$(stats)
 
-awk_stats = awk 'BEGIN { a=9999 } { i=$$1; if(i<a)a=i; if(i>b)b=i; c+=1; s+=i; } END { print " min " a " avg " s/c " max " b " sum " s }'
+awk_stats = awk 'BEGIN { a=9999 } { i=$$1; if(i<a)a=i; if(i>b)b=i; c+=1; s+=i; } END { printf " min %d avg %d max %d sum %d\n", a, s/c, b, s }'
+awk_stats_f = awk 'BEGIN { a=9999 } { i=$$1; if(i<a)a=i; if(i>b)b=i; c+=1; s+=i; } END { printf " min %1.2f avg %1.2f max %1.2f sum %1.2f\n", a, s/c, b, s }'
 
 verify:
 	@export pi=1; \
 	pprefix="Precompiling..." ; \
-	pc='◍◌'; \
+	pc='▓▒░'; \
 	pc="$$pc$$pc$$pc$$pc$$pc$$pc$$pc$$pc$$pc$$pc$$pc$$pc$$pc$$pc$$pc$$pc"; \
 	mkdir -p out && \
 	ls -r *.hs | cut -f1 -d. | uniq | while read n; do \
@@ -109,7 +110,7 @@ verify:
 	done && \
 	printf "ch" && cat out/stats | cut -d ' ' -f 1 | $(awk_stats) && \
 	printf "nl" && cat out/stats | cut -d ' ' -f 2 | $(awk_stats) && \
-	printf "$(tlpurple)ts" && cat out/stats | cut -d ' ' -f 3 | $(awk_stats) && printf "$(treset)"
+	printf "$(tlpurple)ts" && cat out/stats | cut -d ' ' -f 3 | $(awk_stats_f) && printf "$(treset)"
 
 run-all:
 	@ls -r *.hs | cut -f1 -d. | uniq | while read n; do \
