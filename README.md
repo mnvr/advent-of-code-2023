@@ -12,23 +12,18 @@ latest solution on the latest of its example inputs, use
 
 Other commands:
 
--   `make read` – interactively run, reading input from stdin.
--   `make run` – run on the actual input.
--   `make test` – same as `make run`, but also print the latest expected answer,
-    and raise an error if it doesn't match the expected answer.
--   `make watch` – same as `make`, but start a fswatch to automatically re-run
-    it whenever the .hs file is changed.
--   `make verify` - Run `make test`, but for all days so far, in reverse.
+-   `make test` – run on the actual input, and compare against the expected
+    answers.
 -   `make o` - same as `make test`, but first compile the .hs file using GHC
-    with optimizations enabled, and also print timings. To remove these, use
-    `make clean`. There's also a `make o2` variant of this.
+    with optimizations enabled. There's also a `make o2` variant of this.
+-   `make verify` - Run `make test`, but for all days so far, in reverse.
+-   `make clean` - Clean temporary files (written to `out/`).
 
 All of these are wrappers around the basic pattern of
 
     cat somefile | runghc xx.hs
 
 Some of the solutions are done in shell scripts. To run these, the filename
-needs to be passed to the script instead of passing the input via stdin (this is
-to keep the scripts simple – reading stdin in a script isn't a snap):
+needs to be passed to the script instead of passing the input via stdin:
 
     ./xx.sh somefile

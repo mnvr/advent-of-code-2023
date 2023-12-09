@@ -1,6 +1,6 @@
 default: example
 
-.PHONY: example read run test watch verify o o2 stats clean
+.PHONY: example test o o2 verify clean
 
 # For printing colored strings, we use escape sequences
 #
@@ -16,18 +16,6 @@ example:
 	@dim='\033[2;80m'; reset='\033[0m'; \
 	n=`ls -t *.hs | head -1 | cut -f1 -d.`; \
 	in=`ls -t examples/$$n* | head -1`; \
-	hs=`ls -t *.hs | head -1`; \
-	echo "$$dim""cat $$in | runghc $$hs""$$reset" && \
-	cat $$in | runghc $$hs
-
-read:
-	@echo "runghc `ls -t *.hs | head -1`" && \
-	runghc `ls -t *.hs | head -1`
-
-run:
-	@dim='\033[2;80m'; reset='\033[0m'; \
-	n=`ls -t *.hs | head -1 | cut -f1 -d.`; \
-	in="inputs/$$n"; \
 	hs=`ls -t *.hs | head -1`; \
 	echo "$$dim""cat $$in | runghc $$hs""$$reset" && \
 	cat $$in | runghc $$hs
@@ -50,22 +38,6 @@ test:
 	nl=`wc -l < $$hs | tr -d ' '`; \
 	cs=`test $$ch -lt 999 && echo "$$ch chars "`; \
 	echo "$$dim"$$hs $$cs$$nl lines $$ts s"$$reset"
-
-watch:
-	@dim='\033[2;80m'; reset='\033[0m'; \
-	f=`ls -t *.hs | head -1 | cut -f1 -d.`; \
-	in=`ls -t examples/$$f* | head -1`; \
-	hs=`ls -t *.hs | head -1`; \
-	echo "$$dim""fswatch $$hs | while read f; do cat $$in | runghc $$hs; done""$$reset" && \
-	fswatch $$hs | while read f; do cat $$in | runghc $$hs; done
-
-verify:
-	@ls -r *.hs | cut -f1 -d. | uniq | while read n; do \
-	  in="inputs/$$n"; \
-      hs="$$n.hs"; \
-	  cat $$in | runghc $$hs && \
-	  echo "(`cat answers/$$n-a`,`cat answers/$$n-b`)" ;\
-	done
 
 o:
 	@dim='\033[2;80m'; reset='\033[0m'; \
@@ -91,18 +63,13 @@ o2:
 	cat $$in | time -h ./out/$$n && \
 	echo "(`cat answers/$$n-a`,`cat answers/$$n-b`)"
 
-stats:
-	@dim='\033[2;80m'; reset='\033[0m'; \
-	n=`ls -t *.hs | head -1 | cut -f1 -d.`; \
-	in=`ls -t examples/$$n* | head -1`; \
-	hs=`ls -t *.hs | head -1`; \
-	echo "$$dim""cat $$in | command time -p -o out/time runghc $$hs""$$reset" && \
-	cat $$in | runghc $$hs && \
-	ts=`cat out/time | grep real | cut -d ' ' -f2`; \
-	ch=`wc -m < $$hs | tr -d ' '`; \
-	nl=`wc -l < $$hs | tr -d ' '`; \
-	cs=`test $$ch -lt 999 && echo "$$ch chars "`; \
-	echo $$hs $$cs$$nl lines $$ts s
+verify:
+	@ls -r *.hs | cut -f1 -d. | uniq | while read n; do \
+	  in="inputs/$$n"; \
+      hs="$$n.hs"; \
+	  cat $$in | runghc $$hs && \
+	  echo "(`cat answers/$$n-a`,`cat answers/$$n-b`)" ;\
+	done
 
 clean:
 	rm -rf out
