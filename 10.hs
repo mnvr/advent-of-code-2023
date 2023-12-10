@@ -18,14 +18,14 @@ parse = ensureStart . neighbours . chunks . lines
       f m (y, (p, c, n)) = foldl g m (enum c) where
           g :: (Maybe Node, M.Map Node (Node, Node)) -> (Int, Char) -> (Maybe Node, M.Map Node (Node, Node))
           g r      (x, '.') = r
-          g (_, m) (x, 'S') = let k = (x, y) in
+          g (_, m) (x, 'S') = let k = (y, x) in
             (Just k, case neighboursOfStart (p, c, n) 'S' k of
                 (Just n1, Just n2) -> M.insert k (n1, n2) m)
-          g (s, m) (x,  i ) = let k = (x, y) in
+          g (s, m) (x,  i ) = let k = (y, x) in
             case neighbour (p, c, n) i k of
                 (Just n1, Just n2) -> (s, M.insert k (n1, n2) m)
-                z -> error (show ((y, x), i, z))
-                -- _ -> (s, m)
+                -- z -> error (show ((y, x), i, z))
+                _ -> (s, m)
     neighbour :: (String, String, String) -> Char -> (Int, Int) -> (Maybe (Int, Int), Maybe (Int, Int))
     neighbour (p, c, n) '|' k = (north p k, south n k)
     neighbour (p, c, n) '-' k = (west c k, east c k)
@@ -33,27 +33,28 @@ parse = ensureStart . neighbours . chunks . lines
     neighbour (p, c, n) 'J' k = (north p k, west c k)
     neighbour (p, c, n) '7' k = (south n k, west c k)
     neighbour (p, c, n) 'F' k = (south n k, east c k)
-    north p (x, y) = if p !! x `notElem` "|F7S" then Nothing else Just (x, y - 1)
-    south n (x, y) = if n !! x `notElem` "|LJS" then Nothing else Just (x, y + 1)
-    west c (x, y) = if x == 0 || c !! (x - 1) `notElem` "-LFS" then Nothing
-        else Just (x - 1, y)
-    east c (x, y) = if x + 1 == length c || c !! (x + 1) `notElem` "-J7S" then Nothing
-        else Just (x + 1, y)
+    north p (y, x) = if p !! x `notElem` "|F7S" then Nothing else Just (y - 1, x)
+    south n (y, x) = if n !! x `notElem` "|LJS" then Nothing else Just (y + 1, x)
+    west c (y, x) = if x == 0 || c !! (x - 1) `notElem` "-LFS" then Nothing
+        else Just (y, x - 1)
+    east c (y, x) = if x + 1 == length c || c !! (x + 1) `notElem` "-J7S" then Nothing
+        else Just (y, x + 1)
     neighboursOfStart :: (String, String, String) -> Char -> (Int, Int) -> (Maybe (Int, Int), Maybe (Int, Int))
-    neighboursOfStart (p, c, n) _ (x, y) = case catMaybes [
-        if p !! x `elem` "|F7" then Just (x, y - 1) else Nothing,
-        if n !! x `elem` "|LJ" then Just (x, y + 1) else Nothing,
-        if x > 0 && c !! (x - 1) `elem` "-LF" then Just (x - 1, y) else Nothing,
-        if x + 1 < length c && c !! (x + 1) `elem` "-J7" then Just (x + 1, y) else Nothing
+    neighboursOfStart (p, c, n) _ (y, x) = case catMaybes [
+        if p !! x `elem` "|F7" then Just (y - 1, x) else Nothing,
+        if n !! x `elem` "|LJ" then Just (y + 1, x) else Nothing,
+        if x > 0 && c !! (x - 1) `elem` "-LF" then Just (y, x - 1) else Nothing,
+        if x + 1 < length c && c !! (x + 1) `elem` "-J7" then Just (y, x + 1) else Nothing
         ] of
         [a, b] -> (Just a, Just b)
     ensureStart (Just s, m) = (s, m)
     ensureStart _ = error "input does not contain a start node"
 
-p1 = maximum . M.elems . dist
+-- p1 = maximum . M.elems . dist
+p1 = dist
 
-dist :: (Node, M.Map Node (Node, Node)) -> (M.Map Node Int)
-dist (start, neighbours) = relax (distanceMap neighbours)
+-- dist :: (Node, M.Map Node (Node, Node)) -> (M.Map Node Int)
+dist (start, neighbours) = M.keys (distanceMap neighbours)
   where
     inf = (maxBound - 1 :: Int)
     distanceMap = M.update (const (Just 0)) start . M.map (const inf)
@@ -61,7 +62,9 @@ dist (start, neighbours) = relax (distanceMap neighbours)
         (True, m') -> relax m'
         (_, m') -> m'
     relaxNode dmap changed key dist = case M.lookup key neighbours of
-        Just (n1, n2) -> let d1 = (fromJust (M.lookup n1 dmap)) + 1
-                             d2 = (fromJust (M.lookup n2 dmap)) + 1
+        Just (n1, n2) -> let d1 = (maybe inf id (M.lookup n1 dmap)) + 1
+                             -- d1 = (fromJust (M.lookup n1 dmap)) + 1
+                             d2 = (maybe inf id (M.lookup n2 dmap)) + 1
+                            --  d2 = (fromJust (M.lookup n2 dmap)) + 1
                              d = min d1 d2
                          in if dist > d then (True, d) else (changed, dist)
