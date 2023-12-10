@@ -2,6 +2,7 @@ import Data.Bifunctor (first, second)
 import Data.Map qualified as M
 import Data.Maybe (catMaybes, fromJust)
 import Control.Arrow ((&&&))
+import Debug.Trace
 
 main :: IO ()
 main = interact $ (++ "\n") . show . p2 . parse
@@ -75,9 +76,12 @@ p2 inp = map scan [fst rows..snd rows]
     cols = (minimum &&& maximum) $ map snd keys
     -- scan y = "scan " ++ (show y)
     scan :: Int -> Int
-    scan y = fst $ foldl ff (0, Nothing) [fst cols..snd cols]
+    scan y = fst $ foldl f (0, Nothing) [fst cols..snd cols]
       where
         onLoop x = (y, x) `elem` keys
+        f a x = let b = onLoop x
+                    c = ff a x
+                in trace ("scanning row " ++ show y ++ " col " ++ show x ++ "(onLoop was " ++ show b ++ ") " ++ show a ++ " => " ++ show c) c
         ff (c, Nothing) x | onLoop x  = (c, Just 0)
         ff (c, Nothing) x | otherwise = (c, Nothing)
         ff (c, Just 0) x | onLoop x  = (c, Nothing)
