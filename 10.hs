@@ -1,3 +1,4 @@
+import Data.Bifunctor (first, second)
 import Data.Map qualified as M
 import Data.Maybe (catMaybes)
 
@@ -24,10 +25,10 @@ parse = ensureStart . neighbours . chunks . lines
     neighbour 'J' p = (north p, west p)
     neighbour '7' p = (south p, west p)
     neighbour 'F' p = (south p, east p)
-    north (x,y) = (x,y-1)
-    south (x,y) = (x,y+1)
-    east (x,y) = (x-1,y)
-    west (x,y) = (x+1,y)
+    north = second (subtract 1)
+    south = second (+ 1)
+    west = first (subtract 1)
+    east = first (+ 1)
     neighboursOfStart p c n y x = case nos' p c n y x of
         [a,b] -> (a, b)
         [a] -> (a, (x+1,y))
