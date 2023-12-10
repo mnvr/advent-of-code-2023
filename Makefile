@@ -84,7 +84,7 @@ verify:
 	pc='▓▒░'; \
 	pc="$$pc$$pc$$pc$$pc$$pc$$pc$$pc$$pc$$pc$$pc$$pc$$pc$$pc$$pc$$pc$$pc"; \
 	mkdir -p out && \
-	ls -r *.hs | cut -f1 -d. | uniq | while read n; do \
+	ls -r *.hs | grep -v wip | cut -f1 -d. | uniq | while read n; do \
 	  in="inputs/$$n"; \
       hs="$$n.hs"; \
 	  pghc="ghc -O2 -outputdir out -o out/$$n $$hs" \
@@ -96,7 +96,7 @@ verify:
 	done && \
 	echo "$(tclear)$(tstart)$$pprefix done" && \
 	rm -f "out/stats" && \
-	ls -r *.hs | cut -f1 -d. | uniq | while read n; do \
+	ls -r *.hs | grep -v wip | cut -f1 -d. | uniq | while read n; do \
 	  in="inputs/$$n"; \
 	  hs="$$n.hs"; \
 	  output=`cat $$in | command time -p -o out/time ./out/$$n | tee out/actual | tr '\n' ' '` && \
