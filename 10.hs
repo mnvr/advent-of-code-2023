@@ -70,23 +70,27 @@ dist (start, neighbours) = relax (distanceMap start) [start]
         Nothing -> (M.insert nn (dist + 1) dm, q ++ [nn])
         Just d -> if dist + 1 < d then (M.insert nn (dist + 1) dm, q ++ [nn]) else (dm, q)
 
-data State = Outside | Boundary1 | Boundary2 | Inside
+data State = Outside | Boundary1 Int | Boundary2 Int | Inside
 
-move :: State -> Char -> Char -> State
-move Outside ' ' '|' = Boundary1
-move Outside _ _ = Outside
-move Boundary1 _ ' ' = Inside
-move Boundary1 _ '|' = Boundary2
-move Boundary2 _ '|' = Boundary2
-move Boundary2 _ ' ' = Outside
-move Inside _ ' ' = Inside
-move Inside _ '|' = Boundary2 -- ?
+move :: State -> Char -> Char -> Maybe Int -> State
+move Outside ' ' '|' (Just d) = Boundary1 d
+move Outside _ _ _ = Outside
+move (Boundary1 _) _ ' ' _ = Inside
+move (Boundary1 _) _ '|' (Just d) = Boundary2 d
+move (Boundary2 _) _ '|' (Just d) = Boundary2 d
+move (Boundary2 _) _ ' ' _ = Outside
+move Inside _ ' ' _ = Inside
+move Inside _ '|' (Just d) = Boundary2 d -- ?
+
+-- L--J.L7...LJS7F-7L7.        (orig)
+-- L--JOL7IIILJS7F-7L7O        (marked)
+-- bBBB.bB...bBBBBBBBB.        (ours)
 
 showState :: State -> Char
 showState Outside = '.'
-showState Boundary1 = 'b'
-showState Boundary2 = 'B'
-showState Inside = 'I'
+showState (Boundary1 d) = head $ show d -- 'b'
+showState (Boundary2 d) = head $ show d -- 'B'
+showState Inside = '#'
 
 p2 inp = concat $ intersperse "\n" $ map scan [fst rows..snd rows]
   where
@@ -99,5 +103,5 @@ p2 inp = concat $ intersperse "\n" $ map scan [fst rows..snd rows]
         onLoop x = (y, x) `elem` keys
         ff (state, prevC, ss) x =
             let ch = if onLoop x then '|' else ' '
-                state' = move state prevC ch
+                state' = move state prevC ch (M.lookup (y, x) dm)
             in (state', ch, state':ss)
