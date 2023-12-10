@@ -1,6 +1,6 @@
 import Data.Bifunctor (first, second)
 import Data.Map qualified as M
-import Data.Maybe (catMaybes)
+import Data.Maybe (catMaybes, fromJust)
 
 main :: IO ()
 main = interact $ (++ "\n") . show . p1 . parse
@@ -40,3 +40,16 @@ parse = ensureStart . neighbours . chunks . lines
     ensureStart _ = error "input does not contain a start node"
 
 p1 = id
+
+dist :: (Node, M.Map Node (Node, Node)) -> (M.Map Node Int)
+dist (start, neighbours) = relax (distanceMap neighbours)
+  where
+    distanceMap = M.update (const (Just 0)) start . M.map (const (maxBound - 1 :: Int))
+    relax m = case M.mapAccumWithKey (relaxNode m) False m of
+        (True, m') -> relax m'
+        (_, m') -> m'
+    relaxNode dmap changed key dist = case M.lookup key neighbours of
+        Just (n1, n2) -> let d1 = fromJust (M.lookup n1 dmap) + 1
+                             d2 = fromJust (M.lookup n2 dmap) + 1
+                             d = min d1 d2
+                         in if dist > d then (True, d) else (changed, dist)
