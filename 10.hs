@@ -24,19 +24,20 @@ parse = ensureStart . neighbours . chunks . lines
           g (s, m) (x,  i ) = let k = (x, y) in
             case neighbour (p, c, n) i k of
                 (Just n1, Just n2) -> (s, M.insert k (n1, n2) m)
-                _ -> (s, m)
+                z -> error (show ((y, x), i, z))
+                -- _ -> (s, m)
     neighbour :: (String, String, String) -> Char -> (Int, Int) -> (Maybe (Int, Int), Maybe (Int, Int))
     neighbour (p, c, n) '|' k = (north p k, south n k)
-    neighbour (p, c, n) '-' k = (east c k, west c k)
+    neighbour (p, c, n) '-' k = (west c k, east c k)
     neighbour (p, c, n) 'L' k = (north p k, east c k)
     neighbour (p, c, n) 'J' k = (north p k, west c k)
     neighbour (p, c, n) '7' k = (south n k, west c k)
     neighbour (p, c, n) 'F' k = (south n k, east c k)
-    north p (x, y) = if p !! x `notElem` "|F7" then Nothing else Just (x, y - 1)
-    south n (x, y) = if n !! x `notElem` "|LJ" then Nothing else Just (x, y + 1)
-    west c (x, y) = if x == 0 || c !! (x - 1) `notElem` "-LF" then Nothing
+    north p (x, y) = if p !! x `notElem` "|F7S" then Nothing else Just (x, y - 1)
+    south n (x, y) = if n !! x `notElem` "|LJS" then Nothing else Just (x, y + 1)
+    west c (x, y) = if x == 0 || c !! (x - 1) `notElem` "-LFS" then Nothing
         else Just (x - 1, y)
-    east c (x, y) = if x + 1 == length c || c !! (x + 1) `notElem` "-J7" then Nothing
+    east c (x, y) = if x + 1 == length c || c !! (x + 1) `notElem` "-J7S" then Nothing
         else Just (x + 1, y)
     neighboursOfStart :: (String, String, String) -> Char -> (Int, Int) -> (Maybe (Int, Int), Maybe (Int, Int))
     neighboursOfStart (p, c, n) _ (x, y) = case catMaybes [
@@ -49,7 +50,7 @@ parse = ensureStart . neighbours . chunks . lines
     ensureStart (Just s, m) = (s, m)
     ensureStart _ = error "input does not contain a start node"
 
-p1 = second (M.keys &&& M.lookup (1,1)) -- maximum . M.elems . dist
+p1 = maximum . M.elems . dist
 
 dist :: (Node, M.Map Node (Node, Node)) -> (M.Map Node Int)
 dist (start, neighbours) = relax (distanceMap neighbours)
