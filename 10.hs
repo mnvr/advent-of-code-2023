@@ -50,15 +50,15 @@ parse = ensureStart . neighbours . chunks . lines
     ensureStart (Just s, m) = (s, m)
     ensureStart _ = error "input does not contain a start node"
 
--- p1 = maximum . M.elems . dist
-p1 = dist
+p1 = maximum . M.elems . dist
+-- p1 = dist
 
 -- dist :: (Node, M.Map Node (Node, Node)) -> (M.Map Node Int)
-dist (start, neighbours) = relax distanceMap -- neighbours)
+dist (start, neighbours) = pruneUnreachable $ relax (distanceMap neighbours)
   where
     inf = (maxBound - 1 :: Int)
-    -- distanceMap = M.update (const (Just 0)) start . M.map (const inf)
-    distanceMap = M.singleton start 0
+    distanceMap = M.update (const (Just 0)) start . M.map (const inf)
+    pruneUnreachable = M.filter (/= inf)
     relax m = case M.mapAccumWithKey (relaxNode m) False m of
         (True, m') -> relax m'
         (_, m') -> m'
@@ -68,4 +68,4 @@ dist (start, neighbours) = relax distanceMap -- neighbours)
             (Just d1, _) -> updateIfLower d1
             (_, Just d2) -> updateIfLower d2
             _ -> (changed, dist)
-        where updateIfLower d = if d < dist then (True, d) else (changed, dist)
+        where updateIfLower d = if (d + 1) < dist then (True, d + 1) else (changed, dist)
