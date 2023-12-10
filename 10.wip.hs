@@ -70,7 +70,7 @@ dist (start, neighbours) = relax (distanceMap start) [start]
         Nothing -> (M.insert nn (dist + 1) dm, q ++ [nn])
         Just d -> if dist + 1 < d then (M.insert nn (dist + 1) dm, q ++ [nn]) else (dm, q)
 
-p2 inp = concat $ intersperse "\n" $ map scan rows
+p2a inp = concat $ intersperse "\n" $ map scan rows
   where
     dm = dist inp
     keys = M.keys dm
@@ -105,11 +105,21 @@ instance Show State where
   show (Boundary2 d) = if d < 10 then (" " ++ show d ++ " ") else (show d ++ " ")
   show Inside = "   "
 
-p2b inp = show $ expand
+p2 inp@(_, neighbors) = expand
   where
     dm = dist inp
     keys = M.keys dm
     rows = range $ map fst $ keys
     cols = range $ map snd $ keys
-    expand = map expandRow rows
-    expandRow row = [row]
+    expand = concat $ intersperse "\n" $ map expandRow rows
+    expandRow row = concatMap (exp row) cols
+    exp y x | (y, x) `elem` keys = let key = (y, x) in
+              expPipe key (M.lookup key neighbors)
+            | otherwise = " ."
+    expPipe key@(y, x) (Just (n1, n2))
+      | n1 == (y, x - 1) && n2 == (y, x + 1) = "--"
+      | n1 == (y - 1, x) && n2 == (y, x - 1) = "- "
+      | n1 == (y + 1, x) && n2 == (y, x - 1) = "- "
+      | n1 == (y - 1, x) && n2 == (y, x + 1) = " -"
+      | n1 == (y + 1, x) && n2 == (y, x + 1) = " -"
+      | otherwise = "*8"
