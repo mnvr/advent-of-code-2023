@@ -67,7 +67,7 @@ dist (start, neighbours) = relax (distanceMap start) [start]
         Nothing -> (M.insert nn (dist + 1) dm, q ++ [nn])
         Just d -> if dist + 1 < d then (M.insert nn (dist + 1) dm, q ++ [nn]) else (dm, q)
 
-p2 inp = sum $ map scan [fst rows..snd rows]
+p2 inp = map scan [fst rows..snd rows]
   where
     dm = dist inp
     keys = M.keys dm
@@ -75,11 +75,12 @@ p2 inp = sum $ map scan [fst rows..snd rows]
     cols = (minimum &&& maximum) $ map snd keys
     -- scan y = "scan " ++ (show y)
     scan :: Int -> Int
-    scan y = fst $ foldl ff (0, Nothing) [fst cols..snd cols] where
-        ff (c, inside) x
-          | (y, x) `elem` keys = case inside of
-            Nothing -> (c, Just 0)
-            Just ic -> (c + ic, Nothing)
-          | otherwise = case inside of
-            Nothing -> (c, Nothing)
-            Just ic -> (c, Just (ic + 1))
+    scan y = fst $ foldl ff (0, Nothing) [fst cols..snd cols]
+      where
+        onLoop x = (y, x) `elem` keys
+        ff (c, Nothing) x | onLoop x  = (c, Just 0)
+        ff (c, Nothing) x | otherwise = (c, Nothing)
+        ff (c, Just 0) x | onLoop x  = (c, Nothing)
+        ff (c, Just 0) x | otherwise = (c, Just 1)
+        ff (c, Just ic) x | onLoop x  = (c + ic, Nothing)
+        ff (c, Just ic) x | otherwise = (c, Just (ic + 1))
