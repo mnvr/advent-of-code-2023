@@ -70,46 +70,34 @@ dist (start, neighbours) = relax (distanceMap start) [start]
         Nothing -> (M.insert nn (dist + 1) dm, q ++ [nn])
         Just d -> if dist + 1 < d then (M.insert nn (dist + 1) dm, q ++ [nn]) else (dm, q)
 
--- p2 inp = concat $ intersperse "\n" $ map scan [fst rows..snd rows]
-p2 inp = concat $ intersperse "\n" $ map (\xs -> concat (map show xs)) $ map scan [fst rows..snd rows]
+data State = Outside | Boundary1 | Boundary2 | Inside
+
+move :: State -> Char -> Char -> State
+move Outside ' ' '|' = Boundary1
+move Outside _ _ = Outside
+move Boundary1 _ ' ' = Inside
+move Boundary1 _ '|' = Boundary2
+move Boundary2 _ '|' = Boundary2
+move Boundary2 _ ' ' = Outside
+move Inside _ ' ' = Inside
+move Inside _ '|' = Boundary2 -- ?
+
+showState :: State -> Char
+showState Outside = '.'
+showState Boundary1 = 'b'
+showState Boundary2 = 'B'
+showState Inside = 'I'
+
+p2 inp = concat $ intersperse "\n" $ map scan [fst rows..snd rows]
   where
     dm = dist inp
     keys = M.keys dm
     rows = (minimum &&& maximum) $ map fst keys
     cols = (minimum &&& maximum) $ map snd keys
-    scan y = (\(_,i,_,_,_,_,_,_) -> reverse i) $ foldl ff ("", [], 0, ' ', 0, True, 0, 1) [fst cols..snd cols]
+    scan y = (\(_,_,ss) -> map showState (reverse ss)) $ foldl ff (Outside, ' ', []) [fst cols..snd cols]
       where
         onLoop x = (y, x) `elem` keys
-        initIsIn = if onLoop 0 then 1 else 0
-
-        isEdge '|' x | onLoop x = False
-        isEdge '|' x | otherwise = True
-        isEdge ' ' x | onLoop x = True
-        isEdge ' ' x | otherwise = False
-
-        edgeD '|' x | onLoop x = \z -> if z == 1 then 0 else z
-        edgeD '|' x | otherwise = (subtract 1)
-        edgeD ' ' x | onLoop x = (+1)
-        edgeD ' ' x | otherwise = (+0)
-
-        sh True = 1
-        sh False = 0
-
-        -- ff :: (String, Int, Char) -> Int -> (String, Int, Char)
-        ff (s, is, i, prevC, isIn, isOutside, ec, dt) x =
-            let isL = onLoop x
-                isE = isEdge prevC x
-                toggle x = if x == 0 then 1 else 0
-                c = if onLoop x then '|' else ' '
-                j = if isEdge prevC x then i + 1 else i
-                isIn' = isIn
-                isOutside' = if isOutside && isE && isL then False else if not isOutside && isE && not isL then True else isOutside
-                -- ec' = if prevC == ' ' && isL then ec + 1 else if prevC == '|'
-                -- && not isL then ec - 1 else ec
-                ec' = if isL then ec + dt else ec
-                dt' = if isL then dt * (-1) else dt
-                z = if isOutside' && ec' == 1 then 1 else 0
-                -- v = if ec == 1 && isOutside then 1 else 0
-            in (c : s, z : is, j, c, isIn', isOutside', ec',dt')
-
-
+        ff (state, prevC, ss) x =
+            let ch = if onLoop x then '|' else ' '
+                state' = move state prevC ch
+            in (state', ch, state':ss)
