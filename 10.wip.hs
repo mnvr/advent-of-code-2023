@@ -28,7 +28,6 @@ parse = ensureStart . neighbours . chunks . lines
           g (s, m) (x,  i ) = let k = (y, x) in
             case neighbour (p, c, n) i k of
                 (Just n1, Just n2) -> (s, M.insert k (n1, n2) m)
-                -- z -> error (show ((y, x), i, z))
                 _ -> (s, m)
     neighbour :: (String, String, String) -> Char -> (Int, Int) -> (Maybe (Int, Int), Maybe (Int, Int))
     neighbour (p, c, n) '|' k = (north p k, south n k)
@@ -71,6 +70,23 @@ dist (start, neighbours) = relax (distanceMap start) [start]
         Nothing -> (M.insert nn (dist + 1) dm, q ++ [nn])
         Just d -> if dist + 1 < d then (M.insert nn (dist + 1) dm, q ++ [nn]) else (dm, q)
 
+p2 inp = concat $ intersperse "\n" $ map scan rows
+  where
+    dm = dist inp
+    keys = M.keys dm
+    rows = range $ map fst $ keys
+    cols = range $ map snd $ keys
+    scan y = (\(_,_,ss) -> concatMap show (reverse ss)) $ foldl f (Outside, ' ', []) cols
+      where
+        isOnLoop x = (y, x) `elem` keys
+        f (state, prevC, ss) x =
+            let ch = if isOnLoop x then '|' else ' '
+                state' = move state prevC ch (M.lookup (y, x) dm)
+            in (state', ch, state':ss)
+
+range :: [Int] -> [Int]
+range xs = [minimum xs..maximum xs]
+
 data State = Outside | Boundary1 Int | Boundary2 Int | Inside
 
 move :: State -> Char -> Char -> Maybe Int -> State
@@ -83,26 +99,17 @@ move (Boundary2 _) _ ' ' _ = Outside
 move Inside _ ' ' _ = Inside
 move Inside _ '|' (Just d) = Boundary2 d -- ?
 
--- L--J.L7...LJS7F-7L7.        (orig)
--- L--JOL7IIILJS7F-7L7O        (marked)
--- bBBB.bB...bBBBBBBBB.        (ours)
+instance Show State where
+  show Outside = " . "
+  show (Boundary1 d) = if d < 10 then (" " ++ show d ++ " ") else (show d ++ " ")
+  show (Boundary2 d) = if d < 10 then (" " ++ show d ++ " ") else (show d ++ " ")
+  show Inside = "   "
 
-showState :: State -> String
-showState Outside = " . "
-showState (Boundary1 d) = if d < 10 then (" " ++ show d ++ " ") else (show d ++ " ")-- 'b'
-showState (Boundary2 d) = if d < 10 then (" " ++ show d ++ " ") else (show d ++ " ")  -- 'B'
-showState Inside = "   "
-
-p2 inp = concat $ intersperse "\n" $ map scan [fst rows..snd rows]
+p2b inp = show $ expand
   where
     dm = dist inp
     keys = M.keys dm
-    rows = (minimum &&& maximum) $ map fst keys
-    cols = (minimum &&& maximum) $ map snd keys
-    scan y = (\(_,_,ss) -> concatMap showState (reverse ss)) $ foldl ff (Outside, ' ', []) [fst cols..snd cols]
-      where
-        onLoop x = (y, x) `elem` keys
-        ff (state, prevC, ss) x =
-            let ch = if onLoop x then '|' else ' '
-                state' = move state prevC ch (M.lookup (y, x) dm)
-            in (state', ch, state':ss)
+    rows = range $ map fst $ keys
+    cols = range $ map snd $ keys
+    expand = map expandRow rows
+    expandRow row = [row]
