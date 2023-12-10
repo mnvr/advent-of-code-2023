@@ -77,7 +77,7 @@ p2 inp = concat $ intersperse "\n" $ map scan [fst rows..snd rows]
     cols = (minimum &&& maximum) $ map snd keys
     -- scan y = "scan " ++ (show y)
     -- scan :: Int -> Int
-    scan y = (\(x,_,_,_) -> x) $ foldl ff ("", 0, Nothing, False) [fst cols..snd cols]
+    scan y = (\(x,_,_,_) -> reverse x) $ foldl ff ("", 0, False, False) [fst cols..snd cols]
       where
         onLoop x = (y, x) `elem` keys
         -- f a x = let b = onLoop x
@@ -85,10 +85,17 @@ p2 inp = concat $ intersperse "\n" $ map scan [fst rows..snd rows]
         --         in trace ("scanning row " ++ show y ++ " col " ++ show x ++ " (onLoop was " ++ take 4 (show b) ++ ") " ++ show a ++ " => " ++ show c) c
         --
         -- third arg: inside or on the loop itself
-        ff (s, c, Nothing, False) x | onLoop x  = ('|' : s, c, Just x, True)
-        ff (s, c, Nothing, True) x | onLoop x  = ('|' : s, c, Just x, False)
-        ff (s, c, Nothing, False) x | otherwise  = ('O' : s, c, Just x, False)
-        ff (s, c, Nothing, True) x | otherwise  = ('I' : s, c, Just x, True)
+        -- ff (s, c, _, sign) x = if onLoop x then ('|' : s, c, Just x, sign *
+        -- 1) else ((if sign < 1 then '-' else '+') : s, c, neg sign)
+
+        ff (s, c, isInside, wasPrevOnLoop) x = case onLoop x of
+            True -> ('|' : s, c, isInside, wasPrevOnLoop)
+            False -> (' ' : s, c, isInside, wasPrevOnLoop)
+
+        -- ff (s, c, _, False) x | onLoop x  = ('|' : s, c, Just x, True)
+        -- ff (s, c, _, True) x | onLoop x  = ('|' : s, c, Just x, False)
+        -- ff (s, c, _, False) x | otherwise  = ('O' : s, c, Just x, False)
+        -- ff (s, c, _, True) x | otherwise  = ('I' : s, c, Just x, True)
         -- ff (s, c, Nothing, False) x | otherwise  = ('O' : s, c, Nothing, False)
 
         -- ff (_, c, Nothing, True) x | onLoop x  = error ""
