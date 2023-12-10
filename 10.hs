@@ -50,18 +50,26 @@ parse = ensureStart . neighbours . chunks . lines
     ensureStart (Just s, m) = (s, m)
     ensureStart _ = error "input does not contain a start node"
 
-p1 = dist --maximum . M.elems . dist
+p1 = maximum . M.elems . dist
 -- p1 = dist
 
 -- dist :: (Node, M.Map Node (Node, Node)) -> (M.Map Node Int)
 -- dist (start, neighbours) = pruneUnreachable $ relax' (distanceMap neighbours)
-dist (start, neighbours) = relax (distanceMap start) []
+dist (start, neighbours) = relax (distanceMap start) [start]
   where
     inf = (maxBound - 1 :: Int)
     -- distanceMap = M.update (const (Just 0)) start . M.map (const inf)
     distanceMap s = M.singleton start 0
     -- initialPending = [0]
+    relax :: M.Map Node Int -> [Node] -> M.Map Node Int
     relax dm [] = dm
+    relax dm (key:q) = case (M.lookup key dm, M.lookup key neighbours) of
+        (Just dist, Just (n1, n2)) ->
+            let (dm', q') = relaxNeighbour n1 dm q dist in
+                (let (dm'', q'') = relaxNeighbour n2 dm' q' dist in relax dm'' q'')
+    relaxNeighbour nn dm q dist = case M.lookup nn dm of
+        Nothing -> (M.insert nn (dist + 1) dm, q ++ [nn])
+        Just d -> if dist + 1 < d then (M.insert nn (dist + 1) dm, q ++ [nn]) else (dm, q)
 
     -- relax dmap pending = case foldl f dmap pending of
     --     [] -> r
