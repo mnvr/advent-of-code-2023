@@ -77,19 +77,39 @@ p2 inp = concat $ intersperse "\n" $ map (\xs -> concat (map show xs)) $ map sca
     keys = M.keys dm
     rows = (minimum &&& maximum) $ map fst keys
     cols = (minimum &&& maximum) $ map snd keys
-    scan y = (\(_,i,_,_) -> reverse i) $ foldl ff ("", [], 0, ' ') [fst cols..snd cols]
+    scan y = (\(_,i,_,_,_,_,_,_) -> reverse i) $ foldl ff ("", [], 0, ' ', 0, True, 0, 1) [fst cols..snd cols]
       where
         onLoop x = (y, x) `elem` keys
+        initIsIn = if onLoop 0 then 1 else 0
 
         isEdge '|' x | onLoop x = False
         isEdge '|' x | otherwise = True
         isEdge ' ' x | onLoop x = True
         isEdge ' ' x | otherwise = False
 
+        edgeD '|' x | onLoop x = \z -> if z == 1 then 0 else z
+        edgeD '|' x | otherwise = (subtract 1)
+        edgeD ' ' x | onLoop x = (+1)
+        edgeD ' ' x | otherwise = (+0)
+
+        sh True = 1
+        sh False = 0
+
         -- ff :: (String, Int, Char) -> Int -> (String, Int, Char)
-        ff (s, is, i, prevC) x =
-            let c = if onLoop x then '|' else ' '
+        ff (s, is, i, prevC, isIn, isOutside, ec, dt) x =
+            let isL = onLoop x
+                isE = isEdge prevC x
+                toggle x = if x == 0 then 1 else 0
+                c = if onLoop x then '|' else ' '
                 j = if isEdge prevC x then i + 1 else i
-            in (c : s, j : is, j, c)
+                isIn' = isIn
+                isOutside' = if isOutside && isE && isL then False else if not isOutside && isE && not isL then True else isOutside
+                -- ec' = if prevC == ' ' && isL then ec + 1 else if prevC == '|'
+                -- && not isL then ec - 1 else ec
+                ec' = if isL then ec + dt else ec
+                dt' = if isL then dt * (-1) else dt
+                z = if isOutside' && ec' == 1 then 1 else 0
+                -- v = if ec == 1 && isOutside then 1 else 0
+            in (c : s, z : is, j, c, isIn', isOutside', ec',dt')
 
 
