@@ -3,9 +3,10 @@ import Data.Map qualified as M
 import Data.Maybe (catMaybes, fromJust)
 import Control.Arrow ((&&&))
 import Debug.Trace
+import Data.List (intersperse)
 
 main :: IO ()
-main = interact $ (++ "\n") . show . p2 . parse
+main = interact $ (++ "\n")  . p2 . parse
 
 type Node = (Int, Int)
 
@@ -68,29 +69,36 @@ dist (start, neighbours) = relax (distanceMap start) [start]
         Nothing -> (M.insert nn (dist + 1) dm, q ++ [nn])
         Just d -> if dist + 1 < d then (M.insert nn (dist + 1) dm, q ++ [nn]) else (dm, q)
 
-p2 inp = map scan [fst rows..snd rows]
+p2 inp = concat $ intersperse "\n" $ map scan [fst rows..snd rows]
   where
     dm = dist inp
     keys = M.keys dm
     rows = (minimum &&& maximum) $ map fst keys
     cols = (minimum &&& maximum) $ map snd keys
     -- scan y = "scan " ++ (show y)
-    scan :: Int -> Int
-    scan y = (\(x,_,_) -> x) $ foldl ff (0, Nothing, False) [fst cols..snd cols]
+    -- scan :: Int -> Int
+    scan y = (\(x,_,_,_) -> x) $ foldl ff ("", 0, Nothing, False) [fst cols..snd cols]
       where
         onLoop x = (y, x) `elem` keys
         -- f a x = let b = onLoop x
         --             c = ff a x
         --         in trace ("scanning row " ++ show y ++ " col " ++ show x ++ " (onLoop was " ++ take 4 (show b) ++ ") " ++ show a ++ " => " ++ show c) c
-        ff (c, Nothing, False) x | onLoop x  = (c, Just x, True)
-        ff (c, Nothing, True) x | onLoop x  = error ""
-        ff (c, Just lastOnLoop, False) x | onLoop x  = (c + x - lastOnLoop, Just x, True)
-        ff (c, Just lastOnLoop, True) x | onLoop x  = (c, Just x, True)
+        --
+        -- third arg: inside or on the loop itself
+        ff (s, c, Nothing, False) x | onLoop x  = ('|' : s, c, Just x, True)
+        ff (s, c, Nothing, True) x | onLoop x  = ('|' : s, c, Just x, False)
+        ff (s, c, Nothing, False) x | otherwise  = ('O' : s, c, Just x, False)
+        ff (s, c, Nothing, True) x | otherwise  = ('I' : s, c, Just x, True)
+        -- ff (s, c, Nothing, False) x | otherwise  = ('O' : s, c, Nothing, False)
 
-        ff (c, Nothing, False) x | otherwise  = (c, Nothing, False)
-        ff (c, Nothing, True) x | otherwise  = error ""
-        ff (c, Just lastOnLoop, False) x | otherwise  = (c, Just lastOnLoop, False)
-        ff (c, Just lastOnLoop, True) x | otherwise = (c, Just lastOnLoop, True)
+        -- ff (_, c, Nothing, True) x | onLoop x  = error ""
+        -- ff (_, c, Nothing, True) x | otherwise  = error ""
+
+        -- ff (s, c, Just lastOnLoop, False) x | onLoop x  = ('|' : s, c + x - lastOnLoop, Just x, True)
+        -- ff (s, c, Just lastOnLoop, False) x | otherwise  = ('O' : s, c, Just lastOnLoop, False)
+
+        -- ff (s, c, Just lastOnLoop, True) x | onLoop x  = ('|' : s, c, Just x, True)
+        -- ff (s, c, Just lastOnLoop, True) x | otherwise = ('I' : s, c, Just x, False)
 
         -- ff (c, Nothing) x | otherwise = (c, Nothing)
         -- ff (c, Just lastOnLoop) x | otherwise  = (c + x - lastOnLoop, Nothing)
