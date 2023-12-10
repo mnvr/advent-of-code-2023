@@ -111,15 +111,20 @@ p2 inp@(_, neighbors) = expand
     keys = M.keys dm
     rows = range $ map fst $ keys
     cols = range $ map snd $ keys
-    expand = concat $ intersperse "\n" $ map expandRow rows
-    expandRow row = concatMap (exp row) cols
+    expand = concat $ intersperse "\n" $ map (\(a,b)-> a ++ "\n" ++ b) expand'
+    expand' :: [(String, String)]
+    expand' = map expandRow rows
+    expandRow :: Int -> (String, String)
+    expandRow row = foldr (\(ta, tb) (a, b) -> (a ++ ta, b ++ tb)) ([], []) $ expandRow' row
+    expandRow' :: Int -> [(String, String)]
+    expandRow' row = map (exp row) cols
     exp y x | (y, x) `elem` keys = let key = (y, x) in
               expPipe key (M.lookup key neighbors)
-            | otherwise = " ."
+            | otherwise = (" v", " ^")
     expPipe key@(y, x) (Just (n1, n2))
-      | n1 == (y, x - 1) && n2 == (y, x + 1) = "--"
-      | n1 == (y - 1, x) && n2 == (y, x - 1) = "- "
-      | n1 == (y + 1, x) && n2 == (y, x - 1) = "- "
-      | n1 == (y - 1, x) && n2 == (y, x + 1) = " -"
-      | n1 == (y + 1, x) && n2 == (y, x + 1) = " -"
-      | otherwise = "*8"
+      | n1 == (y, x - 1) && n2 == (y, x + 1) = ("--", "mm")
+      | n1 == (y - 1, x) && n2 == (y, x - 1) = ("- ", "mm")
+      | n1 == (y + 1, x) && n2 == (y, x - 1) = ("- ", "mm")
+      | n1 == (y - 1, x) && n2 == (y, x + 1) = (" -", "mm")
+      | n1 == (y + 1, x) && n2 == (y, x + 1) = (" -", "mm")
+      | otherwise = ("*8", "mm")
