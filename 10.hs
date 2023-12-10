@@ -54,17 +54,18 @@ parse = ensureStart . neighbours . chunks . lines
 p1 = dist
 
 -- dist :: (Node, M.Map Node (Node, Node)) -> (M.Map Node Int)
-dist (start, neighbours) = M.keys (distanceMap neighbours)
+dist (start, neighbours) = relax distanceMap -- neighbours)
   where
     inf = (maxBound - 1 :: Int)
-    distanceMap = M.update (const (Just 0)) start . M.map (const inf)
+    -- distanceMap = M.update (const (Just 0)) start . M.map (const inf)
+    distanceMap = M.singleton start 0
     relax m = case M.mapAccumWithKey (relaxNode m) False m of
         (True, m') -> relax m'
         (_, m') -> m'
     relaxNode dmap changed key dist = case M.lookup key neighbours of
-        Just (n1, n2) -> let d1 = (maybe inf id (M.lookup n1 dmap)) + 1
-                             -- d1 = (fromJust (M.lookup n1 dmap)) + 1
-                             d2 = (maybe inf id (M.lookup n2 dmap)) + 1
-                            --  d2 = (fromJust (M.lookup n2 dmap)) + 1
-                             d = min d1 d2
-                         in if dist > d then (True, d) else (changed, dist)
+        Just (n1, n2) -> case (M.lookup n1 dmap,  M.lookup n2 dmap) of
+            (Just d1, Just d2) -> updateIfLower (min d1 d2)
+            (Just d1, _) -> updateIfLower d1
+            (_, Just d2) -> updateIfLower d2
+            _ -> (changed, dist)
+        where updateIfLower d = if d < dist then (True, d) else (changed, dist)
