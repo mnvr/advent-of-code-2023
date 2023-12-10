@@ -50,22 +50,37 @@ parse = ensureStart . neighbours . chunks . lines
     ensureStart (Just s, m) = (s, m)
     ensureStart _ = error "input does not contain a start node"
 
-p1 = maximum . M.elems . dist
+p1 = dist --maximum . M.elems . dist
 -- p1 = dist
 
 -- dist :: (Node, M.Map Node (Node, Node)) -> (M.Map Node Int)
-dist (start, neighbours) = pruneUnreachable $ relax (distanceMap neighbours)
+-- dist (start, neighbours) = pruneUnreachable $ relax' (distanceMap neighbours)
+dist (start, neighbours) = relax (distanceMap start) []
   where
     inf = (maxBound - 1 :: Int)
-    distanceMap = M.update (const (Just 0)) start . M.map (const inf)
-    pruneUnreachable = M.filter (/= inf)
-    relax m = case M.mapAccumWithKey (relaxNode m) False m of
-        (True, m') -> relax m'
-        (_, m') -> m'
-    relaxNode dmap changed key dist = case M.lookup key neighbours of
-        Just (n1, n2) -> case (M.lookup n1 dmap,  M.lookup n2 dmap) of
-            (Just d1, Just d2) -> updateIfLower (min d1 d2)
-            (Just d1, _) -> updateIfLower d1
-            (_, Just d2) -> updateIfLower d2
-            _ -> (changed, dist)
-        where updateIfLower d = if (d + 1) < dist then (True, d + 1) else (changed, dist)
+    -- distanceMap = M.update (const (Just 0)) start . M.map (const inf)
+    distanceMap s = M.singleton start 0
+    -- initialPending = [0]
+    relax dm [] = dm
+
+    -- relax dmap pending = case foldl f dmap pending of
+    --     [] -> r
+    --  where f m key = case (M.lookup key m, M.lookup key neighbours) of
+    --           (Just dist, Just (n1, n2)) -> case (M.lookup n1 dmap,  M.lookup n2 dmap) of
+    --             (Just d1, Just d2) -> updateIfLower (min d1 d2)
+    --             (Just d1, _) -> updateIfLower d1
+    --             (_, Just d2) -> updateIfLower d2
+    --             _ -> (changed, dist)
+    --          where updateIfLower d = if (d + 1) < dist then (True, d + 1) else (changed, dist)
+
+    -- pruneUnreachable = M.filter (/= inf)
+    -- relax' m = case M.mapAccumWithKey (relaxNode' m) False m of
+    --     (True, m') -> relax' m'
+    --     (_, m') -> m'
+    -- relaxNode' dmap changed key dist = case M.lookup key neighbours of
+    --     Just (n1, n2) -> case (M.lookup n1 dmap,  M.lookup n2 dmap) of
+    --         (Just d1, Just d2) -> updateIfLower (min d1 d2)
+    --         (Just d1, _) -> updateIfLower d1
+    --         (_, Just d2) -> updateIfLower d2
+    --         _ -> (changed, dist)
+    --     where updateIfLower d = if (d + 1) < dist then (True, d + 1) else (changed, dist)
