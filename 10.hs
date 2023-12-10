@@ -5,6 +5,7 @@ import Control.Arrow ((&&&))
 import Debug.Trace
 import Data.List (intersperse)
 
+-- WIP!!
 main :: IO ()
 -- main = interact $ (++ "\n") . show  . p2 . parse
 main = interact $ (++ "\n") . p2 . parse
@@ -86,11 +87,11 @@ move Inside _ '|' (Just d) = Boundary2 d -- ?
 -- L--JOL7IIILJS7F-7L7O        (marked)
 -- bBBB.bB...bBBBBBBBB.        (ours)
 
-showState :: State -> Char
-showState Outside = '.'
-showState (Boundary1 d) = head $ show d -- 'b'
-showState (Boundary2 d) = head $ show d -- 'B'
-showState Inside = '#'
+showState :: State -> String
+showState Outside = " . "
+showState (Boundary1 d) = if d < 10 then (" " ++ show d ++ " ") else (show d ++ " ")-- 'b'
+showState (Boundary2 d) = if d < 10 then (" " ++ show d ++ " ") else (show d ++ " ")  -- 'B'
+showState Inside = "   "
 
 p2 inp = concat $ intersperse "\n" $ map scan [fst rows..snd rows]
   where
@@ -98,7 +99,7 @@ p2 inp = concat $ intersperse "\n" $ map scan [fst rows..snd rows]
     keys = M.keys dm
     rows = (minimum &&& maximum) $ map fst keys
     cols = (minimum &&& maximum) $ map snd keys
-    scan y = (\(_,_,ss) -> map showState (reverse ss)) $ foldl ff (Outside, ' ', []) [fst cols..snd cols]
+    scan y = (\(_,_,ss) -> concatMap showState (reverse ss)) $ foldl ff (Outside, ' ', []) [fst cols..snd cols]
       where
         onLoop x = (y, x) `elem` keys
         ff (state, prevC, ss) x =
