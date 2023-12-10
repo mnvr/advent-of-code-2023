@@ -76,15 +76,22 @@ p2 inp = map scan [fst rows..snd rows]
     cols = (minimum &&& maximum) $ map snd keys
     -- scan y = "scan " ++ (show y)
     scan :: Int -> Int
-    scan y = fst $ foldl f (0, Nothing) [fst cols..snd cols]
+    scan y = (\(x,_,_) -> x) $ foldl ff (0, Nothing, False) [fst cols..snd cols]
       where
         onLoop x = (y, x) `elem` keys
-        f a x = let b = onLoop x
-                    c = ff a x
-                in trace ("scanning row " ++ show y ++ " col " ++ show x ++ "(onLoop was " ++ show b ++ ") " ++ show a ++ " => " ++ show c) c
-        ff (c, Nothing) x | onLoop x  = (c, Just 0)
-        ff (c, Nothing) x | otherwise = (c, Nothing)
-        ff (c, Just 0) x | onLoop x  = (c, Nothing)
-        ff (c, Just 0) x | otherwise = (c, Just 1)
-        ff (c, Just ic) x | onLoop x  = (c + ic, Nothing)
-        ff (c, Just ic) x | otherwise = (c, Just (ic + 1))
+        -- f a x = let b = onLoop x
+        --             c = ff a x
+        --         in trace ("scanning row " ++ show y ++ " col " ++ show x ++ " (onLoop was " ++ take 4 (show b) ++ ") " ++ show a ++ " => " ++ show c) c
+        ff (c, Nothing, False) x | onLoop x  = (c, Just x, True)
+        ff (c, Nothing, True) x | onLoop x  = error ""
+        ff (c, Just lastOnLoop, False) x | onLoop x  = (c + x - lastOnLoop, Just x, True)
+        ff (c, Just lastOnLoop, True) x | onLoop x  = (c, Just x, True)
+
+        ff (c, Nothing, False) x | otherwise  = (c, Nothing, False)
+        ff (c, Nothing, True) x | otherwise  = error ""
+        ff (c, Just lastOnLoop, False) x | otherwise  = (c, Just lastOnLoop, False)
+        ff (c, Just lastOnLoop, True) x | otherwise = (c, Just lastOnLoop, True)
+
+        -- ff (c, Nothing) x | otherwise = (c, Nothing)
+        -- ff (c, Just lastOnLoop) x | otherwise  = (c + x - lastOnLoop, Nothing)
+        -- ff (c, Just lastOnLoop) x | otherwise = (c, Just lastOnLoop)
