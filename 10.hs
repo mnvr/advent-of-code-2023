@@ -1,6 +1,7 @@
 import Data.Bifunctor (first, second)
 import Data.Map qualified as M
 import Data.Maybe (catMaybes, fromJust)
+import Control.Arrow ((&&&))
 
 main :: IO ()
 main = interact $ (++ "\n") . show . p1 . parse
@@ -33,32 +34,33 @@ parse = ensureStart . neighbours . chunks . lines
     neighbour (p, c, n) 'F' k = (south n k, east c k)
     north p (x, y) = if p !! x `notElem` "|F7" then Nothing else Just (x, y - 1)
     south n (x, y) = if n !! x `notElem` "|LJ" then Nothing else Just (x, y + 1)
-    west c (x, y) = if x == 0 || c !! (x-1) `notElem` "-LF" then Nothing
+    west c (x, y) = if x == 0 || c !! (x - 1) `notElem` "-LF" then Nothing
         else Just (x - 1, y)
-    east c (x, y) = if x == length c || c !! (x+1) `notElem` "-J7" then Nothing
+    east c (x, y) = if x + 1 == length c || c !! (x + 1) `notElem` "-J7" then Nothing
         else Just (x + 1, y)
     neighboursOfStart :: (String, String, String) -> Char -> (Int, Int) -> (Maybe (Int, Int), Maybe (Int, Int))
-    neighboursOfStart (p, c, n) _ k = case catMaybes [
-        const (Just k) <$> north p k,
-        const (Just k) <$> south n k,
-        const (Just k) <$> west c k,
-        const (Just k) <$> east c k
+    neighboursOfStart (p, c, n) _ (x, y) = case catMaybes [
+        if p !! x `elem` "|F7" then Just (x, y - 1) else Nothing,
+        if n !! x `elem` "|LJ" then Just (x, y + 1) else Nothing,
+        if x > 0 && c !! (x - 1) `elem` "-LF" then Just (x - 1, y) else Nothing,
+        if x + 1 < length c && c !! (x + 1) `elem` "-J7" then Just (x + 1, y) else Nothing
         ] of
-        [Just a, Just b] -> (Just a, Just b)
+        [a, b] -> (Just a, Just b)
     ensureStart (Just s, m) = (s, m)
     ensureStart _ = error "input does not contain a start node"
 
-p1 = id -- maximum . M.elems . dist
+p1 = second (M.keys &&& M.lookup (1,1)) -- maximum . M.elems . dist
 
 dist :: (Node, M.Map Node (Node, Node)) -> (M.Map Node Int)
 dist (start, neighbours) = relax (distanceMap neighbours)
   where
-    distanceMap = M.update (const (Just 0)) start . M.map (const (maxBound - 1 :: Int))
+    inf = (maxBound - 1 :: Int)
+    distanceMap = M.update (const (Just 0)) start . M.map (const inf)
     relax m = case M.mapAccumWithKey (relaxNode m) False m of
         (True, m') -> relax m'
         (_, m') -> m'
     relaxNode dmap changed key dist = case M.lookup key neighbours of
-        Just (n1, n2) -> let d1 = fromJust (M.lookup n1 dmap) + 1
-                             d2 = fromJust (M.lookup n2 dmap) + 1
+        Just (n1, n2) -> let d1 = (fromJust (M.lookup n1 dmap)) + 1
+                             d2 = (fromJust (M.lookup n2 dmap)) + 1
                              d = min d1 d2
                          in if dist > d then (True, d) else (changed, dist)
