@@ -39,7 +39,7 @@ parse = ensureStart . neighbours . chunks . lines
     ensureStart (Just s, m) = (s, m)
     ensureStart _ = error "input does not contain a start node"
 
-p1 = id
+p1 = maximum . M.elems . dist
 
 dist :: (Node, M.Map Node (Node, Node)) -> (M.Map Node Int)
 dist (start, neighbours) = relax (distanceMap neighbours)
