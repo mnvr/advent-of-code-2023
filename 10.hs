@@ -4,7 +4,7 @@ import Data.Maybe (catMaybes, fromJust)
 import Control.Arrow ((&&&))
 
 main :: IO ()
-main = interact $ (++ "\n") . show . p1 . parse
+main = interact $ (++ "\n") . show . p2 . parse
 
 type Node = (Int, Int)
 
@@ -66,3 +66,20 @@ dist (start, neighbours) = relax (distanceMap start) [start]
     relaxNeighbour nn dm q dist = case M.lookup nn dm of
         Nothing -> (M.insert nn (dist + 1) dm, q ++ [nn])
         Just d -> if dist + 1 < d then (M.insert nn (dist + 1) dm, q ++ [nn]) else (dm, q)
+
+p2 inp = sum $ map scan [fst rows..snd rows]
+  where
+    dm = dist inp
+    keys = M.keys dm
+    rows = (minimum &&& maximum) $ map fst keys
+    cols = (minimum &&& maximum) $ map snd keys
+    -- scan y = "scan " ++ (show y)
+    scan :: Int -> Int
+    scan y = fst $ foldl ff (0, Nothing) [fst cols..snd cols] where
+        ff (c, inside) x
+          | (y, x) `elem` keys = case inside of
+            Nothing -> (c, Just 0)
+            Just ic -> (c + ic, Nothing)
+          | otherwise = case inside of
+            Nothing -> (c, Nothing)
+            Just ic -> (c, Just (ic + 1))
