@@ -15,31 +15,40 @@ parse = ensureStart . neighbours . chunks . lines
     enum = zip [0..]
     neighbours ck = foldl f (Nothing, M.empty) (enum ck) where
       f m (y, (p, c, n)) = foldl g m (enum c) where
+          g :: (Maybe Node, M.Map Node (Node, Node)) -> (Int, Char) -> (Maybe Node, M.Map Node (Node, Node))
           g r      (x, '.') = r
           g (_, m) (x, 'S') = let k = (x, y) in
-            (Just k, M.insert k (neighboursOfStart p c n y x) m)
-          g (s, m) (x,  i ) = let k = (x, y) in (s, M.insert k (neighbour i k) m)
-    neighbour '|' p = (north p, south p)
-    neighbour '-' p = (east p, west p)
-    neighbour 'L' p = (north p, east p)
-    neighbour 'J' p = (north p, west p)
-    neighbour '7' p = (south p, west p)
-    neighbour 'F' p = (south p, east p)
-    north = second (subtract 1)
-    south = second (+ 1)
-    west = first (subtract 1)
-    east = first (+ 1)
-    neighboursOfStart p c n y x = case nos' p c n y x of
-        [a,b] -> (a, b)
-        [a] -> (a, (x+1,y))
-    nos' p c n y x = catMaybes [
-        if p !! x `elem` "|F7" then Just (x,y-1) else Nothing,
-        if n !! x `elem` "|LJ" then Just (x,y+1) else Nothing,
-        if x > 0 && c !! (x-1) `elem` "-LF" then Just (x-1, y) else Nothing]
+            (Just k, case neighboursOfStart (p, c, n) 'S' k of
+                (Just n1, Just n2) -> M.insert k (n1, n2) m)
+          g (s, m) (x,  i ) = let k = (x, y) in
+            case neighbour (p, c, n) i k of
+                (Just n1, Just n2) -> (s, M.insert k (n1, n2) m)
+                _ -> (s, m)
+    neighbour :: (String, String, String) -> Char -> (Int, Int) -> (Maybe (Int, Int), Maybe (Int, Int))
+    neighbour (p, c, n) '|' k = (north p k, south n k)
+    neighbour (p, c, n) '-' k = (east c k, west c k)
+    neighbour (p, c, n) 'L' k = (north p k, east c k)
+    neighbour (p, c, n) 'J' k = (north p k, west c k)
+    neighbour (p, c, n) '7' k = (south n k, west c k)
+    neighbour (p, c, n) 'F' k = (south n k, east c k)
+    north p (x, y) = if p !! x `notElem` "|F7" then Nothing else Just (x, y - 1)
+    south n (x, y) = if n !! x `notElem` "|LJ" then Nothing else Just (x, y + 1)
+    west c (x, y) = if x == 0 || c !! (x-1) `notElem` "-LF" then Nothing
+        else Just (x - 1, y)
+    east c (x, y) = if x == length c || c !! (x+1) `notElem` "-J7" then Nothing
+        else Just (x + 1, y)
+    neighboursOfStart :: (String, String, String) -> Char -> (Int, Int) -> (Maybe (Int, Int), Maybe (Int, Int))
+    neighboursOfStart (p, c, n) _ k = case catMaybes [
+        const (Just k) <$> north p k,
+        const (Just k) <$> south n k,
+        const (Just k) <$> west c k,
+        const (Just k) <$> east c k
+        ] of
+        [Just a, Just b] -> (Just a, Just b)
     ensureStart (Just s, m) = (s, m)
     ensureStart _ = error "input does not contain a start node"
 
-p1 = maximum . M.elems . dist
+p1 = id -- maximum . M.elems . dist
 
 dist :: (Node, M.Map Node (Node, Node)) -> (M.Map Node Int)
 dist (start, neighbours) = relax (distanceMap neighbours)
