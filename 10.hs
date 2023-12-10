@@ -6,7 +6,8 @@ import Debug.Trace
 import Data.List (intersperse)
 
 main :: IO ()
-main = interact $ (++ "\n")  . p2 . parse
+-- main = interact $ (++ "\n") . show  . p2 . parse
+main = interact $ (++ "\n") . p2 . parse
 
 type Node = (Int, Int)
 
@@ -69,44 +70,26 @@ dist (start, neighbours) = relax (distanceMap start) [start]
         Nothing -> (M.insert nn (dist + 1) dm, q ++ [nn])
         Just d -> if dist + 1 < d then (M.insert nn (dist + 1) dm, q ++ [nn]) else (dm, q)
 
-p2 inp = concat $ intersperse "\n" $ map scan [fst rows..snd rows]
+-- p2 inp = concat $ intersperse "\n" $ map scan [fst rows..snd rows]
+p2 inp = concat $ intersperse "\n" $ map (\xs -> concat (map show xs)) $ map scan [fst rows..snd rows]
   where
     dm = dist inp
     keys = M.keys dm
     rows = (minimum &&& maximum) $ map fst keys
     cols = (minimum &&& maximum) $ map snd keys
-    -- scan y = "scan " ++ (show y)
-    -- scan :: Int -> Int
-    scan y = (\(x,_,_,_) -> reverse x) $ foldl ff ("", 0, False, False) [fst cols..snd cols]
+    scan y = (\(_,i,_,_) -> reverse i) $ foldl ff ("", [], 0, ' ') [fst cols..snd cols]
       where
         onLoop x = (y, x) `elem` keys
-        -- f a x = let b = onLoop x
-        --             c = ff a x
-        --         in trace ("scanning row " ++ show y ++ " col " ++ show x ++ " (onLoop was " ++ take 4 (show b) ++ ") " ++ show a ++ " => " ++ show c) c
-        --
-        -- third arg: inside or on the loop itself
-        -- ff (s, c, _, sign) x = if onLoop x then ('|' : s, c, Just x, sign *
-        -- 1) else ((if sign < 1 then '-' else '+') : s, c, neg sign)
 
-        ff (s, c, isInside, wasPrevOnLoop) x = case onLoop x of
-            True -> ('|' : s, c, isInside, wasPrevOnLoop)
-            False -> (' ' : s, c, isInside, wasPrevOnLoop)
+        isEdge '|' x | onLoop x = False
+        isEdge '|' x | otherwise = True
+        isEdge ' ' x | onLoop x = True
+        isEdge ' ' x | otherwise = False
 
-        -- ff (s, c, _, False) x | onLoop x  = ('|' : s, c, Just x, True)
-        -- ff (s, c, _, True) x | onLoop x  = ('|' : s, c, Just x, False)
-        -- ff (s, c, _, False) x | otherwise  = ('O' : s, c, Just x, False)
-        -- ff (s, c, _, True) x | otherwise  = ('I' : s, c, Just x, True)
-        -- ff (s, c, Nothing, False) x | otherwise  = ('O' : s, c, Nothing, False)
+        -- ff :: (String, Int, Char) -> Int -> (String, Int, Char)
+        ff (s, is, i, prevC) x =
+            let c = if onLoop x then '|' else ' '
+                j = if isEdge prevC x then i + 1 else i
+            in (c : s, j : is, j, c)
 
-        -- ff (_, c, Nothing, True) x | onLoop x  = error ""
-        -- ff (_, c, Nothing, True) x | otherwise  = error ""
 
-        -- ff (s, c, Just lastOnLoop, False) x | onLoop x  = ('|' : s, c + x - lastOnLoop, Just x, True)
-        -- ff (s, c, Just lastOnLoop, False) x | otherwise  = ('O' : s, c, Just lastOnLoop, False)
-
-        -- ff (s, c, Just lastOnLoop, True) x | onLoop x  = ('|' : s, c, Just x, True)
-        -- ff (s, c, Just lastOnLoop, True) x | otherwise = ('I' : s, c, Just x, False)
-
-        -- ff (c, Nothing) x | otherwise = (c, Nothing)
-        -- ff (c, Just lastOnLoop) x | otherwise  = (c + x - lastOnLoop, Nothing)
-        -- ff (c, Just lastOnLoop) x | otherwise = (c, Just lastOnLoop)
