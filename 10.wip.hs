@@ -105,12 +105,13 @@ instance Show State where
   show (Boundary2 d) = if d < 10 then (" " ++ show d ++ " ") else (show d ++ " ")
   show Inside = "   "
 
-p2Pre inp@(_, neighbors) = expand
+p2Pre inp@(_, neighbors) = (expand, (2 * (nrows + 2)), (2 * (ncols + 2)))
   where
     dm = dist inp
     keys = M.keys dm
     rows = range $ map fst $ keys
     cols = range $ map snd $ keys
+    nrows = (\ys -> maximum ys - minimum ys) $ map fst $ keys
     ncols = (\ys -> maximum ys - minimum ys) $ map snd $ keys
     empty = replicate (2 * (ncols + 2)) '#'
     ce = (\ss -> [empty, "\n"] ++ ss ++ [empty])
@@ -140,9 +141,9 @@ p2Pre inp@(_, neighbors) = expand
                                                 "|e")
       | otherwise = ("..", "..")
 
-p2 inp = concat $ floodn 2 gm []
+p2 inp = concat $ floodU 0 gm []
   where
-    grid = p2Pre inp
+    (grid, nrows, ncols) = p2Pre inp
     enum = zip [0..]
     gm = mkGM grid
     mkGM :: String -> M.Map Node Char
@@ -151,15 +152,26 @@ p2 inp = concat $ floodn 2 gm []
     gm' m (y, row) = foldl (gm'' y) m (enum row)
     gm'' y m (x, c) = M.insert (y,x) c m
 
+    showGM :: M.Map Node Char -> Int -> Int -> [String]
+    showGM m nr nc = map makeRow [0..nr]
+      where makeRow y = map (\x -> maybe '#' id (M.lookup (y,x) m)) [0..nc]
+
+    floodU c m ss = case flood m of
+      (0, m') -> intersperse "\n" $ (reverse ss) ++ ["iterations " ++ (show c)] ++ (showGM m' nrows ncols)
+      (changed, m') -> floodU (c + 1) m' (stats (m, changed) : ss)
+
     floodn 0 m ss = intersperse "\n" (reverse ss)
     floodn n m ss = let (changed, m') = flood m
                     in floodn (n-1) m' ((stats (m,changed)): ss)
 
     remaining = M.filter (=='e')
-    stats (m, ch) = "changed " ++ (show ch) ++ "\nremaining: " ++
+    stats (m, ch) = "changed " ++ (show ch) ++ "\tremaining " ++
       (show $ length $ M.keys $ remaining m)
     flood :: M.Map Node Char -> (Int, M.Map Node Char)
     flood m = M.mapAccumWithKey f 0 m
       where
         f :: Int -> Node -> Char -> (Int, Char)
-        f changed key ch = (changed, ch)
+        f changed key 'e' | any (== '#') (nbr key) = (changed+1, '#')
+        f changed _ ch = (changed, ch)
+        nbr (y,x) = catMaybes $ map (`M.lookup` m) [
+          (y - 1, x), (y + 1, x), (y, x - 1), (y, x + 1)]
