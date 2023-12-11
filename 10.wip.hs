@@ -90,12 +90,13 @@ mkGrid ls ny nx = Grid { gm = mkGridMap ls, gny = ny, gnx = nx }
 
 p2 :: Parsed -> String
 p2 pr@Parsed { start, nm, ny, nx } =
-  let (log, fg) = flood eg in show og ++ show eg ++ unlines log ++ show fg
+  show og ++ show eg ++ unlines log ++ show fg ++ show cg
   where
     dm = mkDistanceMap (start, nm)
     og = reconstruct pr dm
     eg = expand pr dm
-    fg = flood eg
+    (log, fg) = flood eg
+    cg = collapse fg
     -- grid = trace (show (ny, nx)) $ expand pr dm
     -- (eny, enx) = (2 * ny, 2 * nx)
     -- gm = mkGridMap grid
@@ -148,9 +149,9 @@ expand Parsed { nm, ny, nx } dm =
                    | otherwise = ("??", "??")
     expandCell' key@(y, x) (Just (n1, n2))
       | n1 == (y, x - 1) && n2 == (y, x + 1) = ("--", "??")
-      | n1 == (y - 1, x) && n2 == (y, x - 1) = ("|?", "J?")
+      | n1 == (y - 1, x) && n2 == (y, x - 1) = ("1?", "J?")
       | n1 == (y + 1, x) && n2 == (y, x - 1) = ("7?", "|?")
-      | n1 == (y - 1, x) && n2 == (y, x + 1) = ("|?", "L/")
+      | n1 == (y - 1, x) && n2 == (y, x + 1) = ("l?", "L/")
       | n1 == (y + 1, x) && n2 == (y, x + 1) = ("F\\", "|?")
       | n1 == (y - 1, x) && n2 == (y + 1, x) = ("|?", "|?")
     boundaryLine = enx `replicate` '#'
@@ -173,6 +174,19 @@ flood Grid { gm, gny, gnx } = let (log, gm') = go [] gm in (log, mkGrid gm')
         -- orig (y,x) = even y && even x
         nbr (y,x) = catMaybes $ map (`M.lookup` m) [
           (y, x - 1), (y - 1, x), (y, x + 1), (y + 1, x)]
+
+collapse :: Grid -> Grid
+collapse Grid { gm, gny, gnx } = Grid { gm = cm, gny = cny, gnx = cnx }
+  where
+    cny = gny `div` 2
+    cnx = gnx `div` 2
+    cm = M.foldrWithKey f M.empty gm
+    f key@(y, x) ch m | even y && even x = M.insert (y `div` 2, x `div` 2) (g ch) m
+                      | otherwise = m
+    g '1' = 'J'
+    g 'l' = 'L'
+    g '?' = '.'
+    g c = c
 
     -- expandCell' key@(y, x) (Just (n1, n2))
     --   | n1 == (y, x - 1) && n2 == (y, x + 1) = ("--",
