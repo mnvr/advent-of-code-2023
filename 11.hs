@@ -40,7 +40,7 @@ p1 :: [Galaxy] -> Int
 p1 = sumD . expand 2
 
 p2 :: [Galaxy] -> Int
-p2 = sumD . expand 10
+p2 = sumD . expand 1000000
 
 sumD :: [Galaxy] -> Int
 sumD = sum . map (uncurry dist) . pairs
