@@ -2,7 +2,9 @@ import Data.Bifunctor (first, second)
 import Data.Map qualified as M
 import Data.Maybe (catMaybes, fromJust)
 import Data.List (intersperse)
-import Debug.Trace (trace)
+-- import Debug.Trace (trace)\
+
+trace m a = a
 
 -- WIP!!
 main :: IO ()
@@ -145,7 +147,7 @@ expand Parsed { nm, ny, nx } dm =
     expandCell key | key `elem` keys = expandCell' key (M.lookup key nm)
                    | otherwise = ("???", "???")
     expandCell' key@(y, x) (Just (n1, n2))
-      | n1 == (y, x - 1) && n2 == (y, x + 1) = ("---", "---")
+      | n1 == (y, x - 1) && n2 == (y, x + 1) = ("???", "---")
       | n1 == (y - 1, x) && n2 == (y, x - 1) = ("?|?", "-J?")
       | n1 == (y + 1, x) && n2 == (y, x - 1) = ("-7?", "?|?")
       | n1 == (y + 1, x) && n2 == (y, x + 1) = ("?F-", "?|?")
@@ -178,14 +180,21 @@ collapse Grid { gm, gny, gnx } = Grid { gm = cm, gny = cny, gnx = cnx }
     cnx = (gnx `div` 3) - 2
     cm = trace ("collapse to cny = " ++ show cny ++ " cnx = " ++ show cnx) $ M.foldrWithKey f M.empty gm
     f key@(y, x) ch m
-      | isNotBoundary key && even y && x `mod` 3 == 0 = trace ("picking " ++ show (y,x) ++ " " ++ (show ch)) $ M.insert (y `div` 2, x `div` 3 - 2) (g key ch m) m
+      | isNotBoundary key && even y && x `mod` 3 == 0 =
+        let newKey = ((y - 2) `div` 2, (x - 3) `div` 3)
+            newCh = g key ch m
+        in trace ("will collapse expanded " ++ show (y,x) ++ " " ++ show ch ++ " to " ++ show newKey ++ " " ++ show newCh) $ M.insert ((y - 2) `div` 2, (x - 3) `div` 3) (g key ch gm) m
       | otherwise = m
     isNotBoundary (y, x) = y > 1 && y < gny - 2 && x > 2 && x < gnx - 3
-    g (y, x) '-' m = if isChar (y, x+1) m '7' then '7' else '-'
-    g (y, x) '?' m = if isChar (y+1, x+1) m 'J' then 'J' else if isChar (y,x+1) m 'F' then 'F' else if isChar (y+1,x+1) m 'L' then 'L' else if isChar (y,x+1) m '|' then '|' else inside
-    g (y, x) '#' m = '.'
+    g (y, x) '-' m = '7'
+    g (y, x) ch m = if isChar (y+1, x+1) m 'J' then 'J' else if isChar (y,x+1) m 'F' then 'F' else if isChar (y+1,x+1) m 'L' then 'L' else if isChar (y,x+1) m '|' then '|' else if isChar (y+1,x+1) m '-' then '-' else if ch == '#' then '#' else if ch == '?' then inside else error ("unexpected character " ++ show ch)
+    -- g (y, x) '#' m = '.'
     -- g key c m = c
-    isChar key m ch = M.lookup key m == Just ch
+    isChar key m ch = let res = M.lookup key m
+                          res2 = res == Just ch
+                      -- in trace ("isChar " ++ show key ++ " " ++ show ch ++ " " ++ show res2 ++ " (found " ++ show res ++ ")") res2
+                      in res2
 
 inside :: Char
 inside = '■'
+-- inside = '='
