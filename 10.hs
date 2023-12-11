@@ -4,7 +4,6 @@ import Data.Maybe (catMaybes, fromJust)
 import Control.Arrow ((&&&))
 
 main :: IO ()
--- main = interact $ (++ "\n") . fst . p2v . parse
 main = interact $ (++ "\n") . show . (p1 &&& p2) . parse
 
 type Node = (Int, Int)
@@ -12,6 +11,7 @@ type Node = (Int, Int)
 data Parsed = Parsed {
   start :: Node,
   nm :: M.Map Node (Node, Node),
+  dm :: M.Map Node Int,
   ny :: Int,
   nx :: Int
   }
@@ -20,7 +20,8 @@ parse :: String -> Parsed
 parse = mkParsed . chunks . lines
   where
     mkParsed ck@((h, _, _):_) = let (s, nb) = ensureStart (neighbours ck)
-      in Parsed { start = s, nm = nb, ny = length ck, nx = length h }
+      in Parsed { start = s, nm = nb, dm = mkDistanceMap s nb,
+                  ny = length ck, nx = length h }
     chunks ls = let g = ground ls in zip3 (g : ls) ls (drop 1 ls ++ [g])
     ground (h:_) = length h `replicate` '.'
     enum = zip [0..]
@@ -59,14 +60,8 @@ parse = mkParsed . chunks . lines
     ensureStart (Just s, m) = (s, m)
     ensureStart _ = error "input does not contain a start node"
 
-p1 :: Parsed -> Int
-p1 Parsed { start, nm } = p1' (start, nm)
-
-p1' :: (Node, M.Map Node (Node, Node)) -> Int
-p1' = maximum . M.elems . mkDistanceMap
-
-mkDistanceMap :: (Node, M.Map Node (Node, Node)) -> (M.Map Node Int)
-mkDistanceMap (start, neighbours) = relax (dm0 start) [start]
+mkDistanceMap :: Node -> M.Map Node (Node, Node) -> M.Map Node Int
+mkDistanceMap start neighbours = relax (dm0 start) [start]
   where
     dm0 s = M.singleton start 0
     relax :: M.Map Node Int -> [Node] -> M.Map Node Int
@@ -79,29 +74,17 @@ mkDistanceMap (start, neighbours) = relax (dm0 start) [start]
         Nothing -> (M.insert nn (dist + 1) dm, q ++ [nn])
         Just d -> if dist + 1 < d then (M.insert nn (dist + 1) dm, q ++ [nn]) else (dm, q)
 
-data Grid = Grid { gm :: M.Map Node Char, gny :: Int, gnx :: Int }
+p1 :: Parsed -> Int
+p1 Parsed { dm } = maximum $ M.elems dm
 
-instance Show Grid where
-  show Grid { gm, gny, gnx } = unlines $ gridMapToLines gm gny gnx
+data Grid = Grid { gm :: M.Map Node Char, gny :: Int, gnx :: Int }
 
 mkGrid :: [String] -> Int -> Int -> Grid
 mkGrid ls ny nx = Grid { gm = mkGridMap ls, gny = ny, gnx = nx }
 
 p2 :: Parsed -> Int
-p2 = snd . p2v
-
-p2v :: Parsed -> (String, Int)
-p2v pr@Parsed { start, nm, ny, nx } =
-  (show og ++ show eg ++ unlines log ++ show fg ++ show cg ++ resultL (gm cg),
-  countEmpty (gm cg))
-  where
-    dm = mkDistanceMap (start, nm)
-    og = reconstruct pr dm
-    eg = expand pr dm
-    (log, fg) = flood eg
-    cg = collapse fg
-    resultL m = "inside " ++ show (countEmpty m)
-    countEmpty = length . M.elems . M.filter (== inside)
+p2 = countEmpty . gm . collapse . flood . expand
+  where countEmpty = length . M.elems . M.filter (== '?')
 
 mkGridMap :: [String] -> M.Map Node Char
 mkGridMap = foldl f M.empty . enum
@@ -110,30 +93,8 @@ mkGridMap = foldl f M.empty . enum
     g y m (x, c) = M.insert (y, x) c m
     enum = zip [0..]
 
-gridMapToLines :: M.Map Node Char -> Int -> Int -> [String]
-gridMapToLines gm ny nx = map makeRow [0..ny-1]
-  where makeRow y = map (\x -> maybe '!' id (M.lookup (y, x) gm)) [0..nx-1]
-
-reconstruct :: Parsed -> M.Map Node Int -> Grid
-reconstruct Parsed { nm, ny, nx } dm =
-  Grid { gm = mkGridMap expandLines, gny = ny, gnx = nx }
-  where
-    keys = M.keys dm
-    expandLines = map expandRow [0..ny-1]
-    expandRow y = foldr (\l ls -> l:ls) [] (expandRow' y)
-    expandRow' y = map (\x -> expandCell (y, x)) [0..nx-1]
-    expandCell key | key `elem` keys = expandCell' key (M.lookup key nm)
-                   | otherwise = '.'
-    expandCell' key@(y, x) (Just (n1, n2))
-      | n1 == (y, x - 1) && n2 == (y, x + 1) = '-'
-      | n1 == (y - 1, x) && n2 == (y, x - 1) = 'J'
-      | n1 == (y + 1, x) && n2 == (y, x - 1) = '7'
-      | n1 == (y - 1, x) && n2 == (y, x + 1) = 'L'
-      | n1 == (y + 1, x) && n2 == (y, x + 1) = 'F'
-      | n1 == (y - 1, x) && n2 == (y + 1, x) = '|'
-
-expand :: Parsed -> M.Map Node Int -> Grid
-expand Parsed { nm, ny, nx } dm =
+expand :: Parsed -> Grid
+expand Parsed { nm, dm, ny, nx } =
   Grid { gm = mkGridMap expandLines, gny = eny, gnx = enx }
   where
     keys = M.keys dm
@@ -157,16 +118,13 @@ expand Parsed { nm, ny, nx } dm =
     addBoundary = map (\s -> "###" ++ s ++ "###")
     addBoundaryLines ls = let bs = 3 `replicate` boundaryLine in bs ++ ls ++ bs
 
-flood :: Grid -> ([String], Grid)
-flood Grid { gm, gny, gnx } = let (log, gm') = go [] gm in (log, mkGrid gm')
+flood :: Grid -> Grid
+flood Grid { gm, gny, gnx } = Grid { gm = go gm, gny = gny, gnx = gnx }
   where
-    mkGrid m = Grid { gm = m, gny = gny, gnx = gnx }
-    go log gm = case step gm of
-      (0, l, gm') -> (reverse (l: log), gm')
-      (_, l, gm') -> go (l:log) gm'
-    step :: M.Map Node Char -> (Int, String, M.Map Node Char)
-    step m = let (changed, m') = step' m in (changed, "changed " ++ show changed, m')
-    step' m = M.mapAccumWithKey f 0 m
+    go gm = case step gm of
+      (0, gm') -> gm'
+      (_, gm') -> go gm'
+    step m = M.mapAccumWithKey f 0 m
       where
         f changed key '?' | any (=='#') (nbr key) = (changed + 1, '#')
         f changed key ch = (changed, ch)
@@ -184,9 +142,4 @@ collapse Grid { gm, gny, gnx } = Grid { gm = cm, gny = cny, gnx = cnx }
          M.insert ((y - 3) `div` 3, (x - 3) `div` 3) (g key gm) m
       | otherwise = m
     isNotBoundary (y, x) = y > 2 && y < gny - 3 && x > 2 && x < gnx - 3
-    g (y, x) m = g' (fromJust $ M.lookup (y+1, x+1) m)
-    g' '?' = inside
-    g' ch = ch
-
-inside :: Char
-inside = '■'
+    g (y, x) m = fromJust $ M.lookup (y+1, x+1) m
