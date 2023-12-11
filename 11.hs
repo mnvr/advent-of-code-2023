@@ -23,7 +23,8 @@ expand by gs = sort $ map f gs
     xs = nub (map snd gs)
     missingY = sort $ [0..maximum ys] \\ ys
     missingX = sort $ [0..maximum xs] \\ xs
-    f (y, x) = (y + (by * adjustY), x + (by * adjustX))
+    m = by - 1
+    f (y, x) = (y + m * adjustY, x + m * adjustX)
       where
         adjustY = maybe (length missingY) id (findIndex (> y) missingY)
         adjustX = maybe (length missingX) id (findIndex (> x) missingX)
@@ -36,7 +37,7 @@ dist :: Galaxy -> Galaxy -> Int
 dist (y, x) (y', x') = abs (y - y') + abs (x - x')
 
 p1 :: [Galaxy] -> Int
-p1 = sumD . expand 1
+p1 = sumD . expand 2
 
 p2 :: [Galaxy] -> Int
 p2 = sumD . expand 10
