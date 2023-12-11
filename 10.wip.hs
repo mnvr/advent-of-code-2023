@@ -105,13 +105,17 @@ instance Show State where
   show (Boundary2 d) = if d < 10 then (" " ++ show d ++ " ") else (show d ++ " ")
   show Inside = "   "
 
-p2 inp@(_, neighbors) = expand
+p2Pre inp@(_, neighbors) = expand
   where
     dm = dist inp
     keys = M.keys dm
     rows = range $ map fst $ keys
     cols = range $ map snd $ keys
-    expand = concat $ intersperse "\n" $ map (\(a,b)-> a ++ "\n" ++ b) expand'
+    ncols = (\ys -> maximum ys - minimum ys) $ map snd $ keys
+    empty = replicate (2 * (ncols + 2)) '#'
+    ce = (\ss -> [empty, "\n"] ++ ss ++ [empty])
+    re = (\s -> "#" ++ s ++ "#")
+    expand = concat $ ce $ map (\(a,b)-> (re a) ++ "\n" ++ (re b) ++ "\n") expand'
     expand' :: [(String, String)]
     expand' = map expandRow rows
     expandRow :: Int -> (String, String)
@@ -135,3 +139,6 @@ p2 inp@(_, neighbors) = expand
       | n1 == (y - 1, x) && n2 == (y + 1, x) = ("|e",
                                                 "|e")
       | otherwise = ("..", "..")
+
+p2 inp = grid
+  where grid = p2Pre inp
