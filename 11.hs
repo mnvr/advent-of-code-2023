@@ -31,7 +31,7 @@ expand by gs = map f gs
 
 pairs :: [a] -> [(a, a)]
 pairs gs = concatMap f [0..length gs - 1]
-  where f i = let u = gs !! i in map (\v -> (u, v)) (drop (i + 1) gs)
+  where f i = let u = gs !! i in map (u,) (drop (i + 1) gs)
 
 dist :: Galaxy -> Galaxy -> Int
 dist (y, x) (y', x') = abs (y - y') + abs (x - x')
