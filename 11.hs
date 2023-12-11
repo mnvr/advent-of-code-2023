@@ -1,7 +1,7 @@
 import Data.List
 
 main :: IO ()
-main = interact $ (++ "\n") . show . p1 . parse
+main = interact $ (++ "\n") . p1 . parse
 
 type Galaxy = (Int, Int)
 
@@ -27,17 +27,15 @@ expand gs = sort $ map f gs
         adjustY = maybe 0 id (findIndex (> y) missingY)
         adjustX = maybe 0 id (findIndex (> x) missingX)
 
--- pairs :: [Galaxy] -> [(Galaxy, Galaxy)]
-pairs [] = []
-pairs [g] = []
+pairs :: [a] -> [(a, a)]
 pairs gs = concatMap f [0..length gs - 1]
   where f i = let u = gs !! i in map (\v -> (u, v)) (drop (i + 1) gs)
--- let rs = drop 1 gs in zip gs rs ++ pairs rs
+
 
 dist :: Galaxy -> Galaxy -> Int
 dist (y, x) (y', x') = abs (y - y') + abs (x - x')
 
--- p1 = map (\(i, (u, v)) -> (i, u, v, dist u v)) .
--- p1 = map (\((i, u), (j, v)) -> (i, j, dist u v)) . pairs . zip [1..]
--- p1 = map (\((i, u), (j, v)) -> (i, j)) . pairs . zip [1..]
-p1 = pairs .  zip [1..] -- map (\((i, u), (j, v)) -> (i, j)) . pairs . zip [1..]
+
+p1 = unlines . map f . pairs .  zip [1..]
+  where
+    f = (\((i, u), (j, v)) -> "Distance between galaxies " ++ show (i, j) ++ " [" ++ show u ++ ", " ++ show v ++ "] is " ++ show (dist u v))
