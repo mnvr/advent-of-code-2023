@@ -174,6 +174,7 @@ collapse Grid { gm, gny, gnx } = Grid { gm = cm, gny = cny, gnx = cnx }
     isNotBoundary (y, x) = y > 2 && y < gny - 3 && x > 2 && x < gnx - 3
     g (y, x) m = g' (fromJust $ M.lookup (y+1, x+1) m)
     g' '?' = inside
+    g' '#' = '.'
     g' ch = ch
 
 inside :: Char
