@@ -1,6 +1,6 @@
 import Data.Bifunctor (first, second)
 import Data.Map qualified as M
-import Data.Maybe (catMaybes)
+import Data.Maybe (catMaybes, fromJust)
 import Data.List (intersperse)
 import Debug.Trace (trace)
 
@@ -109,7 +109,7 @@ mkGridMap = foldl f M.empty . enum
 
 gridMapToLines :: M.Map Node Char -> Int -> Int -> [String]
 gridMapToLines gm ny nx = map makeRow [0..ny-1]
-  where makeRow y = map (\x -> maybe '!' id (M.lookup (y, x) gm)) [0..nx-1]
+  where makeRow y = map (\x -> fromJust (M.lookup (y, x) gm)) [0..nx-1]
 
 reconstruct :: Parsed -> M.Map Node Int -> Grid
 reconstruct Parsed { nm, ny, nx } dm =
@@ -182,44 +182,6 @@ collapse Grid { gm, gny, gnx } = Grid { gm = cm, gny = cny, gnx = cnx }
                       | otherwise = m
     g '1' = 'J'
     g 'l' = 'L'
-    g '?' = '.'
+    g '?' = '■'
+    g '#' = ' '
     g c = c
-
-    -- expandCell' key@(y, x) (Just (n1, n2))
-    --   | n1 == (y, x - 1) && n2 == (y, x + 1) = ("--",
-    --                                             "ee")
-    --   | n1 == (y - 1, x) && n2 == (y, x - 1) = ("|e",
-    --                                             "L/")
-    --   | n1 == (y + 1, x) && n2 == (y, x - 1) = ("F\\",
-    --                                             "|e")
-    --   | n1 == (y - 1, x) && n2 == (y, x + 1) = ("|e",
-    --                                             "Je")
-    --   | n1 == (y + 1, x) && n2 == (y, x + 1) = ("7e",
-    --                                             "|e")
-    --   | n1 == (y - 1, x) && n2 == (y + 1, x) = ("|e",
-    --                                             "|e")
-
--- flood :: M.Map Node Char -> ([String], M.Map Node Char)
--- flood m = ([], m) where -- go 0 m [] where
---   go i m log = case step m of
---     (0, m') -> (reverse (("iterations " ++ show i) : log), m')
---     (changed, m') -> let r = remaining m'
---                          msg = "changed " ++ show changed ++ "\tremaining " ++ show r
---                      in go (i + 1) m' (msg :log)
---   remaining = length . M.keys . M.filter (=='e')
---   step :: M.Map Node Char -> (Int, M.Map Node Char)
---   step m = M.mapAccumWithKey f 0 m
---     where
---         f :: Int -> Node -> Char -> (Int, Char)
---         f changed key 'e' | any (== '#') (nbr key) = (changed + 1, '#')
---         f changed _ ch = (changed, ch)
---         nbr (y, x) = catMaybes $ map (`M.lookup` m) [
---           (y - 1, x), (y + 1, x), (y, x - 1), (y, x + 1)]
-
--- markEmpty :: M.Map Node Char -> M.Map Node Char
--- markEmpty m = M.mapWithKey f m
---   where
---     f key 'e' | isEmptyBlock key = '.'
---     f _ ch = ch
---     isEmptyBlock (y, x) = even y && even x && all (=='e') nbrs
---       where nbrs = catMaybes (map (`M.lookup` m) [(y+1,x), (y,x+1), (y+1,x+1)])
