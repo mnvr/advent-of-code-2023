@@ -140,5 +140,26 @@ p2Pre inp@(_, neighbors) = expand
                                                 "|e")
       | otherwise = ("..", "..")
 
-p2 inp = grid
-  where grid = p2Pre inp
+p2 inp = concat $ floodn 2 gm []
+  where
+    grid = p2Pre inp
+    enum = zip [0..]
+    gm = mkGM grid
+    mkGM :: String -> M.Map Node Char
+    mkGM s = foldl gm' M.empty $ enum $ lines $ s
+    gm' :: M.Map Node Char -> (Int, [Char]) -> M.Map Node Char
+    gm' m (y, row) = foldl (gm'' y) m (enum row)
+    gm'' y m (x, c) = M.insert (y,x) c m
+
+    floodn 0 m ss = intersperse "\n" (reverse ss)
+    floodn n m ss = let (changed, m') = flood m
+                    in floodn (n-1) m' ((stats (m,changed)): ss)
+
+    remaining = M.filter (=='e')
+    stats (m, ch) = "changed " ++ (show ch) ++ "\nremaining: " ++
+      (show $ length $ M.keys $ remaining m)
+    flood :: M.Map Node Char -> (Int, M.Map Node Char)
+    flood m = M.mapAccumWithKey f 0 m
+      where
+        f :: Int -> Node -> Char -> (Int, Char)
+        f changed key ch = (changed, ch)
