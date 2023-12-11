@@ -141,7 +141,7 @@ p2Pre inp@(_, neighbors) = (expand, (2 * nrows + 3), (2 * ncols + 2))
                                                 "|e")
       | otherwise = ("..", "..")
 
-p2 inp = concat $ floodU 0 gm []
+p2 inp = show $ floodU 0 gm []
   where
     (grid, nrows, ncols) = p2Pre inp
     enum = zip [0..]
@@ -166,10 +166,14 @@ p2 inp = concat $ floodU 0 gm []
       where makeRow y = map (\x -> maybe '#' id (M.lookup (y,x) m)) [0..nc]
 
     floodU c m ss = case flood m of
-      (0, m') -> let m'' = (markEmpty m') in
-        intersperse "\n" $ (reverse ss) ++ ["iterations " ++ (show c)]
-          ++ (showGM m'' nrows ncols) ++ ["inside " ++ show (countEmpty m'')]
+      (0, m') -> let m'' = (markEmpty m') in (countEmpty m'')
       (changed, m') -> floodU (c + 1) m' (stats (m, changed) : ss)
+
+    floodUP c m ss = case flood m of
+      (0, m') -> let m'' = (markEmpty m') in
+        concat $ intersperse "\n" $ (reverse ss) ++ ["iterations " ++ (show c)]
+          ++ (showGM m'' nrows ncols) ++ ["inside " ++ show (countEmpty m'')]
+      (changed, m') -> floodUP (c + 1) m' (stats (m, changed) : ss)
 
     floodn 0 m ss = intersperse "\n" (reverse ss)
     floodn n m ss = let (changed, m') = flood m
