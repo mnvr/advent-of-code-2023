@@ -90,18 +90,15 @@ mkGrid ls ny nx = Grid { gm = mkGridMap ls, gny = ny, gnx = nx }
 
 p2 :: Parsed -> String
 p2 pr@Parsed { start, nm, ny, nx } =
-  show og ++ show eg ++ unlines log ++ show fg ++ show cg
+  show og ++ show eg ++ unlines log ++ show fg ++ show cg ++ result (gm cg)
   where
     dm = mkDistanceMap (start, nm)
     og = reconstruct pr dm
     eg = expand pr dm
     (log, fg) = flood eg
     cg = collapse fg
-    -- grid = trace (show (ny, nx)) $ expand pr dm
-    -- (eny, enx) = (2 * ny, 2 * nx)
-    -- gm = mkGridMap grid
-    -- resultLog m = ["inside " ++ show (countEmpty m)]
-    -- countEmpty = length . M.elems . M.filter (== '.')
+    result m = "inside " ++ show (countEmpty m)
+    countEmpty = length . M.elems . M.filter (== '.')
 
 mkGridMap :: [String] -> M.Map Node Char
 mkGridMap = foldl f M.empty . enum
@@ -219,10 +216,10 @@ collapse Grid { gm, gny, gnx } = Grid { gm = cm, gny = cny, gnx = cnx }
 --         nbr (y, x) = catMaybes $ map (`M.lookup` m) [
 --           (y - 1, x), (y + 1, x), (y, x - 1), (y, x + 1)]
 
-markEmpty :: M.Map Node Char -> M.Map Node Char
-markEmpty m = M.mapWithKey f m
-  where
-    f key 'e' | isEmptyBlock key = '.'
-    f _ ch = ch
-    isEmptyBlock (y, x) = even y && even x && all (=='e') nbrs
-      where nbrs = catMaybes (map (`M.lookup` m) [(y+1,x), (y,x+1), (y+1,x+1)])
+-- markEmpty :: M.Map Node Char -> M.Map Node Char
+-- markEmpty m = M.mapWithKey f m
+--   where
+--     f key 'e' | isEmptyBlock key = '.'
+--     f _ ch = ch
+--     isEmptyBlock (y, x) = even y && even x && all (=='e') nbrs
+--       where nbrs = catMaybes (map (`M.lookup` m) [(y+1,x), (y,x+1), (y+1,x+1)])
