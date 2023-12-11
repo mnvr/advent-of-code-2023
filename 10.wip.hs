@@ -105,7 +105,7 @@ instance Show State where
   show (Boundary2 d) = if d < 10 then (" " ++ show d ++ " ") else (show d ++ " ")
   show Inside = "   "
 
-p2Pre inp@(_, neighbors) = (expand, (2 * (nrows + 2)), (2 * (ncols + 2)))
+p2Pre inp@(_, neighbors) = (expand, (2 * nrows + 3), (2 * ncols + 2))
   where
     dm = dist inp
     keys = M.keys dm
@@ -152,12 +152,23 @@ p2 inp = concat $ floodU 0 gm []
     gm' m (y, row) = foldl (gm'' y) m (enum row)
     gm'' y m (x, c) = M.insert (y,x) c m
 
+    markEmpty :: M.Map Node Char -> M.Map Node Char
+    markEmpty m = M.mapWithKey f m
+      where f key 'e' | isEmptyBlock key = '.'
+            f _ ch = ch
+            isEmptyBlock (y, x) = odd y && even x && all (=='e') nbrs
+              where nbrs = catMaybes (map (`M.lookup` m) [(y+1,x), (y,x+1), (y+1,x+1)])
+
+    countEmpty = length . M.elems . M.filter (=='.')
+
     showGM :: M.Map Node Char -> Int -> Int -> [String]
     showGM m nr nc = map makeRow [0..nr]
       where makeRow y = map (\x -> maybe '#' id (M.lookup (y,x) m)) [0..nc]
 
     floodU c m ss = case flood m of
-      (0, m') -> intersperse "\n" $ (reverse ss) ++ ["iterations " ++ (show c)] ++ (showGM m' nrows ncols)
+      (0, m') -> let m'' = (markEmpty m') in
+        intersperse "\n" $ (reverse ss) ++ ["iterations " ++ (show c)]
+          ++ (showGM m'' nrows ncols) ++ ["inside " ++ show (countEmpty m'')]
       (changed, m') -> floodU (c + 1) m' (stats (m, changed) : ss)
 
     floodn 0 m ss = intersperse "\n" (reverse ss)
