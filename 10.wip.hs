@@ -98,7 +98,7 @@ p2 pr@Parsed { start, nm, ny, nx } =
     (log, fg) = flood eg
     cg = collapse fg
     result m = "inside " ++ show (countEmpty m)
-    countEmpty = length . M.elems . M.filter (== '.')
+    countEmpty = length . M.elems . M.filter (== inside)
 
 mkGridMap :: [String] -> M.Map Node Char
 mkGridMap = foldl f M.empty . enum
@@ -168,7 +168,6 @@ flood Grid { gm, gny, gnx } = let (log, gm') = go [] gm in (log, mkGrid gm')
       where
         f changed key '?' | any (=='#') (nbr key) = (changed + 1, '#')
         f changed key ch = (changed, ch)
-        -- orig (y,x) = even y && even x
         nbr (y,x) = catMaybes $ map (`M.lookup` m) [
           (y, x - 1), (y - 1, x), (y, x + 1), (y + 1, x)]
 
@@ -182,6 +181,9 @@ collapse Grid { gm, gny, gnx } = Grid { gm = cm, gny = cny, gnx = cnx }
                       | otherwise = m
     g '1' = 'J'
     g 'l' = 'L'
-    g '?' = '■'
+    g '?' = inside
     g '#' = ' '
     g c = c
+
+inside :: Char
+inside = '■'
