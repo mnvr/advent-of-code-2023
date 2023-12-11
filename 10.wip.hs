@@ -109,7 +109,7 @@ mkGridMap = foldl f M.empty . enum
 
 gridMapToLines :: M.Map Node Char -> Int -> Int -> [String]
 gridMapToLines gm ny nx = map makeRow [0..ny-1]
-  where makeRow y = map (\x -> fromJust (M.lookup (y, x) gm)) [0..nx-1]
+  where makeRow y = map (\x -> maybe '!' id (M.lookup (y, x) gm)) [0..nx-1]
 
 reconstruct :: Parsed -> M.Map Node Int -> Grid
 reconstruct Parsed { nm, ny, nx } dm =
@@ -134,8 +134,8 @@ expand Parsed { nm, ny, nx } dm =
   Grid { gm = mkGridMap expandLines, gny = eny, gnx = enx }
   where
     keys = M.keys dm
-    eny = 2 * ny + 4
-    enx = 3 * nx + 6
+    eny = 2 * (ny + 2)
+    enx = 3 * (nx + 2)
     expandLines :: [String]
     expandLines = addBoundaryLines $ concatMap (addBoundary . expandRow) [0..ny-1]
     expandRow :: Int -> [String]
@@ -146,12 +146,10 @@ expand Parsed { nm, ny, nx } dm =
                    | otherwise = ("???", "???")
     expandCell' key@(y, x) (Just (n1, n2))
       | n1 == (y, x - 1) && n2 == (y, x + 1) = ("---", "---")
-      | n1 == (y - 1, x) && n2 == (y, x - 1) = ("j1?", "-J?")
-      | n1 == (y + 1, x) && n2 == (y, x - 1) = ("s7?", "?|?")
-      | n1 == (y + 1, x) && n2 == (y, x + 1) = ("fF-", "?|?")
-      | n1 == (y - 1, x) && n2 == (y, x + 1) = ("l|?", "?L-")
-      -- | n1 == (y - 1, x) && n2 == (y, x + 1) = ("l?", "L/")
-      -- | n1 == (y + 1, x) && n2 == (y, x + 1) = ("F\\", "|?")
+      | n1 == (y - 1, x) && n2 == (y, x - 1) = ("?|?", "-J?")
+      | n1 == (y + 1, x) && n2 == (y, x - 1) = ("-7?", "?|?")
+      | n1 == (y + 1, x) && n2 == (y, x + 1) = ("?F-", "?|?")
+      | n1 == (y - 1, x) && n2 == (y, x + 1) = ("?|?", "?L-")
       | n1 == (y - 1, x) && n2 == (y + 1, x) = ("?|?", "?|?")
     boundaryLine = enx `replicate` '#'
     addBoundary = map (\s -> "###" ++ s ++ "###")
@@ -168,29 +166,26 @@ flood Grid { gm, gny, gnx } = let (log, gm') = go [] gm in (log, mkGrid gm')
     step m = let (changed, m') = step' m in (changed, "changed " ++ show changed, m')
     step' m = M.mapAccumWithKey f 0 m
       where
-        f changed key ch
-          | placeholder ch && any (=='#') (nbr key) = (changed + 1, '#')
-          | otherwise = (changed, ch)
-        placeholder ch = ch == '?' || ch == 'j' || ch == 'f' || ch == 'l'
+        f changed key '?' | any (=='#') (nbr key) = (changed + 1, '#')
+        f changed key ch = (changed, ch)
         nbr (y,x) = catMaybes $ map (`M.lookup` m) [
           (y, x - 1), (y - 1, x), (y, x + 1), (y + 1, x)]
 
 collapse :: Grid -> Grid
 collapse Grid { gm, gny, gnx } = Grid { gm = cm, gny = cny, gnx = cnx }
   where
-    cny = gny `div` 2
-    cnx = gnx `div` 3
-    cm = M.foldrWithKey f M.empty gm
+    cny = (gny `div` 2) - 2
+    cnx = (gnx `div` 3) - 2
+    cm = trace ("collapse to cny = " ++ show cny ++ " cnx = " ++ show cnx) $ M.foldrWithKey f M.empty gm
     f key@(y, x) ch m
-      | even y && x `mod` 3 == 0 = M.insert (y `div` 2, x `div` 3) (g ch) m
+      | isNotBoundary key && even y && x `mod` 3 == 0 = trace ("picking " ++ show (y,x) ++ " " ++ (show ch)) $ M.insert (y `div` 2, x `div` 3 - 2) (g key ch m) m
       | otherwise = m
-    g 's' = '7'
-    g 'j' = 'J'
-    g 'f' = 'F'
-    g 'l' = 'L'
-    g '?' = inside
-    g '#' = '.'
-    g c = c
+    isNotBoundary (y, x) = y > 1 && y < gny - 2 && x > 2 && x < gnx - 3
+    g (y, x) '-' m = if isChar (y, x+1) m '7' then '7' else '-'
+    g (y, x) '?' m = if isChar (y+1, x+1) m 'J' then 'J' else if isChar (y,x+1) m 'F' then 'F' else if isChar (y+1,x+1) m 'L' then 'L' else if isChar (y,x+1) m '|' then '|' else inside
+    g (y, x) '#' m = '.'
+    -- g key c m = c
+    isChar key m ch = M.lookup key m == Just ch
 
 inside :: Char
 inside = '■'
