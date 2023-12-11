@@ -135,7 +135,7 @@ expand Parsed { nm, ny, nx } dm =
   where
     keys = M.keys dm
     eny = 2 * ny + 4
-    enx = 2 * nx + 4
+    enx = 3 * nx + 6
     expandLines :: [String]
     expandLines = addBoundaryLines $ concatMap (addBoundary . expandRow) [0..ny-1]
     expandRow :: Int -> [String]
@@ -143,18 +143,18 @@ expand Parsed { nm, ny, nx } dm =
     expandRow' :: Int -> [(String, String)]
     expandRow' y = map (\x -> expandCell (y, x)) [0..nx-1]
     expandCell key | key `elem` keys = expandCell' key (M.lookup key nm)
-                   | otherwise = ("??", "??")
+                   | otherwise = ("???", "???")
     expandCell' key@(y, x) (Just (n1, n2))
-      | n1 == (y, x - 1) && n2 == (y, x + 1) = ("--", "??")
-      | n1 == (y - 1, x) && n2 == (y, x - 1) = ("1?", "J?")
-      | n1 == (y + 1, x) && n2 == (y, x - 1) = ("7?", "|?")
-      | n1 == (y - 1, x) && n2 == (y, x + 1) = ("l|", "?L")
-      | n1 == (y + 1, x) && n2 == (y, x + 1) = ("fF", "?|")
+      | n1 == (y, x - 1) && n2 == (y, x + 1) = ("---", "---")
+      | n1 == (y - 1, x) && n2 == (y, x - 1) = ("j1?", "-J?")
+      | n1 == (y + 1, x) && n2 == (y, x - 1) = ("s7?", "?|?")
+      | n1 == (y + 1, x) && n2 == (y, x + 1) = ("fF-", "?|?")
+      | n1 == (y - 1, x) && n2 == (y, x + 1) = ("l|?", "?L-")
       -- | n1 == (y - 1, x) && n2 == (y, x + 1) = ("l?", "L/")
       -- | n1 == (y + 1, x) && n2 == (y, x + 1) = ("F\\", "|?")
-      | n1 == (y - 1, x) && n2 == (y + 1, x) = ("|?", "|?")
+      | n1 == (y - 1, x) && n2 == (y + 1, x) = ("?|?", "?|?")
     boundaryLine = enx `replicate` '#'
-    addBoundary = map (\s -> "##" ++ s ++ "##")
+    addBoundary = map (\s -> "###" ++ s ++ "###")
     addBoundaryLines ls = let bs = [boundaryLine, boundaryLine] in bs ++ ls ++ bs
 
 flood :: Grid -> ([String], Grid)
@@ -171,7 +171,7 @@ flood Grid { gm, gny, gnx } = let (log, gm') = go [] gm in (log, mkGrid gm')
         f changed key ch
           | placeholder ch && any (=='#') (nbr key) = (changed + 1, '#')
           | otherwise = (changed, ch)
-        placeholder ch = ch == '?' || ch == 'f' || ch == 'l'
+        placeholder ch = ch == '?' || ch == 'j' || ch == 'f' || ch == 'l'
         nbr (y,x) = catMaybes $ map (`M.lookup` m) [
           (y, x - 1), (y - 1, x), (y, x + 1), (y + 1, x)]
 
@@ -179,12 +179,14 @@ collapse :: Grid -> Grid
 collapse Grid { gm, gny, gnx } = Grid { gm = cm, gny = cny, gnx = cnx }
   where
     cny = gny `div` 2
-    cnx = gnx `div` 2
+    cnx = gnx `div` 3
     cm = M.foldrWithKey f M.empty gm
     f key@(y, x) ch m
-      | even y && even x = M.insert (y `div` 2, x `div` 2) (g ch) m
+      | even y && x `mod` 3 == 0 = M.insert (y `div` 2, x `div` 3) (g ch) m
       | otherwise = m
-    g '1' = 'J'
+    g 's' = '7'
+    g 'j' = 'J'
+    g 'f' = 'F'
     g 'l' = 'L'
     g '?' = inside
     g '#' = '.'
