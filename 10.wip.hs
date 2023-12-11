@@ -97,7 +97,7 @@ p2 pr@Parsed { start, nm, ny, nx } = show eg -- gridLines gm eny enx
   where
     dm = mkDistanceMap (start, nm)
     og = reconstruct pr dm
-    eg = expand2 pr dm
+    eg = expand pr dm
     -- grid = trace (show (ny, nx)) $ expand pr dm
     -- (eny, enx) = (2 * ny, 2 * nx)
     -- gm = mkGridMap grid
@@ -132,8 +132,8 @@ reconstruct Parsed { nm, ny, nx } dm = mkGrid expandLines ny nx
       | n1 == (y + 1, x) && n2 == (y, x + 1) = 'F'
       | n1 == (y - 1, x) && n2 == (y + 1, x) = '|'
 
-expand2 :: Parsed -> M.Map Node Int -> Grid
-expand2 Parsed { nm, ny, nx } dm = mkGrid expandLines eny enx
+expand :: Parsed -> M.Map Node Int -> Grid
+expand Parsed { nm, ny, nx } dm = mkGrid expandLines eny enx
   where
     keys = M.keys dm
     eny = 2 * ny + 4
@@ -147,48 +147,29 @@ expand2 Parsed { nm, ny, nx } dm = mkGrid expandLines eny enx
     expandCell key | key `elem` keys = expandCell' key (M.lookup key nm)
                    | otherwise = (".?", "??")
     expandCell' key@(y, x) (Just (n1, n2))
-      | n1 == (y, x - 1) && n2 == (y, x + 1) = ("-?", "??")
-      | n1 == (y - 1, x) && n2 == (y, x - 1) = ("J?", "??")
-      | n1 == (y + 1, x) && n2 == (y, x - 1) = ("7?", "??")
-      | n1 == (y - 1, x) && n2 == (y, x + 1) = ("L?", "??")
-      | n1 == (y + 1, x) && n2 == (y, x + 1) = ("F?", "??")
-      | n1 == (y - 1, x) && n2 == (y + 1, x) = ("|?", "??")
+      | n1 == (y, x - 1) && n2 == (y, x + 1) = ("--", "??")
+      | n1 == (y - 1, x) && n2 == (y, x - 1) = ("|?", "J?")
+      | n1 == (y + 1, x) && n2 == (y, x - 1) = ("7?", "|?")
+      | n1 == (y - 1, x) && n2 == (y, x + 1) = ("|?", "L/")
+      | n1 == (y + 1, x) && n2 == (y, x + 1) = ("F\\", "|?")
+      | n1 == (y - 1, x) && n2 == (y + 1, x) = ("|?", "|?")
     boundaryLine = enx `replicate` '#'
     addBoundary = map (\s -> "##" ++ s ++ "##")
     addBoundaryLines ls = let bs = [boundaryLine, boundaryLine] in bs ++ ls ++ bs
 
-expand :: Parsed -> M.Map Node Int -> String
-expand Parsed { nm, ny, nx } dm = unlines expandLines
-  where
-    keys = M.keys dm
-    expandLines = boundaryRow ++ expand' ++ boundaryRow
-    boundaryRow = []--[boundaryLine, boundaryLine]
-    boundaryLine = (nx + 2) `replicate` 'm'
-    expand' :: [String]
-    expand' = let z = concatMap expandRow [0..ny-1] in trace ("expand' " ++ show z) z
-    expandRow :: Int -> [String]
-    expandRow y = let ery = trace ("expandRow " ++ show y) $ foldr (\(l1, l2) ls -> l1:l2:ls) [] (expandRow' y) in trace ("expandedRow " ++ show y ++ " " ++ show ery) ery
-    expandRow' :: Int -> [(String, String)]
-    expandRow' y =  -- [boundaryCell] ++
-                    let z = map (\x -> expandCell (y, x)) [0..nx-1] in trace ("expandedRow' " ++ show y ++ " " ++ show z) z -- ++
-                    -- [boundaryCell]
-    boundaryCell = ("bb", "bb")
-    expandCell key = trace ("expandCell" ++ show key) $ ("ee", "ee")
-    -- expandCell key | key `elem` keys = expandCell' key (M.lookup key nm)
-                  --  | otherwise = ("ee", "ee")
-    expandCell' key@(y, x) (Just (n1, n2))
-      | n1 == (y, x - 1) && n2 == (y, x + 1) = ("--",
-                                                "ee")
-      | n1 == (y - 1, x) && n2 == (y, x - 1) = ("|e",
-                                                "L/")
-      | n1 == (y + 1, x) && n2 == (y, x - 1) = ("F\\",
-                                                "|e")
-      | n1 == (y - 1, x) && n2 == (y, x + 1) = ("|e",
-                                                "Je")
-      | n1 == (y + 1, x) && n2 == (y, x + 1) = ("7e",
-                                                "|e")
-      | n1 == (y - 1, x) && n2 == (y + 1, x) = ("|e",
-                                                "|e")
+    -- expandCell' key@(y, x) (Just (n1, n2))
+    --   | n1 == (y, x - 1) && n2 == (y, x + 1) = ("--",
+    --                                             "ee")
+    --   | n1 == (y - 1, x) && n2 == (y, x - 1) = ("|e",
+    --                                             "L/")
+    --   | n1 == (y + 1, x) && n2 == (y, x - 1) = ("F\\",
+    --                                             "|e")
+    --   | n1 == (y - 1, x) && n2 == (y, x + 1) = ("|e",
+    --                                             "Je")
+    --   | n1 == (y + 1, x) && n2 == (y, x + 1) = ("7e",
+    --                                             "|e")
+    --   | n1 == (y - 1, x) && n2 == (y + 1, x) = ("|e",
+    --                                             "|e")
 
 flood :: M.Map Node Char -> ([String], M.Map Node Char)
 flood m = ([], m) where -- go 0 m [] where
