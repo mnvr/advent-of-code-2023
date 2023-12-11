@@ -120,18 +120,18 @@ p2 inp@(_, neighbors) = expand
     expandRow' row = map (exp row) cols
     exp y x | (y, x) `elem` keys = let key = (y, x) in
               expPipe key (M.lookup key neighbors)
-            | otherwise = ("..", "..")
+            | otherwise = ("ee", "ee")
     expPipe key@(y, x) (Just (n1, n2))
       | n1 == (y, x - 1) && n2 == (y, x + 1) = ("--",
-                                                "==")
-      | n1 == (y - 1, x) && n2 == (y, x - 1) = ("|=",
-                                                "L=")
-      | n1 == (y + 1, x) && n2 == (y, x - 1) = ("F=",
-                                                "|=")
-      | n1 == (y - 1, x) && n2 == (y, x + 1) = ("|=",
-                                                "J=")
-      | n1 == (y + 1, x) && n2 == (y, x + 1) = ("7=",
-                                                "|=")
-      | n1 == (y - 1, x) && n2 == (y + 1, x) = ("|=",
-                                                "|=")
+                                                "ee")
+      | n1 == (y - 1, x) && n2 == (y, x - 1) = ("|e",
+                                                "L/")
+      | n1 == (y + 1, x) && n2 == (y, x - 1) = ("F\\",
+                                                "|e")
+      | n1 == (y - 1, x) && n2 == (y, x + 1) = ("|e",
+                                                "Je")
+      | n1 == (y + 1, x) && n2 == (y, x + 1) = ("7e",
+                                                "|e")
+      | n1 == (y - 1, x) && n2 == (y + 1, x) = ("|e",
+                                                "|e")
       | otherwise = ("..", "..")
