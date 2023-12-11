@@ -89,15 +89,13 @@ mkGrid :: [String] -> Int -> Int -> Grid
 mkGrid ls ny nx = Grid { gm = mkGridMap ls, gny = ny, gnx = nx }
 
 p2 :: Parsed -> String
-p2 pr@Parsed { start, nm, ny, nx } = show eg -- gridLines gm eny enx
-  -- let (log, flooded) = flood gm
-      -- r = resultLog flooded
-  -- in unlines $ gridLines gm eny enx -- $ log ++ gridLines flooded ny nx ++ r
-     -- $ log ++ gridLines flooded ny nx ++ r
+p2 pr@Parsed { start, nm, ny, nx } =
+  let (log, fg) = flood eg in show og ++ show eg ++ unlines log ++ show fg
   where
     dm = mkDistanceMap (start, nm)
     og = reconstruct pr dm
     eg = expand pr dm
+    fg = flood eg
     -- grid = trace (show (ny, nx)) $ expand pr dm
     -- (eny, enx) = (2 * ny, 2 * nx)
     -- gm = mkGridMap grid
@@ -116,7 +114,8 @@ gridMapToLines gm ny nx = map makeRow [0..ny-1]
   where makeRow y = map (\x -> maybe '!' id (M.lookup (y, x) gm)) [0..nx-1]
 
 reconstruct :: Parsed -> M.Map Node Int -> Grid
-reconstruct Parsed { nm, ny, nx } dm = mkGrid expandLines ny nx
+reconstruct Parsed { nm, ny, nx } dm =
+  Grid { gm = mkGridMap expandLines, gny = ny, gnx = nx }
   where
     keys = M.keys dm
     expandLines = map expandRow [0..ny-1]
@@ -133,7 +132,8 @@ reconstruct Parsed { nm, ny, nx } dm = mkGrid expandLines ny nx
       | n1 == (y - 1, x) && n2 == (y + 1, x) = '|'
 
 expand :: Parsed -> M.Map Node Int -> Grid
-expand Parsed { nm, ny, nx } dm = mkGrid expandLines eny enx
+expand Parsed { nm, ny, nx } dm =
+  Grid { gm = mkGridMap expandLines, gny = eny, gnx = enx }
   where
     keys = M.keys dm
     eny = 2 * ny + 4
@@ -145,7 +145,7 @@ expand Parsed { nm, ny, nx } dm = mkGrid expandLines eny enx
     expandRow' :: Int -> [(String, String)]
     expandRow' y = map (\x -> expandCell (y, x)) [0..nx-1]
     expandCell key | key `elem` keys = expandCell' key (M.lookup key nm)
-                   | otherwise = (".?", "??")
+                   | otherwise = ("??", "??")
     expandCell' key@(y, x) (Just (n1, n2))
       | n1 == (y, x - 1) && n2 == (y, x + 1) = ("--", "??")
       | n1 == (y - 1, x) && n2 == (y, x - 1) = ("|?", "J?")
@@ -156,6 +156,23 @@ expand Parsed { nm, ny, nx } dm = mkGrid expandLines eny enx
     boundaryLine = enx `replicate` '#'
     addBoundary = map (\s -> "##" ++ s ++ "##")
     addBoundaryLines ls = let bs = [boundaryLine, boundaryLine] in bs ++ ls ++ bs
+
+flood :: Grid -> ([String], Grid)
+flood Grid { gm, gny, gnx } = let (log, gm') = go [] gm in (log, mkGrid gm')
+  where
+    mkGrid m = Grid { gm = m, gny = gny, gnx = gnx }
+    go log gm = case step gm of
+      (0, l, gm') -> (reverse (l: log), gm')
+      (_, l, gm') -> go (l:log) gm'
+    step :: M.Map Node Char -> (Int, String, M.Map Node Char)
+    step m = let (changed, m') = step' m in (changed, "changed " ++ show changed, m')
+    step' m = M.mapAccumWithKey f 0 m
+      where
+        f changed key '?' | any (=='#') (nbr key) = (changed + 1, '#')
+        f changed key ch = (changed, ch)
+        -- orig (y,x) = even y && even x
+        nbr (y,x) = catMaybes $ map (`M.lookup` m) [
+          (y, x - 1), (y - 1, x), (y, x + 1), (y + 1, x)]
 
     -- expandCell' key@(y, x) (Just (n1, n2))
     --   | n1 == (y, x - 1) && n2 == (y, x + 1) = ("--",
@@ -171,22 +188,22 @@ expand Parsed { nm, ny, nx } dm = mkGrid expandLines eny enx
     --   | n1 == (y - 1, x) && n2 == (y + 1, x) = ("|e",
     --                                             "|e")
 
-flood :: M.Map Node Char -> ([String], M.Map Node Char)
-flood m = ([], m) where -- go 0 m [] where
-  go i m log = case step m of
-    (0, m') -> (reverse (("iterations " ++ show i) : log), m')
-    (changed, m') -> let r = remaining m'
-                         msg = "changed " ++ show changed ++ "\tremaining " ++ show r
-                     in go (i + 1) m' (msg :log)
-  remaining = length . M.keys . M.filter (=='e')
-  step :: M.Map Node Char -> (Int, M.Map Node Char)
-  step m = M.mapAccumWithKey f 0 m
-    where
-        f :: Int -> Node -> Char -> (Int, Char)
-        f changed key 'e' | any (== '#') (nbr key) = (changed + 1, '#')
-        f changed _ ch = (changed, ch)
-        nbr (y, x) = catMaybes $ map (`M.lookup` m) [
-          (y - 1, x), (y + 1, x), (y, x - 1), (y, x + 1)]
+-- flood :: M.Map Node Char -> ([String], M.Map Node Char)
+-- flood m = ([], m) where -- go 0 m [] where
+--   go i m log = case step m of
+--     (0, m') -> (reverse (("iterations " ++ show i) : log), m')
+--     (changed, m') -> let r = remaining m'
+--                          msg = "changed " ++ show changed ++ "\tremaining " ++ show r
+--                      in go (i + 1) m' (msg :log)
+--   remaining = length . M.keys . M.filter (=='e')
+--   step :: M.Map Node Char -> (Int, M.Map Node Char)
+--   step m = M.mapAccumWithKey f 0 m
+--     where
+--         f :: Int -> Node -> Char -> (Int, Char)
+--         f changed key 'e' | any (== '#') (nbr key) = (changed + 1, '#')
+--         f changed _ ch = (changed, ch)
+--         nbr (y, x) = catMaybes $ map (`M.lookup` m) [
+--           (y - 1, x), (y + 1, x), (y, x - 1), (y, x + 1)]
 
 markEmpty :: M.Map Node Char -> M.Map Node Char
 markEmpty m = M.mapWithKey f m
