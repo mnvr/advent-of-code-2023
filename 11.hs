@@ -17,12 +17,12 @@ enum :: [a] -> [(Int, a)]
 enum = zip [0..]
 
 expand :: Int -> [Galaxy] -> [Galaxy]
-expand by gs = sort $ map f gs
+expand by gs = map f gs
   where
     ys = nub (map fst gs)
     xs = nub (map snd gs)
-    missingY = sort $ [0..maximum ys] \\ ys
-    missingX = sort $ [0..maximum xs] \\ xs
+    missingY = [0..maximum ys] \\ ys
+    missingX = [0..maximum xs] \\ xs
     m = by - 1
     f (y, x) = (y + m * adjustY, x + m * adjustX)
       where
