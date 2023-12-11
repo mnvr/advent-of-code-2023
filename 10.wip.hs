@@ -2,6 +2,7 @@ import Data.Bifunctor (first, second)
 import Data.Map qualified as M
 import Data.Maybe (catMaybes)
 import Data.List (intersperse)
+import Debug.Trace (trace)
 
 -- WIP!!
 main :: IO ()
@@ -80,46 +81,69 @@ mkDistanceMap (start, neighbours) = relax (dm0 start) [start]
         Just d -> if dist + 1 < d then (M.insert nn (dist + 1) dm, q ++ [nn]) else (dm, q)
 
 p2 :: Parsed -> String
-p2 pr@Parsed { start, nm, ny, nx } =
-  let (log, flooded) = flood gm
-      r = resultLog flooded
-  in unlines $ log ++ gridLines flooded ny nx ++ r
+p2 pr@Parsed { start, nm, ny, nx } = unlines $ ogl' -- gridLines gm eny enx
+  -- let (log, flooded) = flood gm
+      -- r = resultLog flooded
+  -- in unlines $ gridLines gm eny enx -- $ log ++ gridLines flooded ny nx ++ r
+     -- $ log ++ gridLines flooded ny nx ++ r
   where
     dm = mkDistanceMap (start, nm)
-    grid = expand pr dm
-    gm = mkGridMap grid
-    resultLog m = ["inside " ++ show (countEmpty m)]
-    countEmpty = length . M.elems . M.filter (== '.')
+    ogl = reconstruct pr dm
+    ogm = mkGridMap ogl
+    ogl' = gridMapToLines ogm ny nx
+    -- grid = trace (show (ny, nx)) $ expand pr dm
+    -- (eny, enx) = (2 * ny, 2 * nx)
+    -- gm = mkGridMap grid
+    -- resultLog m = ["inside " ++ show (countEmpty m)]
+    -- countEmpty = length . M.elems . M.filter (== '.')
 
-mkGridMap :: String -> M.Map Node Char
-mkGridMap = foldl f M.empty . enum . lines
+mkGridMap :: [String] -> M.Map Node Char
+mkGridMap = foldl f M.empty . enum
   where
     f m (y, row) = foldl (g y) m (enum row)
     g y m (x, c) = M.insert (y, x) c m
     enum = zip [0..]
 
-gridLines :: M.Map Node Char -> Int -> Int -> [String]
-gridLines m ny nx = map makeRow [0..ny-1]
-  where makeRow y = map (\x -> maybe '#' id (M.lookup (y,x) m)) [0..nx-1]
+gridMapToLines :: M.Map Node Char -> Int -> Int -> [String]
+gridMapToLines gm ny nx = map makeRow [0..ny-1]
+  where makeRow y = map (\x -> maybe '!' id (M.lookup (y, x) gm)) [0..nx-1]
+
+reconstruct :: Parsed -> M.Map Node Int -> [String]
+reconstruct Parsed { nm, ny, nx } dm = expandLines
+  where
+    keys = M.keys dm
+    expandLines = map expandRow [0..ny-1]
+    expandRow y = foldr (\l ls -> l:ls) [] (expandRow' y)
+    expandRow' y = map (\x -> expandCell (y, x)) [0..nx-1]
+    expandCell key | key `elem` keys = expandCell' key (M.lookup key nm)
+                   | otherwise = '.'
+    expandCell' key@(y, x) (Just (n1, n2))
+      | n1 == (y, x - 1) && n2 == (y, x + 1) = '-'
+      | n1 == (y - 1, x) && n2 == (y, x - 1) = 'J'
+      | n1 == (y + 1, x) && n2 == (y, x - 1) = '7'
+      | n1 == (y - 1, x) && n2 == (y, x + 1) = 'L'
+      | n1 == (y + 1, x) && n2 == (y, x + 1) = 'F'
+      | n1 == (y - 1, x) && n2 == (y + 1, x) = '|'
 
 expand :: Parsed -> M.Map Node Int -> String
 expand Parsed { nm, ny, nx } dm = unlines expandLines
   where
     keys = M.keys dm
     expandLines = boundaryRow ++ expand' ++ boundaryRow
-    boundaryRow = [boundaryLine, boundaryLine]
-    boundaryLine = (nx + 2) `replicate` '#'
+    boundaryRow = []--[boundaryLine, boundaryLine]
+    boundaryLine = (nx + 2) `replicate` 'm'
     expand' :: [String]
-    expand' = concatMap expandRow [0..ny-1]
+    expand' = let z = concatMap expandRow [0..ny-1] in trace ("expand' " ++ show z) z
     expandRow :: Int -> [String]
-    expandRow y = foldr (\(l1, l2) ls -> l1:l2:ls) [] (expandRow' y)
+    expandRow y = let ery = trace ("expandRow " ++ show y) $ foldr (\(l1, l2) ls -> l1:l2:ls) [] (expandRow' y) in trace ("expandedRow " ++ show y ++ " " ++ show ery) ery
     expandRow' :: Int -> [(String, String)]
-    expandRow' y =  [boundaryCell] ++
-                    map (\x -> expandCell (y, x)) [0..nx-1] ++
-                    [boundaryCell]
-    boundaryCell = ("##", "##")
-    expandCell key | key `elem` keys = expandCell' key (M.lookup key nm)
-                   | otherwise = ("ee", "ee")
+    expandRow' y =  -- [boundaryCell] ++
+                    let z = map (\x -> expandCell (y, x)) [0..nx-1] in trace ("expandedRow' " ++ show y ++ " " ++ show z) z -- ++
+                    -- [boundaryCell]
+    boundaryCell = ("bb", "bb")
+    expandCell key = trace ("expandCell" ++ show key) $ ("ee", "ee")
+    -- expandCell key | key `elem` keys = expandCell' key (M.lookup key nm)
+                  --  | otherwise = ("ee", "ee")
     expandCell' key@(y, x) (Just (n1, n2))
       | n1 == (y, x - 1) && n2 == (y, x + 1) = ("--",
                                                 "ee")
