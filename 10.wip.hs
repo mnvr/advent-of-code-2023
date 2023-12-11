@@ -80,17 +80,23 @@ mkDistanceMap (start, neighbours) = relax (dm0 start) [start]
         Nothing -> (M.insert nn (dist + 1) dm, q ++ [nn])
         Just d -> if dist + 1 < d then (M.insert nn (dist + 1) dm, q ++ [nn]) else (dm, q)
 
+data Grid = Grid { gm :: M.Map Node Char, gny :: Int, gnx :: Int }
+
+instance Show Grid where
+  show Grid { gm, gny, gnx } = unlines $ gridMapToLines gm gny gnx
+
+mkGrid :: [String] -> Int -> Int -> Grid
+mkGrid ls ny nx = Grid { gm = mkGridMap ls, gny = ny, gnx = nx }
+
 p2 :: Parsed -> String
-p2 pr@Parsed { start, nm, ny, nx } = unlines $ ogl' -- gridLines gm eny enx
+p2 pr@Parsed { start, nm, ny, nx } = show og -- gridLines gm eny enx
   -- let (log, flooded) = flood gm
       -- r = resultLog flooded
   -- in unlines $ gridLines gm eny enx -- $ log ++ gridLines flooded ny nx ++ r
      -- $ log ++ gridLines flooded ny nx ++ r
   where
     dm = mkDistanceMap (start, nm)
-    ogl = reconstruct pr dm
-    ogm = mkGridMap ogl
-    ogl' = gridMapToLines ogm ny nx
+    og = reconstruct pr dm
     -- grid = trace (show (ny, nx)) $ expand pr dm
     -- (eny, enx) = (2 * ny, 2 * nx)
     -- gm = mkGridMap grid
@@ -108,8 +114,8 @@ gridMapToLines :: M.Map Node Char -> Int -> Int -> [String]
 gridMapToLines gm ny nx = map makeRow [0..ny-1]
   where makeRow y = map (\x -> maybe '!' id (M.lookup (y, x) gm)) [0..nx-1]
 
-reconstruct :: Parsed -> M.Map Node Int -> [String]
-reconstruct Parsed { nm, ny, nx } dm = expandLines
+reconstruct :: Parsed -> M.Map Node Int -> Grid
+reconstruct Parsed { nm, ny, nx } dm = mkGrid expandLines ny nx
   where
     keys = M.keys dm
     expandLines = map expandRow [0..ny-1]
@@ -124,6 +130,7 @@ reconstruct Parsed { nm, ny, nx } dm = expandLines
       | n1 == (y - 1, x) && n2 == (y, x + 1) = 'L'
       | n1 == (y + 1, x) && n2 == (y, x + 1) = 'F'
       | n1 == (y - 1, x) && n2 == (y + 1, x) = '|'
+
 
 expand :: Parsed -> M.Map Node Int -> String
 expand Parsed { nm, ny, nx } dm = unlines expandLines
