@@ -27,10 +27,17 @@ expand gs = sort $ map f gs
         adjustY = maybe 0 id (findIndex (> y) missingY)
         adjustX = maybe 0 id (findIndex (> x) missingX)
 
-pairs :: [Galaxy] -> [(Galaxy, Galaxy)]
-pairs gs = nub [(u, v) | u <- gs, v <- gs, u /= v]
+-- pairs :: [Galaxy] -> [(Galaxy, Galaxy)]
+pairs [] = []
+pairs [g] = []
+pairs gs = concatMap f [0..length gs - 1]
+  where f i = let u = gs !! i in map (\v -> (u, v)) (drop (i + 1) gs)
+-- let rs = drop 1 gs in zip gs rs ++ pairs rs
 
 dist :: Galaxy -> Galaxy -> Int
 dist (y, x) (y', x') = abs (y - y') + abs (x - x')
 
-p1 = map (\(u, v) -> (u, v, dist u v)) . pairs
+-- p1 = map (\(i, (u, v)) -> (i, u, v, dist u v)) .
+-- p1 = map (\((i, u), (j, v)) -> (i, j, dist u v)) . pairs . zip [1..]
+-- p1 = map (\((i, u), (j, v)) -> (i, j)) . pairs . zip [1..]
+p1 = pairs .  zip [1..] -- map (\((i, u), (j, v)) -> (i, j)) . pairs . zip [1..]
