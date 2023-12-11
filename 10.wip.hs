@@ -182,7 +182,7 @@ collapse Grid { gm, gny, gnx } = Grid { gm = cm, gny = cny, gnx = cnx }
     g '1' = 'J'
     g 'l' = 'L'
     g '?' = inside
-    g '#' = ' '
+    g '#' = '.'
     g c = c
 
 inside :: Char
