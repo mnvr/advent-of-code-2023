@@ -148,8 +148,10 @@ expand Parsed { nm, ny, nx } dm =
       | n1 == (y, x - 1) && n2 == (y, x + 1) = ("--", "??")
       | n1 == (y - 1, x) && n2 == (y, x - 1) = ("1?", "J?")
       | n1 == (y + 1, x) && n2 == (y, x - 1) = ("7?", "|?")
-      | n1 == (y - 1, x) && n2 == (y, x + 1) = ("l?", "L/")
-      | n1 == (y + 1, x) && n2 == (y, x + 1) = ("F\\", "|?")
+      | n1 == (y - 1, x) && n2 == (y, x + 1) = ("l|", "?L")
+      | n1 == (y + 1, x) && n2 == (y, x + 1) = ("fF", "?|")
+      -- | n1 == (y - 1, x) && n2 == (y, x + 1) = ("l?", "L/")
+      -- | n1 == (y + 1, x) && n2 == (y, x + 1) = ("F\\", "|?")
       | n1 == (y - 1, x) && n2 == (y + 1, x) = ("|?", "|?")
     boundaryLine = enx `replicate` '#'
     addBoundary = map (\s -> "##" ++ s ++ "##")
@@ -166,8 +168,10 @@ flood Grid { gm, gny, gnx } = let (log, gm') = go [] gm in (log, mkGrid gm')
     step m = let (changed, m') = step' m in (changed, "changed " ++ show changed, m')
     step' m = M.mapAccumWithKey f 0 m
       where
-        f changed key '?' | any (=='#') (nbr key) = (changed + 1, '#')
-        f changed key ch = (changed, ch)
+        f changed key ch
+          | placeholder ch && any (=='#') (nbr key) = (changed + 1, '#')
+          | otherwise = (changed, ch)
+        placeholder ch = ch == '?' || ch == 'f' || ch == 'l'
         nbr (y,x) = catMaybes $ map (`M.lookup` m) [
           (y, x - 1), (y - 1, x), (y, x + 1), (y + 1, x)]
 
@@ -177,8 +181,9 @@ collapse Grid { gm, gny, gnx } = Grid { gm = cm, gny = cny, gnx = cnx }
     cny = gny `div` 2
     cnx = gnx `div` 2
     cm = M.foldrWithKey f M.empty gm
-    f key@(y, x) ch m | even y && even x = M.insert (y `div` 2, x `div` 2) (g ch) m
-                      | otherwise = m
+    f key@(y, x) ch m
+      | even y && even x = M.insert (y `div` 2, x `div` 2) (g ch) m
+      | otherwise = m
     g '1' = 'J'
     g 'l' = 'L'
     g '?' = inside
