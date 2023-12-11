@@ -1,8 +1,7 @@
 import Data.List
-import Debug.Trace
 
 main :: IO ()
-main = interact $ (++ "\n") . p1 . parse
+main = interact $ (++ "\n") . show . p1 . parse
 
 type Galaxy = (Int, Int)
 
@@ -17,7 +16,7 @@ enum :: [a] -> [(Int, a)]
 enum = zip [0..]
 
 expand :: [Galaxy] -> [Galaxy]
-expand gs = let rs = sort $ map f gs in trace ("orig: " ++ show gs ++ "\nmodf: " ++ show rs) rs
+expand gs = sort $ map f gs
   where
     ys = nub (map fst gs)
     xs = nub (map snd gs)
@@ -37,7 +36,5 @@ dist :: Galaxy -> Galaxy -> Int
 dist (y, x) (y', x') = abs (y - y') + abs (x - x')
 
 
-p1 = show . sum . map (uncurry dist) . pairs
-p1b = unlines . map f . pairs .  zip [1..]
-  where
-    f = (\((i, u), (j, v)) -> "Distance between galaxies " ++ show (i, j) ++ " [" ++ show u ++ ", " ++ show v ++ "] is " ++ show (dist u v))
+p1 :: [Galaxy] -> Int
+p1 = sum . map (uncurry dist) . pairs
