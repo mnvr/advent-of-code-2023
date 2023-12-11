@@ -89,7 +89,7 @@ mkGrid :: [String] -> Int -> Int -> Grid
 mkGrid ls ny nx = Grid { gm = mkGridMap ls, gny = ny, gnx = nx }
 
 p2 :: Parsed -> String
-p2 pr@Parsed { start, nm, ny, nx } = show og -- gridLines gm eny enx
+p2 pr@Parsed { start, nm, ny, nx } = show eg -- gridLines gm eny enx
   -- let (log, flooded) = flood gm
       -- r = resultLog flooded
   -- in unlines $ gridLines gm eny enx -- $ log ++ gridLines flooded ny nx ++ r
@@ -97,6 +97,7 @@ p2 pr@Parsed { start, nm, ny, nx } = show og -- gridLines gm eny enx
   where
     dm = mkDistanceMap (start, nm)
     og = reconstruct pr dm
+    eg = expand2 pr dm
     -- grid = trace (show (ny, nx)) $ expand pr dm
     -- (eny, enx) = (2 * ny, 2 * nx)
     -- gm = mkGridMap grid
@@ -131,6 +132,30 @@ reconstruct Parsed { nm, ny, nx } dm = mkGrid expandLines ny nx
       | n1 == (y + 1, x) && n2 == (y, x + 1) = 'F'
       | n1 == (y - 1, x) && n2 == (y + 1, x) = '|'
 
+expand2 :: Parsed -> M.Map Node Int -> Grid
+expand2 Parsed { nm, ny, nx } dm = mkGrid expandLines eny enx
+  where
+    keys = M.keys dm
+    eny = 2 * ny + 4
+    enx = 2 * nx + 4
+    expandLines :: [String]
+    expandLines = addBoundaryLines $ concatMap (addBoundary . expandRow) [0..ny-1]
+    expandRow :: Int -> [String]
+    expandRow y = foldr (\(c1, c2) ([l1, l2]) -> [c1 ++ l1, c2 ++ l2]) [[], []] (expandRow' y)
+    expandRow' :: Int -> [(String, String)]
+    expandRow' y = map (\x -> expandCell (y, x)) [0..nx-1]
+    expandCell key | key `elem` keys = expandCell' key (M.lookup key nm)
+                   | otherwise = (".?", "??")
+    expandCell' key@(y, x) (Just (n1, n2))
+      | n1 == (y, x - 1) && n2 == (y, x + 1) = ("-?", "??")
+      | n1 == (y - 1, x) && n2 == (y, x - 1) = ("J?", "??")
+      | n1 == (y + 1, x) && n2 == (y, x - 1) = ("7?", "??")
+      | n1 == (y - 1, x) && n2 == (y, x + 1) = ("L?", "??")
+      | n1 == (y + 1, x) && n2 == (y, x + 1) = ("F?", "??")
+      | n1 == (y - 1, x) && n2 == (y + 1, x) = ("|?", "??")
+    boundaryLine = enx `replicate` '#'
+    addBoundary = map (\s -> "##" ++ s ++ "##")
+    addBoundaryLines ls = let bs = [boundaryLine, boundaryLine] in bs ++ ls ++ bs
 
 expand :: Parsed -> M.Map Node Int -> String
 expand Parsed { nm, ny, nx } dm = unlines expandLines
