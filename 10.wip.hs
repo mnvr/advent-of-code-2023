@@ -1,14 +1,11 @@
 import Data.Bifunctor (first, second)
 import Data.Map qualified as M
 import Data.Maybe (catMaybes, fromJust)
-import Data.List (intersperse)
--- import Debug.Trace (trace)\
+import Control.Arrow ((&&&))
 
-trace m a = a
-
--- WIP!!
 main :: IO ()
-main = interact $ (++ "\n") . p2 . parse
+-- main = interact $ (++ "\n") . fst . p2v . parse
+main = interact $ (++ "\n") . show . (p1 &&& p2) . parse
 
 type Node = (Int, Int)
 
@@ -90,16 +87,20 @@ instance Show Grid where
 mkGrid :: [String] -> Int -> Int -> Grid
 mkGrid ls ny nx = Grid { gm = mkGridMap ls, gny = ny, gnx = nx }
 
-p2 :: Parsed -> String
-p2 pr@Parsed { start, nm, ny, nx } =
-  show og ++ show eg ++ unlines log ++ show fg ++ show cg ++ result (gm cg)
+p2 :: Parsed -> Int
+p2 = snd . p2v
+
+p2v :: Parsed -> (String, Int)
+p2v pr@Parsed { start, nm, ny, nx } =
+  (show og ++ show eg ++ unlines log ++ show fg ++ show cg ++ resultL (gm cg),
+  countEmpty (gm cg))
   where
     dm = mkDistanceMap (start, nm)
     og = reconstruct pr dm
     eg = expand pr dm
     (log, fg) = flood eg
     cg = collapse fg
-    result m = "inside " ++ show (countEmpty m)
+    resultL m = "inside " ++ show (countEmpty m)
     countEmpty = length . M.elems . M.filter (== inside)
 
 mkGridMap :: [String] -> M.Map Node Char
@@ -177,25 +178,15 @@ collapse Grid { gm, gny, gnx } = Grid { gm = cm, gny = cny, gnx = cnx }
   where
     cny = (gny `div` 3) - 2
     cnx = (gnx `div` 3) - 2
-    cm = trace ("collapse to cny = " ++ show cny ++ " cnx = " ++ show cnx) $ M.foldrWithKey f M.empty gm
+    cm = M.foldrWithKey f M.empty gm
     f key@(y, x) ch m
       | isNotBoundary key && y `mod` 3 == 0 && x `mod` 3 == 0 =
-        let newKey = ((y - 3) `div` 3, (x - 3) `div` 3)
-            newCh = g key ch m
-        in trace ("will collapse expanded " ++ show (y,x) ++ " " ++ show ch ++ " to " ++ show newKey ++ " " ++ show newCh) $ M.insert ((y - 3) `div` 3, (x - 3) `div` 3) (g key ch gm) m
+         M.insert ((y - 3) `div` 3, (x - 3) `div` 3) (g key gm) m
       | otherwise = m
     isNotBoundary (y, x) = y > 2 && y < gny - 3 && x > 2 && x < gnx - 3
-    g (y, x) ch m = g' (fromJust $ M.lookup (y+1, x+1) m)
+    g (y, x) m = g' (fromJust $ M.lookup (y+1, x+1) m)
     g' '?' = inside
     g' ch = ch
 
-    -- g (y, x) '#' m = '.'
-    -- g key c m = c
-    isChar key m ch = let res = M.lookup key m
-                          res2 = res == Just ch
-                      -- in trace ("isChar " ++ show key ++ " " ++ show ch ++ " " ++ show res2 ++ " (found " ++ show res ++ ")") res2
-                      in res2
-
 inside :: Char
 inside = '■'
--- inside = '='
