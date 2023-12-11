@@ -1,20 +1,26 @@
 import Data.Bifunctor (first, second)
 import Data.Map qualified as M
-import Data.Maybe (catMaybes, fromJust)
-import Control.Arrow ((&&&))
-import Debug.Trace
+import Data.Maybe (catMaybes)
 import Data.List (intersperse)
 
 -- WIP!!
 main :: IO ()
--- main = interact $ (++ "\n") . show  . p2 . parse
 main = interact $ (++ "\n") . p2 . parse
 
 type Node = (Int, Int)
 
-parse :: String -> (Node, M.Map Node (Node, Node))
-parse = ensureStart . neighbours . chunks . lines
+data Parsed = Parsed {
+  start :: Node,
+  nm :: M.Map Node (Node, Node),
+  ny :: Int,
+  nx :: Int
+  }
+
+parse :: String -> Parsed
+parse = mkParsed . chunks . lines
   where
+    mkParsed ck@((h, _, _):_) = let (s, nb) = ensureStart (neighbours ck)
+      in Parsed { start = s, nm = nb, ny = length ck, nx = length h }
     chunks ls = let g = ground ls in zip3 (g : ls) ls (drop 1 ls ++ [g])
     ground (h:_) = length h `replicate` '.'
     enum = zip [0..]
@@ -53,13 +59,16 @@ parse = ensureStart . neighbours . chunks . lines
     ensureStart (Just s, m) = (s, m)
     ensureStart _ = error "input does not contain a start node"
 
-p1 :: (Node, M.Map Node (Node, Node)) -> Int
-p1 = maximum . M.elems . dist
+p1 :: Parsed -> Int
+p1 Parsed { start, nm } = p1' (start, nm)
 
-dist :: (Node, M.Map Node (Node, Node)) -> (M.Map Node Int)
-dist (start, neighbours) = relax (distanceMap start) [start]
+p1' :: (Node, M.Map Node (Node, Node)) -> Int
+p1' = maximum . M.elems . mkDistanceMap
+
+mkDistanceMap :: (Node, M.Map Node (Node, Node)) -> (M.Map Node Int)
+mkDistanceMap (start, neighbours) = relax (dm0 start) [start]
   where
-    distanceMap s = M.singleton start 0
+    dm0 s = M.singleton start 0
     relax :: M.Map Node Int -> [Node] -> M.Map Node Int
     relax dm [] = dm
     relax dm (key:q) = case (M.lookup key dm, M.lookup key neighbours) of
@@ -70,63 +79,48 @@ dist (start, neighbours) = relax (distanceMap start) [start]
         Nothing -> (M.insert nn (dist + 1) dm, q ++ [nn])
         Just d -> if dist + 1 < d then (M.insert nn (dist + 1) dm, q ++ [nn]) else (dm, q)
 
-p2a inp = concat $ intersperse "\n" $ map scan rows
+p2 :: Parsed -> String
+p2 pr@Parsed { start, nm, ny, nx } =
+  let (log, flooded) = flood gm
+      r = resultLog flooded
+  in unlines $ log ++ gridLines flooded ny nx ++ r
   where
-    dm = dist inp
-    keys = M.keys dm
-    rows = range $ map fst $ keys
-    cols = range $ map snd $ keys
-    scan y = (\(_,_,ss) -> concatMap show (reverse ss)) $ foldl f (Outside, ' ', []) cols
-      where
-        isOnLoop x = (y, x) `elem` keys
-        f (state, prevC, ss) x =
-            let ch = if isOnLoop x then '|' else ' '
-                state' = move state prevC ch (M.lookup (y, x) dm)
-            in (state', ch, state':ss)
+    dm = mkDistanceMap (start, nm)
+    grid = expand pr dm
+    gm = mkGridMap grid
+    resultLog m = ["inside " ++ show (countEmpty m)]
+    countEmpty = length . M.elems . M.filter (== '.')
 
-range :: [Int] -> [Int]
-range xs = [minimum xs..maximum xs]
-
-data State = Outside | Boundary1 Int | Boundary2 Int | Inside
-
-move :: State -> Char -> Char -> Maybe Int -> State
-move Outside ' ' '|' (Just d) = Boundary1 d
-move Outside _ _ _ = Outside
-move (Boundary1 _) _ ' ' _ = Inside
-move (Boundary1 _) _ '|' (Just d) = Boundary2 d
-move (Boundary2 _) _ '|' (Just d) = Boundary2 d
-move (Boundary2 _) _ ' ' _ = Outside
-move Inside _ ' ' _ = Inside
-move Inside _ '|' (Just d) = Boundary2 d -- ?
-
-instance Show State where
-  show Outside = " . "
-  show (Boundary1 d) = if d < 10 then (" " ++ show d ++ " ") else (show d ++ " ")
-  show (Boundary2 d) = if d < 10 then (" " ++ show d ++ " ") else (show d ++ " ")
-  show Inside = "   "
-
-p2Pre inp@(_, neighbors) = (expand, (2 * nrows + 3), (2 * ncols + 2))
+mkGridMap :: String -> M.Map Node Char
+mkGridMap = foldl f M.empty . enum . lines
   where
-    dm = dist inp
+    f m (y, row) = foldl (g y) m (enum row)
+    g y m (x, c) = M.insert (y, x) c m
+    enum = zip [0..]
+
+gridLines :: M.Map Node Char -> Int -> Int -> [String]
+gridLines m ny nx = map makeRow [0..ny-1]
+  where makeRow y = map (\x -> maybe '#' id (M.lookup (y,x) m)) [0..nx-1]
+
+expand :: Parsed -> M.Map Node Int -> String
+expand Parsed { nm, ny, nx } dm = unlines expandLines
+  where
     keys = M.keys dm
-    rows = range $ map fst $ keys
-    cols = range $ map snd $ keys
-    nrows = (\ys -> maximum ys - minimum ys) $ map fst $ keys
-    ncols = (\ys -> maximum ys - minimum ys) $ map snd $ keys
-    empty = replicate (2 * (ncols + 2)) '#'
-    ce = (\ss -> [empty, "\n"] ++ ss ++ [empty])
-    re = (\s -> "#" ++ s ++ "#")
-    expand = concat $ ce $ map (\(a,b)-> (re a) ++ "\n" ++ (re b) ++ "\n") expand'
-    expand' :: [(String, String)]
-    expand' = map expandRow rows
-    expandRow :: Int -> (String, String)
-    expandRow row = foldr (\(ta, tb) (a, b) -> (a ++ ta, b ++ tb)) ([], []) $ expandRow' row
+    expandLines = boundaryRow ++ expand' ++ boundaryRow
+    boundaryRow = [boundaryLine, boundaryLine]
+    boundaryLine = (nx + 2) `replicate` '#'
+    expand' :: [String]
+    expand' = concatMap expandRow [0..ny-1]
+    expandRow :: Int -> [String]
+    expandRow y = foldr (\(l1, l2) ls -> l1:l2:ls) [] (expandRow' y)
     expandRow' :: Int -> [(String, String)]
-    expandRow' row = map (exp row) cols
-    exp y x | (y, x) `elem` keys = let key = (y, x) in
-              expPipe key (M.lookup key neighbors)
-            | otherwise = ("ee", "ee")
-    expPipe key@(y, x) (Just (n1, n2))
+    expandRow' y =  [boundaryCell] ++
+                    map (\x -> expandCell (y, x)) [0..nx-1] ++
+                    [boundaryCell]
+    boundaryCell = ("##", "##")
+    expandCell key | key `elem` keys = expandCell' key (M.lookup key nm)
+                   | otherwise = ("ee", "ee")
+    expandCell' key@(y, x) (Just (n1, n2))
       | n1 == (y, x - 1) && n2 == (y, x + 1) = ("--",
                                                 "ee")
       | n1 == (y - 1, x) && n2 == (y, x - 1) = ("|e",
@@ -139,54 +133,28 @@ p2Pre inp@(_, neighbors) = (expand, (2 * nrows + 3), (2 * ncols + 2))
                                                 "|e")
       | n1 == (y - 1, x) && n2 == (y + 1, x) = ("|e",
                                                 "|e")
-      | otherwise = ("..", "..")
 
-p2 inp = show $ floodU 0 gm []
-  where
-    (grid, nrows, ncols) = p2Pre inp
-    enum = zip [0..]
-    gm = mkGM grid
-    mkGM :: String -> M.Map Node Char
-    mkGM s = foldl gm' M.empty $ enum $ lines $ s
-    gm' :: M.Map Node Char -> (Int, [Char]) -> M.Map Node Char
-    gm' m (y, row) = foldl (gm'' y) m (enum row)
-    gm'' y m (x, c) = M.insert (y,x) c m
-
-    markEmpty :: M.Map Node Char -> M.Map Node Char
-    markEmpty m = M.mapWithKey f m
-      where f key 'e' | isEmptyBlock key = '.'
-            f _ ch = ch
-            isEmptyBlock (y, x) = odd y && even x && all (=='e') nbrs
-              where nbrs = catMaybes (map (`M.lookup` m) [(y+1,x), (y,x+1), (y+1,x+1)])
-
-    countEmpty = length . M.elems . M.filter (=='.')
-
-    showGM :: M.Map Node Char -> Int -> Int -> [String]
-    showGM m nr nc = map makeRow [0..nr]
-      where makeRow y = map (\x -> maybe '#' id (M.lookup (y,x) m)) [0..nc]
-
-    floodU c m ss = case flood m of
-      (0, m') -> let m'' = (markEmpty m') in (countEmpty m'')
-      (changed, m') -> floodU (c + 1) m' (stats (m, changed) : ss)
-
-    floodUP c m ss = case flood m of
-      (0, m') -> let m'' = (markEmpty m') in
-        concat $ intersperse "\n" $ (reverse ss) ++ ["iterations " ++ (show c)]
-          ++ (showGM m'' nrows ncols) ++ ["inside " ++ show (countEmpty m'')]
-      (changed, m') -> floodUP (c + 1) m' (stats (m, changed) : ss)
-
-    floodn 0 m ss = intersperse "\n" (reverse ss)
-    floodn n m ss = let (changed, m') = flood m
-                    in floodn (n-1) m' ((stats (m,changed)): ss)
-
-    remaining = M.filter (=='e')
-    stats (m, ch) = "changed " ++ (show ch) ++ "\tremaining " ++
-      (show $ length $ M.keys $ remaining m)
-    flood :: M.Map Node Char -> (Int, M.Map Node Char)
-    flood m = M.mapAccumWithKey f 0 m
-      where
+flood :: M.Map Node Char -> ([String], M.Map Node Char)
+flood m = ([], m) where -- go 0 m [] where
+  go i m log = case step m of
+    (0, m') -> (reverse (("iterations " ++ show i) : log), m')
+    (changed, m') -> let r = remaining m'
+                         msg = "changed " ++ show changed ++ "\tremaining " ++ show r
+                     in go (i + 1) m' (msg :log)
+  remaining = length . M.keys . M.filter (=='e')
+  step :: M.Map Node Char -> (Int, M.Map Node Char)
+  step m = M.mapAccumWithKey f 0 m
+    where
         f :: Int -> Node -> Char -> (Int, Char)
-        f changed key 'e' | any (== '#') (nbr key) = (changed+1, '#')
+        f changed key 'e' | any (== '#') (nbr key) = (changed + 1, '#')
         f changed _ ch = (changed, ch)
-        nbr (y,x) = catMaybes $ map (`M.lookup` m) [
+        nbr (y, x) = catMaybes $ map (`M.lookup` m) [
           (y - 1, x), (y + 1, x), (y, x - 1), (y, x + 1)]
+
+markEmpty :: M.Map Node Char -> M.Map Node Char
+markEmpty m = M.mapWithKey f m
+  where
+    f key 'e' | isEmptyBlock key = '.'
+    f _ ch = ch
+    isEmptyBlock (y, x) = even y && even x && all (=='e') nbrs
+      where nbrs = catMaybes (map (`M.lookup` m) [(y+1,x), (y,x+1), (y+1,x+1)])
