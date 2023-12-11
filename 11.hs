@@ -1,7 +1,7 @@
 import Data.List
 
 main :: IO ()
-main = interact $ (++ "\n") . show . parse
+main = interact $ (++ "\n") . show . p1 . parse
 
 type Galaxy = (Int, Int)
 
@@ -26,3 +26,11 @@ expand gs = sort $ map f gs
       where
         adjustY = maybe 0 id (findIndex (> y) missingY)
         adjustX = maybe 0 id (findIndex (> x) missingX)
+
+pairs :: [Galaxy] -> [(Galaxy, Galaxy)]
+pairs gs = nub [(u, v) | u <- gs, v <- gs, u /= v]
+
+dist :: Galaxy -> Galaxy -> Int
+dist (y, x) (y', x') = abs (y - y') + abs (x - x')
+
+p1 = map (\(u, v) -> (u, v, dist u v)) . pairs
