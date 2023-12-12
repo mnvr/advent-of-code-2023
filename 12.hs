@@ -1,8 +1,10 @@
+{-# OPTIONS_GHC -Wno-all #-}
+
 import Data.Map qualified as M
-import Data.List (intercalate)
+import Data.List (intercalate, isPrefixOf, replicate)
 
 main :: IO ()
-main = interact $ (++ "\n") . show . p1 . parse
+main = interact $ (++ "\n") . show . p1 . head . parse
 
 parse :: String -> [(String, [Int])]
 parse = map line . lines
@@ -24,20 +26,41 @@ p1' inp = sum (map count inp)
     matchingRuns xs = length . filter (== xs)
 
 -- p1 :: [(String, [Int])] -> Int
-p1 inp = runs' (fst (head inp)) -- sum (map count inp)
+-- p1 inp = runs' (fst (head inp)) -- sum (map count inp)
+p1 (s, xs) = consume s xs
   where
     count (s, xs) = length $ filter (== xs) $ runs' s
+
+consume :: String -> [Int] -> Int
+consume _ [] = 1
+consume s (x:xs) =
+    if take (x + 1) s == (x `replicate` '#') ++ "." then consume (drop (x + 1) s) xs
+    else if take (x + 1) s == (x `replicate` '#') ++ "?" then consume (drop (x + 1) s) xs
+    else if take (x + 1) s == (x `replicate` '#') ++ [] then consume (drop (x + 1) s) xs
+    else if take 1 s == "." then consume (dropWhile (== '.') s) xs
+    else 0
+
+-- hasPrefixLen :: Char -> Int -> String -> Bool
+-- hasPrefixLen c i s = i `replicate` c `isPrefixOf` s
 
 runs' :: String -> [[Int]]
 runs' [] = [[]]
 runs' ('.':cs) = runs' cs
-runs' s@('#':cs) = let (prefix, rest) = span (== '#') s
-                       r = length prefix
-                   in map (r:) (runs' rest)
--- runs' ('?':cs) = concatMap (\(rx:rs) -> [rx:rs, (rx+1):rs]) (runs' cs)
-runs' ('?':cs) = concatMap f (runs' cs)
-  where
-    f (rx:rs) = if length (takeWhile (== '#') cs) == rx then [rx:rs, 1+rx:rs]
+runs' ('#':[]) = [[1]]
+runs' ('#':'.':cs) = map (1:) (runs' cs)
+runs' ('#':'#':cs) = map (\(rh:rs) -> (rh+1):rs) (runs' ('#':cs))
+runs' ('?':'#':cs) = concatMap (\(rh:rs) -> [rh:rs, (rh+1):rs]) (runs' ('#':cs))
+-- runs' ('?':'?':cs) = [map (1:) (runs' ('.':cs))]
+-- runs' ('?':'.':cs) = map (1:) (runs' ('.':cs))
+-- runs' ('?':'#':cs) = runs' ('.':cs))
+
+-- runs' s@('#':cs) = let (prefix, rest) = span (== '#') s
+--                        r = length prefix
+--                    in map (r:) (runs' rest)
+-- -- runs' ('?':cs) = concatMap (\(rx:rs) -> [rx:rs, (rx+1):rs]) (runs' cs)
+-- runs' ('?':cs) = concatMap f (runs' cs)
+--   where
+--     f (rx:rs) = if length (takeWhile (== '#') cs) == rx then [rx:rs, 1+rx:rs]
 
 satisfy :: [Char] -> [Int] -> Bool
 satisfy _ [] = True
