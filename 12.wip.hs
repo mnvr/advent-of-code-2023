@@ -3,7 +3,7 @@
 import Data.List (intercalate)
 
 main :: IO ()
-main = interact $ (++ "\n") . p1 . parse
+main = interact $ (++ "\n") . show . sum . p1b . parse
 
 parse :: String -> [([String], [Int])]
 parse = map line . lines
@@ -39,6 +39,23 @@ p1 zz = unlines $ map f zz
     g [s] [x] | '#' `notElem` s = show $ length s `nCr` x
               | otherwise = show 1
     g u v = "reduced to " ++ show u ++ "  " ++ show v ++ " which has " ++ show (p1' [(u, v)]) ++ " arrangements"
+
+p1b :: [([String], [Int])] -> [Int]
+p1b zz = map f zz
+  where
+    f (s, xs) = g s xs
+    g (a:b) (x:xs)
+      | take 1 a == "#" && a == x `replicate` '#' = g b xs
+      | not (null b) && not (null xs) && take 1 (last b) == "#" && (last b) == (last xs) `replicate` '#' = g (a:unlast b) (x:unlast xs)
+      | length a == x = g b xs
+      | not (null b) && not (null xs) && length (last b) == last xs = g (a:unlast b) (x:unlast xs)
+      | length a > x && '#' `elem` (take x a) = let c = (drop (x + 2) a) in g (if null c then b else c:b) xs
+      | not (null b) && not (null xs) && length (last b) > (last xs) && '#' `elem` (take (last xs) (last b)) = let c = (drop ((last xs) + 2) (last b)) in g (if null c then a:(unlast b) else (a:(unlast b) ++ [c])) (x:unlast xs)
+    g [] _ = 1
+    g _ [] = 1
+    g [s] [x] | '#' `notElem` s = length s `nCr` x
+              | otherwise = 1
+    g u v = (p1' [(u, v)])
 
 unlast = reverse . drop 1 . reverse
 
