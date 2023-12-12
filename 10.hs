@@ -20,7 +20,8 @@ parse :: String -> Parsed
 parse = mkParsed . chunks . lines
   where
     mkParsed ck@((h, _, _):_) = let (s, nb) = ensureStart (neighbours ck)
-      in Parsed { start = s, nm = nb, dm = mkDistanceMap s nb,
+      in Parsed { start = s, nm = nb,
+                  dm = mkDistanceMap s (M.map (\p -> [fst p, snd p]) nb),
                   ny = length ck, nx = length h }
     chunks ls = let g = ground ls in zip3 (g : ls) ls (drop 1 ls ++ [g])
     ground (h:_) = length h `replicate` '.'
@@ -60,17 +61,16 @@ parse = mkParsed . chunks . lines
     ensureStart (Just s, m) = (s, m)
     ensureStart _ = error "input does not contain a start node"
 
-mkDistanceMap :: Node -> M.Map Node (Node, Node) -> M.Map Node Int
+mkDistanceMap :: Node -> M.Map Node [Node] -> M.Map Node Int
 mkDistanceMap start neighbours = relax (dm0 start) [start]
   where
     dm0 s = M.singleton start 0
     relax :: M.Map Node Int -> [Node] -> M.Map Node Int
     relax dm [] = dm
     relax dm (key:q) = case (M.lookup key dm, M.lookup key neighbours) of
-        (Just dist, Just (n1, n2)) ->
-            let (dm', q') = relaxNeighbour n1 dm q dist in
-                (let (dm'', q'') = relaxNeighbour n2 dm' q' dist in relax dm'' q'')
-    relaxNeighbour nn dm q dist = case M.lookup nn dm of
+        (Just dist, Just ns) ->
+          let (dm', q') = foldl (relaxNeighbour dist) (dm, q) ns in relax dm' q'
+    relaxNeighbour dist (dm, q) nn = case M.lookup nn dm of
         Nothing -> (M.insert nn (dist + 1) dm, q ++ [nn])
         Just d -> if dist + 1 < d then (M.insert nn (dist + 1) dm, q ++ [nn]) else (dm, q)
 
@@ -83,7 +83,7 @@ mkGrid :: [String] -> Int -> Int -> Grid
 mkGrid ls ny nx = Grid { gm = mkGridMap ls, gny = ny, gnx = nx }
 
 p2 :: Parsed -> Int
-p2 pr = (countEmpty . gm . collapse . mask eg . mkDistanceMap2 (0,0) . mkNeighbourMap2) eg
+p2 pr = (countEmpty . gm . collapse . mask eg . mkDistanceMap (0,0) . mkNeighbourMap2) eg
   where countEmpty = length . M.elems . M.filter (== '?')
         eg = expand pr
 
@@ -137,21 +137,6 @@ mkNeighbourMap2 Grid { gm, gny, gnx } = go
                 | otherwise = Nothing
     isInBounds (y, x) = y >= 0 && y < gny && x >= 0 && x < gnx
     isEmpty key = let ch = M.lookup key gm in isInBounds key && ((ch == Just '?') || (ch == Just '#'))
-
-mkDistanceMap2 :: Node -> M.Map Node [Node] -> M.Map Node Int
-mkDistanceMap2 start neighbours = relax (dm0 start) [start]
-  where
-    dm0 s = M.singleton start 0
-    relax :: M.Map Node Int -> [Node] -> M.Map Node Int
-    relax dm [] = dm
-    relax dm (key:q) = case (M.lookup key dm, M.lookup key neighbours) of
-        (Just dist, Just ns) -> let (dm', q') = foldl f (dm, q) ns in relax dm' q'
-            where f (dm', q) n = relaxNeighbour n dm' q dist
-        -- (Just dist, Nothing) -> if key == (20, 20) then dm else error ("unexpected lookup result for key " ++ show key ++ " - " ++ show md ++ "  " ++ show mns)
-        -- (md, mns) -> if key == (20, 20) then dm else error ("unexpected lookup result for key " ++ show key ++ " - " ++ show md ++ "  " ++ show mns)
-    relaxNeighbour nn dm q dist = case M.lookup nn dm of
-        Nothing -> (M.insert nn (dist + 1) dm, q ++ [nn])
-        Just d -> if dist + 1 < d then (M.insert nn (dist + 1) dm, q ++ [nn]) else (dm, q)
 
 mask :: Grid -> M.Map Node Int -> Grid
 mask Grid { gm, gny, gnx } dm = Grid { gm = go, gny, gnx }
