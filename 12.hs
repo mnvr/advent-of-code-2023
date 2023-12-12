@@ -1,7 +1,7 @@
 {-# OPTIONS_GHC -Wno-all #-}
 
 main :: IO ()
-main = interact $ (++ "\n") . show . p1 . head . parse
+main = interact $ (++ "\n") . show . p1 . parse
 
 parse :: String -> [(String, [Int])]
 parse = map line . lines
@@ -10,9 +10,10 @@ parse = map line . lines
         [s, num] -> (s, map read $ words $ map comma num)
     comma c = if c == ',' then ' ' else c
 
-p1 = go
+p1 :: [(String, [Int])] -> Int
+p1 inp = sum (map count inp)
   where
-    go (s, xs) = let as = arrangements s in map (\a -> (a, satisfies xs a, runs a, xs == (runs a))) as
+    count (s, xs) = length $ filter (== xs) $ map runs $ arrangements s
     arrangements :: String -> [String]
     arrangements [] = []
     arrangements "?" = [".", "#"]
@@ -26,9 +27,3 @@ p1 = go
         prefix -> let len = length prefix in len : runs (drop len s)
     matchingRuns :: [Int] -> [[Int]] -> Int
     matchingRuns xs = length . filter (== xs)
-    satisfies ::  [Int] -> String -> Bool
-    satisfies [] _ = True
-    satisfies _ [] = False
-    satisfies xs ('.':rs) = satisfies xs rs
-    satisfies xs@(x:r) s =
-        if take x s == x `replicate` '#' then satisfies r (drop x s) else False
