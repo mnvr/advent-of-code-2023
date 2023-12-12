@@ -2,6 +2,7 @@ import Data.Bifunctor (first, second)
 import Data.Map qualified as M
 import Data.Maybe (catMaybes, fromJust)
 import Control.Arrow ((&&&))
+import Debug.Trace
 
 main :: IO ()
 -- main = interact $ (++ "\n") . show . (p1 &&& p2) . parse
@@ -93,7 +94,7 @@ gridMapToLines gm ny nx = map makeRow [0..ny-1]
   where makeRow y = map (\x -> maybe '!' id (M.lookup (y, x) gm)) [0..nx-1]
 
 showDistanceMap :: Grid -> M.Map Node Int -> String
-showDistanceMap Grid { gm, gny, gnx } dm = unlines rows
+showDistanceMap Grid { gny, gnx } dm = unlines rows
   where
     rows = map row [0..gny-1]
     row y = concatMap item [0..gnx-1]
@@ -115,17 +116,18 @@ mkNeighbourMap2 Grid { gm, gny, gnx } = go
   where
     go = foldl f M.empty [0..gny-1]
     f m y = foldl g m [0..gnx-1]
-      where g m x | M.member (y, x) m = m
-                  | otherwise = foldl alterMap m (neighbors (y, x) m)
+      where g m x | isEmpty (y, x) = foldl alterMap m (neighbors (y, x) m)
+                  | otherwise = m
                       where alterMap m nk =  M.alter af (y, x) m
                               where af Nothing = Just [nk]
                                     af (Just xs) = Just (nk : xs)
     neighbors (y, x) m = catMaybes [
-      ifEmpty (y, x - 1) m, ifEmpty (y - 1, x) m,
-      ifEmpty (y, x + 1) m, ifEmpty (y + 1, x) m]
-    ifEmpty key m | M.notMember key m && isInBounds key = Just key
-                  | otherwise = Nothing
+      ifEmpty (y, x - 1), ifEmpty (y - 1, x),
+      ifEmpty (y, x + 1), ifEmpty (y + 1, x)]
+    ifEmpty key | isEmpty key = Just key
+                | otherwise = Nothing
     isInBounds (y, x) = y >= 0 && y < gny && x >= 0 && x < gnx
+    isEmpty key = let ch = M.lookup key gm in isInBounds key && ((ch == Just '?') || (ch == Just '#'))
 
 mkDistanceMap2 :: Node -> M.Map Node [Node] -> M.Map Node Int
 mkDistanceMap2 start neighbours = relax (dm0 start) [start]
