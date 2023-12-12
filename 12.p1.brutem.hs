@@ -11,8 +11,8 @@ parse = map line . lines
         [s, num] -> (s, map read $ words $ map comma num)
     comma c = if c == ',' then ' ' else c
 
-p1' :: [(String, [Int])] -> Int
-p1' inp = sum (map count inp)
+p1 :: [(String, [Int])] -> Int
+p1 inp = sum (map count inp)
   where
     count (s, xs) = length $ filter (== xs) $ map runs $ arrangements s
     runs :: String -> [Int]
@@ -22,27 +22,6 @@ p1' inp = sum (map count inp)
         prefix -> let len = length prefix in len : runs (drop len s)
     matchingRuns :: [Int] -> [[Int]] -> Int
     matchingRuns xs = length . filter (== xs)
-
--- p1 :: [(String, [Int])] -> Int
-p1 inp = runs' (fst (head inp)) -- sum (map count inp)
-  where
-    count (s, xs) = length $ filter (== xs) $ runs' s
-
-runs' :: String -> [[Int]]
-runs' [] = [[]]
-runs' ('.':cs) = runs' cs
-runs' s@('#':cs) = let (prefix, rest) = span (== '#') s
-                       r = length prefix
-                   in map (r:) (runs' rest)
--- runs' ('?':cs) = concatMap (\(rx:rs) -> [rx:rs, (rx+1):rs]) (runs' cs)
-runs' ('?':cs) = concatMap f (runs' cs)
-  where
-    f (rx:rs) = if length (takeWhile (== '#') cs) == rx then [rx:rs, 1+rx:rs]
-
-satisfy :: [Char] -> [Int] -> Bool
-satisfy _ [] = True
-satisfy s [x] = length (takeWhile (== '#') (dropWhile (/= '#') s)) == x
-
 
 arrangements :: String -> [String]
 arrangements s = snd $ arr M.empty s
@@ -64,7 +43,8 @@ arr m s = case M.lookup s m of
             in (M.insert s r' m, r')
 
 -- p2 :: [(String, [Int])] -> Int
--- p2 = p1 . unfold
+p2 = p1 . unfold
+-- p2 = unfold
 
 unfold :: [(String, [Int])] -> [(String, [Int])]
 unfold = map f
