@@ -5,9 +5,9 @@ import Control.Arrow ((&&&))
 import Debug.Trace
 
 main :: IO ()
--- main = interact $ (++ "\n") . show . (p1 &&& p2) . parse
+main = interact $ (++ "\n") . show . (p1 &&& p2) . parse
 -- main = interact $ (++ "\n") . show . p2 . parse
-main = interact $ (++ "\n") . p2 . parse
+-- main = interact $ (++ "\n") . p2 . parse
 
 type Node = (Int, Int)
 
@@ -104,11 +104,32 @@ showDistanceMap Grid { gny, gnx } dm = unlines rows
 
 -- p2 :: Parsed -> Int
 -- p2 = mkNeighbourMap2 . expand -- countEmpty . gm . collapse . flood . expand
-p2 pr = showDistanceMap eg $ mkDistanceMap2 (0,0) $ mkNeighbourMap2 $ eg -- countEmpty . gm . collapse . flood . expand
+p2 pr = countEmpty (gm cg) -- show cg ++ show (countEmpty (gm cg)) -- showDistanceMap eg dm ++ show g ++ show ci -- countEmpty . gm . collapse . flood . expand
   where
     eg = expand pr
+    dm2 = mkDistanceMap2 (0,0) $ mkNeighbourMap2 $ eg
+    -- ci = countInside eg dm pr
+    meg = mask eg dm2
+    cg = collapse meg
     -- oc = countEmpty . gm . collapse . flood . expand
     countEmpty = length . M.elems . M.filter (== '?')
+
+mask :: Grid -> M.Map Node Int -> Grid
+mask Grid { gm, gny, gnx } dm = Grid { gm = go, gny, gnx }
+  where
+    go = M.mapWithKey f gm
+    f key a = if M.member key dm then '#' else a
+
+countInside :: Grid -> M.Map Node Int -> Parsed -> Int
+countInside Grid { gny, gnx } dmEx Parsed { dm }
+  = (gny * gnx) - reachable - 3 * loop
+  -- = (cny * cnx) -- - reachable
+  where
+    reachable = ((length . M.keys) dmEx) -- `div` 1
+    loop = (length . M.keys) dm
+    cny = (gny `div` 3) - 2
+    cnx = (gnx `div` 3) - 2
+
 
 -- create a new distance map that connects the non-pipe areas
 mkNeighbourMap2 :: Grid -> M.Map Node [Node]
@@ -139,7 +160,7 @@ mkDistanceMap2 start neighbours = relax (dm0 start) [start]
         (Just dist, Just ns) -> let (dm', q') = foldl f (dm, q) ns in relax dm' q'
             where f (dm', q) n = relaxNeighbour n dm' q dist
         -- (Just dist, Nothing) -> if key == (20, 20) then dm else error ("unexpected lookup result for key " ++ show key ++ " - " ++ show md ++ "  " ++ show mns)
-        (md, mns) -> if key == (20, 20) then dm else error ("unexpected lookup result for key " ++ show key ++ " - " ++ show md ++ "  " ++ show mns)
+        -- (md, mns) -> if key == (20, 20) then dm else error ("unexpected lookup result for key " ++ show key ++ " - " ++ show md ++ "  " ++ show mns)
     relaxNeighbour nn dm q dist = case M.lookup nn dm of
         Nothing -> (M.insert nn (dist + 1) dm, q ++ [nn])
         Just d -> if dist + 1 < d then (M.insert nn (dist + 1) dm, q ++ [nn]) else (dm, q)
