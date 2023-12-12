@@ -12,13 +12,20 @@ parse = map line . lines
 
 p1 = go
   where
-    go (s, xs) = let as = arrangements s in map (\a -> (a, satisfies xs a)) as
+    go (s, xs) = let as = arrangements s in map (\a -> (a, satisfies xs a, runs a, xs == (runs a))) as
     arrangements :: String -> [String]
     arrangements [] = []
     arrangements "?" = [".", "#"]
     arrangements [c] = [[c]]
     arrangements ('?':cs) = concatMap (\a -> ['.': a, '#':a]) (arrangements cs)
     arrangements (c:cs) = map (\a -> c: a) (arrangements cs)
+    runs :: String -> [Int]
+    runs [] = []
+    runs s = case takeWhile (== '#') s of
+        [] -> runs (drop 1 s)
+        prefix -> let len = length prefix in len : runs (drop len s)
+    matchingRuns :: [Int] -> [[Int]] -> Int
+    matchingRuns xs = length . filter (== xs)
     satisfies ::  [Int] -> String -> Bool
     satisfies [] _ = True
     satisfies _ [] = False
