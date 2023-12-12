@@ -83,9 +83,8 @@ mkGrid :: [String] -> Int -> Int -> Grid
 mkGrid ls ny nx = Grid { gm = mkGridMap ls, gny = ny, gnx = nx }
 
 p2 :: Parsed -> Int
-p2 pr = (countEmpty . gm . collapse . mask eg . mkDistanceMap2 (0,0) . mkNeighbourMap2) eg
+p2 = countEmpty . gm . collapse . flood . expand
   where countEmpty = length . M.elems . M.filter (== '?')
-        eg = expand pr
 
 mkGridMap :: [String] -> M.Map Node Char
 mkGridMap = foldl f M.empty . enum
@@ -119,45 +118,18 @@ expand Parsed { nm, dm, ny, nx } =
     addBoundary = map (\s -> "###" ++ s ++ "###")
     addBoundaryLines ls = let bs = 3 `replicate` boundaryLine in bs ++ ls ++ bs
 
--- create a new distance map that connects the non-pipe areas
-mkNeighbourMap2 :: Grid -> M.Map Node [Node]
-mkNeighbourMap2 Grid { gm, gny, gnx } = go
+flood :: Grid -> Grid
+flood Grid { gm, gny, gnx } = Grid { gm = go gm, gny = gny, gnx = gnx }
   where
-    go = foldl f M.empty [0..gny-1]
-    f m y = foldl g m [0..gnx-1]
-      where g m x | isEmpty (y, x) = foldl alterMap m (neighbors (y, x) m)
-                  | otherwise = m
-                      where alterMap m nk =  M.alter af (y, x) m
-                              where af Nothing = Just [nk]
-                                    af (Just xs) = Just (nk : xs)
-    neighbors (y, x) m = catMaybes [
-      ifEmpty (y, x - 1), ifEmpty (y - 1, x),
-      ifEmpty (y, x + 1), ifEmpty (y + 1, x)]
-    ifEmpty key | isEmpty key = Just key
-                | otherwise = Nothing
-    isInBounds (y, x) = y >= 0 && y < gny && x >= 0 && x < gnx
-    isEmpty key = let ch = M.lookup key gm in isInBounds key && ((ch == Just '?') || (ch == Just '#'))
-
-mkDistanceMap2 :: Node -> M.Map Node [Node] -> M.Map Node Int
-mkDistanceMap2 start neighbours = relax (dm0 start) [start]
-  where
-    dm0 s = M.singleton start 0
-    relax :: M.Map Node Int -> [Node] -> M.Map Node Int
-    relax dm [] = dm
-    relax dm (key:q) = case (M.lookup key dm, M.lookup key neighbours) of
-        (Just dist, Just ns) -> let (dm', q') = foldl f (dm, q) ns in relax dm' q'
-            where f (dm', q) n = relaxNeighbour n dm' q dist
-        -- (Just dist, Nothing) -> if key == (20, 20) then dm else error ("unexpected lookup result for key " ++ show key ++ " - " ++ show md ++ "  " ++ show mns)
-        -- (md, mns) -> if key == (20, 20) then dm else error ("unexpected lookup result for key " ++ show key ++ " - " ++ show md ++ "  " ++ show mns)
-    relaxNeighbour nn dm q dist = case M.lookup nn dm of
-        Nothing -> (M.insert nn (dist + 1) dm, q ++ [nn])
-        Just d -> if dist + 1 < d then (M.insert nn (dist + 1) dm, q ++ [nn]) else (dm, q)
-
-mask :: Grid -> M.Map Node Int -> Grid
-mask Grid { gm, gny, gnx } dm = Grid { gm = go, gny, gnx }
-  where
-    go = M.mapWithKey f gm
-    f key a = if M.member key dm then '#' else a
+    go gm = case step gm of
+      (0, gm') -> gm'
+      (_, gm') -> go gm'
+    step m = M.mapAccumWithKey f 0 m
+      where
+        f changed key '?' | any (=='#') (nbr key) = (changed + 1, '#')
+        f changed key ch = (changed, ch)
+        nbr (y,x) = catMaybes $ map (`M.lookup` m) [
+          (y, x - 1), (y - 1, x), (y, x + 1), (y + 1, x)]
 
 collapse :: Grid -> Grid
 collapse Grid { gm, gny, gnx } = Grid { gm = cm, gny = cny, gnx = cnx }
