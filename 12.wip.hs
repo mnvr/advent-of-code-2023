@@ -32,10 +32,13 @@ p1 zz = unlines $ map f zz
       | not (null b) && not (null xs) && take 1 (last b) == "#" && (last b) == (last xs) `replicate` '#' = g (a:unlast b) (x:unlast xs)
       | length a == x = g b xs
       | not (null b) && not (null xs) && length (last b) == last xs = g (a:unlast b) (x:unlast xs)
-      | length a > x && '#' `elem` (take x a) = g ((drop (x + 2) a):b) xs
-    g [] [] = show 1
+      | length a > x && '#' `elem` (take x a) = let c = (drop (x + 2) a) in g (if null c then b else c:b) xs
+      | not (null b) && not (null xs) && length (last b) > (last xs) && '#' `elem` (take (last xs) (last b)) = let c = (drop ((last xs) + 2) (last b)) in g (if null c then a:(unlast b) else (a:(unlast b) ++ [c])) (x:unlast xs)
+    g [] _ = show 1
+    g _ [] = show 1
     g [s] [x] | '#' `notElem` s = show $ length s `nCr` x
-    g u v = "reduced to " ++ show u ++ "  " ++ show v
+              | otherwise = show 1
+    g u v = "reduced to " ++ show u ++ "  " ++ show v ++ " which has " ++ show (p1' [(u, v)]) ++ " arrangements"
 
 unlast = reverse . drop 1 . reverse
 
