@@ -1,7 +1,7 @@
 {-# OPTIONS_GHC -Wno-all #-}
 
 import Data.Map qualified as M
-import Data.List (intercalate, isPrefixOf, replicate)
+import Data.List
 
 main :: IO ()
 main = interact $ (++ "\n") . show . p1 . head . parse
@@ -38,8 +38,13 @@ consume s (x:xs) =
     else if take (x + 1) s == (x `replicate` '#') ++ "?" then consume (drop (x + 1) s) xs
     else if take (x + 1) s == (x `replicate` '#') ++ [] then consume (drop (x + 1) s) xs
     else if take 1 s == "." then consume (dropWhile (== '.') s) xs
+    else if (nub (take x s)) \\ "?#" == "" && take 1 (drop x s) /= "#" then consume (drop (x + 1) s) xs
+    else if take 1 s == "#" then 0
     else 0
+    -- else if take (x + 1) s == (x `replicate` '?') ++ '.' then consume (drop (x + 1) s) xs
+    -- else if take (x + 1) s == (x `replicate` '?') ++ '.' then consume (drop (x + 1) s) xs
 
+--only ::
 -- hasPrefixLen :: Char -> Int -> String -> Bool
 -- hasPrefixLen c i s = i `replicate` c `isPrefixOf` s
 
