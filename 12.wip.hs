@@ -1,11 +1,5 @@
-{-# OPTIONS_GHC -Wno-all #-}
-
-import Data.Map qualified as M
-import Data.List
-import Debug.Trace
-
 main :: IO ()
-main = interact $ (++ "\n") . show . sum . map p1 . parse
+main = interact $ (++ "\n") . show . p1 . parse
 
 parse :: String -> [([String], [Int])]
 parse = map line . lines
@@ -15,26 +9,20 @@ parse = map line . lines
     dot c = if c == '.' then ' ' else c
     comma c = if c == ',' then ' ' else c
 
--- p1 (s, xs) = consume s xs
--- p1 :: (String, b) -> String
-p1 (s, xs) = sum $ map (\ss -> consume ss xs) (expand s) -- map variations s -- xs
+p1 :: [([String], [Int])] -> Int
+p1 = sum . map count
+  where count (ss, xs) = sum $ map (`consume` xs) (expand ss)
 
 consume :: [String] -> [Int] -> Int
-consume ss xs = consume' ss xs -- let r = trace ("consume " ++ show ss ++ " " ++ show xs ++ " called") consume' ss xs in trace ("consume " ++ show ss ++ " " ++ show xs ++ " will return " ++ show r) r
-
--- consume ss xs = let r = trace ("consume " ++ show ss ++ " " ++ show xs ++ " called") consume' ss xs in trace ("consume " ++ show ss ++ " " ++ show xs ++ " will return " ++ show r) r
-
-consume' :: [String] -> [Int] -> Int
-consume' [] [] = 1
--- consume' [s] [x] = if length s == x then 1 else 0
-consume' _ [] = 0
-consume' [] _ = 0
-consume' (s:ss) (x:xs) = if length s /= x then 0 else consume ss xs
+consume [] [] = 1
+consume _  [] = 0
+consume []  _ = 0
+consume (s:ss) (x:xs) = if length s /= x then 0 else consume ss xs
 
 expand :: [String] -> [[String]]
 expand [] = [[]]
 expand (s:ss)
-  | nub s == "#" = map (s:) (expand ss)
+  | '?' `notElem` s = map (s:) (expand ss)
   | otherwise = concatMap f (expand ss)
      where f ss = [words v ++ ss | v <- variations s]
 
