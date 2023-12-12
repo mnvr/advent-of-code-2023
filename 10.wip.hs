@@ -5,7 +5,8 @@ import Control.Arrow ((&&&))
 
 main :: IO ()
 -- main = interact $ (++ "\n") . show . (p1 &&& p2) . parse
-main = interact $ (++ "\n") . show . p2 . parse
+-- main = interact $ (++ "\n") . show . p2 . parse
+main = interact $ (++ "\n") . p2 . parse
 
 type Node = (Int, Int)
 
@@ -91,9 +92,20 @@ gridMapToLines :: M.Map Node Char -> Int -> Int -> [String]
 gridMapToLines gm ny nx = map makeRow [0..ny-1]
   where makeRow y = map (\x -> maybe '!' id (M.lookup (y, x) gm)) [0..nx-1]
 
--- p2 :: Parsed -> Int
-p2 = mkDistanceMap2 (0,0) . mkNeighbourMap2 . expand -- countEmpty . gm . collapse . flood . expand
+showDistanceMap :: Grid -> M.Map Node Int -> String
+showDistanceMap Grid { gm, gny, gnx } dm = unlines rows
   where
+    rows = map row [0..gny-1]
+    row y = concatMap item [0..gnx-1]
+      where item x = case M.lookup (y, x) dm of
+                       Nothing -> " .. "
+                       Just d -> (if d < 10 then "  " ++ show d else " " ++ show d) ++ " "
+
+-- p2 :: Parsed -> Int
+-- p2 = mkNeighbourMap2 . expand -- countEmpty . gm . collapse . flood . expand
+p2 pr = showDistanceMap eg $ mkDistanceMap2 (0,0) $ mkNeighbourMap2 $ eg -- countEmpty . gm . collapse . flood . expand
+  where
+    eg = expand pr
     -- oc = countEmpty . gm . collapse . flood . expand
     countEmpty = length . M.elems . M.filter (== '?')
 
@@ -101,8 +113,8 @@ p2 = mkDistanceMap2 (0,0) . mkNeighbourMap2 . expand -- countEmpty . gm . collap
 mkNeighbourMap2 :: Grid -> M.Map Node [Node]
 mkNeighbourMap2 Grid { gm, gny, gnx } = go
   where
-    go = foldl f M.empty [0..gny]
-    f m y = foldl g m [0..gnx]
+    go = foldl f M.empty [0..gny-1]
+    f m y = foldl g m [0..gnx-1]
       where g m x | M.member (y, x) m = m
                   | otherwise = foldl alterMap m (neighbors (y, x) m)
                       where alterMap m nk =  M.alter af (y, x) m
@@ -124,7 +136,8 @@ mkDistanceMap2 start neighbours = relax (dm0 start) [start]
     relax dm (key:q) = case (M.lookup key dm, M.lookup key neighbours) of
         (Just dist, Just ns) -> let (dm', q') = foldl f (dm, q) ns in relax dm' q'
             where f (dm', q) n = relaxNeighbour n dm' q dist
-        (md, mns) -> error ("unexpected lookup result for key " ++ show key ++ " - " ++ show md ++ "  " ++ show mns)
+        -- (Just dist, Nothing) -> if key == (20, 20) then dm else error ("unexpected lookup result for key " ++ show key ++ " - " ++ show md ++ "  " ++ show mns)
+        (md, mns) -> if key == (20, 20) then dm else error ("unexpected lookup result for key " ++ show key ++ " - " ++ show md ++ "  " ++ show mns)
     relaxNeighbour nn dm q dist = case M.lookup nn dm of
         Nothing -> (M.insert nn (dist + 1) dm, q ++ [nn])
         Just d -> if dist + 1 < d then (M.insert nn (dist + 1) dm, q ++ [nn]) else (dm, q)
