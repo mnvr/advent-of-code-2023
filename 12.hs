@@ -2,6 +2,7 @@
 
 import Data.Map qualified as M
 import Data.List
+import Debug.Trace
 
 main :: IO ()
 main = interact $ (++ "\n") . show . p1 . head . parse
@@ -32,14 +33,24 @@ p1 (s, xs) = consume s xs
     count (s, xs) = length $ filter (== xs) $ runs' s
 
 consume :: String -> [Int] -> Int
-consume _ [] = 1
-consume s (x:xs) =
-    if take (x + 1) s == (x `replicate` '#') ++ "." then consume (drop (x + 1) s) xs
-    else if take (x + 1) s == (x `replicate` '#') ++ "?" then consume (drop (x + 1) s) xs
-    else if take (x + 1) s == (x `replicate` '#') ++ [] then consume (drop (x + 1) s) xs
-    else if take 1 s == "." then consume (dropWhile (== '.') s) xs
-    else if (nub (take x s)) \\ "?#" == "" && take 1 (drop x s) /= "#" then consume (drop (x + 1) s) xs
-    else if take 1 s == "#" then 0
+consume s [] = trace ("base case for [] []") 1
+consume s [] = trace ("base case for s  []: " ++ s) $ if nub s == "." then 1 else 0
+consume s (x:xs) = trace ("normal case for x " ++ show x ++ "  " ++ s) $
+    if take (x + 1) s == (x `replicate` '#') ++ "." then trace ("case a") $ consume (drop (x + 1) s) xs
+    else if take (x + 1) s == (x `replicate` '#') ++ "?" then trace ("case b") $ consume (drop (x + 1) s) xs
+    else if take (x + 1) s == (x `replicate` '#') ++ [] then trace ("case c") $ consume (drop (x + 1) s) xs
+    else if take 1 s == "." then trace ("case d") $ consume (dropWhile (== '.') s) (x:xs)
+    else if take 1 s == "?" && x == 1 then trace ("case e") $ (
+        let a = consume (drop 1 s) xs           -- taking ? as #
+            b = consume (drop 1 s) (x:xs)       -- taking ? as .
+        in trace ("case e got a " ++ show a ++ " b " ++ show b) $ if a == 0 then b else if b == 0 then a else a + b)
+    else if take 1 s == "?" then trace ("case f") $ (
+        let a = consume (drop 1 s) ((x-1) : xs) -- taking ? as #
+            b = consume (drop 1 s) (x:xs)       -- taking ? as .
+        in trace ("case f got a " ++ show a ++ " b " ++ show b) $ if a == 0 then b else if b == 0 then a else a + b)
+    -- else if (nub (take x s)) \\ "?#" == "" && take 1 (drop x s) /= "#" then consume (drop (x + 1) s) xs
+    -- else if (nub (take x s)) \\ "?#" == "" && take 1 (drop x s) == "?" then consume (drop (x + 1) s) xs + consume (drop 1 s) (x:xs)
+    -- else if take 1 s == "#" then 0
     else 0
     -- else if take (x + 1) s == (x `replicate` '?') ++ '.' then consume (drop (x + 1) s) xs
     -- else if take (x + 1) s == (x `replicate` '?') ++ '.' then consume (drop (x + 1) s) xs
