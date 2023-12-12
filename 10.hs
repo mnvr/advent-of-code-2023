@@ -46,17 +46,11 @@ parse = mkParsed . chunks . lines
     neighbour (p, c, n) 'F' k = (south n k, east c k)
     north p (y, x) = if p !! x `notElem` "|F7S" then Nothing else Just (y - 1, x)
     south n (y, x) = if n !! x `notElem` "|LJS" then Nothing else Just (y + 1, x)
-    west c (y, x) = if x == 0 || c !! (x - 1) `notElem` "-LFS" then Nothing
-        else Just (y, x - 1)
-    east c (y, x) = if x + 1 == length c || c !! (x + 1) `notElem` "-J7S" then Nothing
-        else Just (y, x + 1)
+    west c (y, x) = if x == 0 || c !! (x - 1) `notElem` "-LFS" then Nothing else Just (y, x - 1)
+    east c (y, x) = if x + 1 == length c || c !! (x + 1) `notElem` "-J7S" then Nothing else Just (y, x + 1)
     neighboursOfStart :: (String, String, String) -> Char -> (Int, Int) -> (Maybe (Int, Int), Maybe (Int, Int))
-    neighboursOfStart (p, c, n) _ (y, x) = case catMaybes [
-        if p !! x `elem` "|F7" then Just (y - 1, x) else Nothing,
-        if n !! x `elem` "|LJ" then Just (y + 1, x) else Nothing,
-        if x > 0 && c !! (x - 1) `elem` "-LF" then Just (y, x - 1) else Nothing,
-        if x + 1 < length c && c !! (x + 1) `elem` "-J7" then Just (y, x + 1) else Nothing
-        ] of
+    neighboursOfStart (p, c, n) _ key = case catMaybes [
+        north p key, south n key, west c key, east c key] of
         [a, b] -> (Just a, Just b)
     ensureStart (Just s, m) = (s, m)
     ensureStart _ = error "input does not contain a start node"
