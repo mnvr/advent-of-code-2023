@@ -62,17 +62,14 @@ parse = mkParsed . chunks . lines
     ensureStart _ = error "input does not contain a start node"
 
 mkDistanceMap :: Node -> M.Map Node [Node] -> M.Map Node Int
-mkDistanceMap start neighbours = relax (dm0 start) [start]
+mkDistanceMap start neighbours = relax (M.singleton start 0) [start]
   where
-    dm0 s = M.singleton start 0
-    relax :: M.Map Node Int -> [Node] -> M.Map Node Int
     relax dm [] = dm
-    relax dm (key:q) = case (M.lookup key dm, M.lookup key neighbours) of
-        (Just dist, Just ns) ->
-          let (dm', q') = foldl (relaxNeighbour dist) (dm, q) ns in relax dm' q'
-    relaxNeighbour dist (dm, q) nn = case M.lookup nn dm of
-        Nothing -> (M.insert nn (dist + 1) dm, q ++ [nn])
-        Just d -> if dist + 1 < d then (M.insert nn (dist + 1) dm, q ++ [nn]) else (dm, q)
+    relax dm (key : q) = case (M.lookup key dm, M.lookup key neighbours) of
+        (Just d, Just ns) -> uncurry relax $ foldl (relaxNeighbour d) (dm, q) ns
+    relaxNeighbour d (dm, q) n = case M.lookup n dm of
+        Just nd | nd <= d + 1 -> (dm, q)
+        _ -> (M.insert n (d + 1) dm, q ++ [n])
 
 p1 :: Parsed -> Int
 p1 Parsed { dm } = maximum $ M.elems dm
