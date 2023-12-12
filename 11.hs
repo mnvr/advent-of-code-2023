@@ -21,8 +21,8 @@ expand by gs = map f gs
   where
     ys = nub (map fst gs)
     xs = nub (map snd gs)
-    missingY = [0..maximum ys] \\ ys
-    missingX = [0..maximum xs] \\ xs
+    missingY = [0 .. maximum ys] \\ ys
+    missingX = [0 .. maximum xs] \\ xs
     m = by - 1
     f (y, x) = (y + m * adjustY, x + m * adjustX)
       where
@@ -30,7 +30,7 @@ expand by gs = map f gs
         adjustX = maybe (length missingX) id (findIndex (> x) missingX)
 
 pairs :: [a] -> [(a, a)]
-pairs gs = concatMap f [0..length gs - 1]
+pairs gs = concatMap f [0 .. length gs - 1]
   where f i = let u = gs !! i in map (u,) (drop (i + 1) gs)
 
 dist :: Galaxy -> Galaxy -> Int

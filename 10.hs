@@ -10,7 +10,7 @@ type Node = (Int, Int)
 
 data Parsed = Parsed {
   start :: Node,
-  nm :: M.Map Node (Node, Node),
+  neighbours :: M.Map Node (Node, Node),
   dm :: M.Map Node Int,
   ny :: Int,
   nx :: Int
@@ -20,8 +20,8 @@ parse :: String -> Parsed
 parse = mkParsed . chunks . lines
   where
     mkParsed ck@((h, _, _):_) = let (s, nb) = ensureStart (neighbours ck)
-      in Parsed { start = s, nm = nb,
-                  dm = mkDistanceMap s (M.map (\p -> [fst p, snd p]) nb),
+      in Parsed { start = s, neighbours = nb,
+                  dm = dist s (M.map (\p -> [fst p, snd p]) nb),
                   ny = length ck, nx = length h }
     chunks ls = let g = ground ls in zip3 (g : ls) ls (drop 1 ls ++ [g])
     ground (h:_) = length h `replicate` '.'
@@ -61,8 +61,8 @@ parse = mkParsed . chunks . lines
     ensureStart (Just s, m) = (s, m)
     ensureStart _ = error "input does not contain a start node"
 
-mkDistanceMap :: Node -> M.Map Node [Node] -> M.Map Node Int
-mkDistanceMap start neighbours = relax (M.singleton start 0) [start]
+dist :: Node -> M.Map Node [Node] -> M.Map Node Int
+dist start neighbours = relax (M.singleton start 0) [start]
   where
     relax dm [] = dm
     relax dm (key : q) = case (M.lookup key dm, M.lookup key neighbours) of
@@ -80,9 +80,11 @@ mkGrid :: [String] -> Int -> Int -> Grid
 mkGrid ls ny nx = Grid { gm = mkGridMap ls, gny = ny, gnx = nx }
 
 p2 :: Parsed -> Int
-p2 pr = (countEmpty . gm . collapse . mask eg . mkDistanceMap (0,0) . mkNeighbourMap2) eg
-  where countEmpty = length . M.elems . M.filter (== '?')
-        eg = expand pr
+p2 pr = countEmpty $ gm $ collapse $ mask eg reachable
+  where
+    eg = expand pr
+    reachable = dist (0, 0) (inverseMap eg)
+    countEmpty = length . M.elems . M.filter (== '?')
 
 mkGridMap :: [String] -> M.Map Node Char
 mkGridMap = foldl f M.empty . enum
@@ -92,7 +94,7 @@ mkGridMap = foldl f M.empty . enum
     enum = zip [0..]
 
 expand :: Parsed -> Grid
-expand Parsed { nm, dm, ny, nx } =
+expand Parsed { neighbours, dm, ny, nx } =
   Grid { gm = mkGridMap expandLines, gny = eny, gnx = enx }
   where
     keys = M.keys dm
@@ -103,7 +105,7 @@ expand Parsed { nm, dm, ny, nx } =
       foldr (\(c1, c2, c3) ([l1, l2, l3]) -> [c1 ++ l1, c2 ++ l2, c3 ++ l3])
       [[], [], []] (expandRow' y)
     expandRow' y = map (\x -> expandCell (y, x)) [0..nx-1]
-    expandCell key | key `elem` keys = expandCell' key (M.lookup key nm)
+    expandCell key | key `elem` keys = expandCell' key (M.lookup key neighbours)
                    | otherwise = ("???", "???", "???")
     expandCell' key@(y, x) (Just (n1, n2))
       | n1 == (y, x - 1) && n2 == (y, x + 1) = ("???", "---", "???")
@@ -116,9 +118,9 @@ expand Parsed { nm, dm, ny, nx } =
     addBoundary = map (\s -> "###" ++ s ++ "###")
     addBoundaryLines ls = let bs = 3 `replicate` boundaryLine in bs ++ ls ++ bs
 
--- create a new distance map that connects the non-pipe areas
-mkNeighbourMap2 :: Grid -> M.Map Node [Node]
-mkNeighbourMap2 Grid { gm, gny, gnx } = go
+-- A neighbour map that connects non-pipe nodes
+inverseMap :: Grid -> M.Map Node [Node]
+inverseMap Grid { gm, gny, gnx } = go
   where
     go = foldl f M.empty [0..gny-1]
     f m y = foldl g m [0..gnx-1]
