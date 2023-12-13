@@ -7,7 +7,7 @@ import Data.Bits
 
 main :: IO ()
 -- main = interact $ (++ "\n") . show . p1 . parse
-main = interact $ (++ "\n")  . p2 . parse
+main = interact $ (++ "\n")  . show . p2 . parse
 
 type Pattern = ([String], [String])
 
@@ -27,20 +27,27 @@ rIndex xs = find f [1..length xs - 1]
                   j = min (length a) (length b)
               in take j (reverse a) == take j b
 
+rIndices :: [String] -> [Maybe Int]
+rIndices xs = map f [1..length xs - 1]
+  where f i = let (a, b) = splitAt i xs
+                  j = min (length a) (length b)
+              in if take j (reverse a) == take j b then Just i else Nothing
+
 p1 :: [Pattern] -> Int
 p1 = sum . map (fromJust . ri)
   where ri (rows, cols) = (*100) <$> rIndex rows
 
 -- p2 :: [Pattern] -> Int
-p2 = concat . intersperse "\n" . map unlines . head . map findAlternative
+-- p2 = concat . intersperse "\n" . map unlines . head . map findAlternative
+p2 = map findAlternative
 
 -- findAlternative :: Pattern -> Int
-findAlternative (rows, cols) = rowVariants -- debug $ (*100) <$> rf <|> rc
+findAlternative (rows, cols) = rf -- debug $ (*100) <$> rf <|> rc
   where
     or = rIndex rows
     oc = rIndex cols
-    rf = asum $ filter (const True) $ map rIndex rowVariants
-    rc = asum $ filter (const True) $ map rIndex colVariants
+    rf = asum $ filter (/= or) $ concatMap rIndices rowVariants
+    rc = asum $ filter (/= oc) $ concatMap rIndices colVariants
     rowVariants = [flip y x rows | y <- [0..length rows - 1], x <- [0..length cols - 1]]
     colVariants = [flip x y cols | y <- [0..length rows - 1], x <- [0..length cols - 1]]
     flip y x ns = zipWith (\i r -> if i == y then flipBit x r else r) [0..] ns
@@ -51,3 +58,5 @@ findAlternative (rows, cols) = rowVariants -- debug $ (*100) <$> rf <|> rc
 
     debug (Just v) = v
     debug (Nothing) = error (show (rows, cols))
+
+    d2 p = show (rIndex p) : p
