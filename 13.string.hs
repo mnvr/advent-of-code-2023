@@ -7,7 +7,7 @@ import Data.Bits
 
 main :: IO ()
 -- main = interact $ (++ "\n") . show . p1 . parse
-main = interact $ (++ "\n") . show . p2 . parse
+main = interact $ (++ "\n")  . p2 . parse
 
 type Pattern = ([String], [String])
 
@@ -32,10 +32,10 @@ p1 = sum . map (fromJust . ri)
   where ri (rows, cols) = (*100) <$> rIndex rows
 
 -- p2 :: [Pattern] -> Int
-p2 = map findAlternative
+p2 = concat . intersperse "\n" . map unlines . head . map findAlternative
 
 -- findAlternative :: Pattern -> Int
-findAlternative (rows, cols) = map rIndex rowVariants -- debug $ (*100) <$> rf <|> rc
+findAlternative (rows, cols) = rowVariants -- debug $ (*100) <$> rf <|> rc
   where
     or = rIndex rows
     oc = rIndex cols
