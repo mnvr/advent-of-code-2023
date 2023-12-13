@@ -7,14 +7,15 @@ import Numeric
 main :: IO ()
 main = interact $ (++ "\n") . show . p1 . parse
 
-type Pattern = ([Int], [Int])
+data Pattern = Pattern { rows :: [Int], cols :: [Int], ncol :: Int }
 
 parse :: String -> [Pattern]
 parse = from . lines
   where
     from [] = []
     from ls = let (pl, rest) = span (/= "") ls in pat pl : from (drop 1 rest)
-    pat = ints &&& ints . transpose
+    pat pl@(l:_) = pat' (length l) pl
+    pat' n pl = Pattern { rows = ints pl, cols = ints (transpose pl), ncol = n }
     ints = map int
     int s = case readBin $ map (\c -> if c == '.' then '0' else '1') s of
         [(i, _)] -> i
