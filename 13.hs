@@ -57,9 +57,11 @@ p2 ps = concatMap (\(j, p) -> concat $ map (\(i, s, p) -> "variation " ++ show i
 -- we take the smallest from amongst them.
 p2min ps = sum $ map f ps
  where
-    f p = let vs = variations p in case filter (> 0) (map frow vs) of
+    f p = let vs = variations p in case filter (> 0) (map fboth vs) of
         [] -> minimum (filter (> 0) (map fcol vs))
         xs -> minimum xs
+
+fboth p = (fcol p) + (frow p)
 
 frow p = (mrow p) * 100
 
