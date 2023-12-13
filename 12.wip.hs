@@ -1,9 +1,10 @@
 {-# OPTIONS_GHC -Wno-all #-}
 
 import Data.List (intercalate)
+import Data.Map qualified as M
 
 main :: IO ()
-main = interact $ (++ "\n") . show . sum . p1b . parse
+main = interact $ (++ "\n") . show . p1' . parse
 
 parse :: String -> [([String], [Int])]
 parse = map line . lines
@@ -79,3 +80,25 @@ variations :: String -> [String]
 variations [] = [[]]
 variations ('#':s) = map ('#':) (variations s)
 variations ('?':s) = concatMap (\s -> ['#':s, ' ':s]) (variations s)
+
+p1m :: [([String], [Int])] -> Int
+p1m = sum . map count
+  where count (ss, xs) = sum $ map (\ss -> consumem M.empty ss xs) (expandm ss)
+
+consumem :: M.Map ([String], [Int]) Int -> [String] -> [Int] -> Int
+consumem m [] [] = 1
+consumem m _  [] = 0
+consumem m []  _ = 0
+consumem m (s:ss) (x:xs) = if length s /= x then 0 else consume ss xs
+
+expandm :: [String] -> [[String]]
+expandm [] = [[]]
+expandm (s:ss)
+  | '?' `notElem` s = map (s:) (expandm ss)
+  | otherwise = concatMap f (expandm ss)
+     where f ss = [words v ++ ss | v <- variationsm s]
+
+variationsm :: String -> [String]
+variationsm [] = [[]]
+variationsm ('#':s) = map ('#':) (variationsm s)
+variationsm ('?':s) = concatMap (\s -> ['#':s, ' ':s]) (variationsm s)
