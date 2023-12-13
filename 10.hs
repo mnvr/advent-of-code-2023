@@ -66,6 +66,19 @@ parse = mkParsed . chunks . lines
 enum :: [a] -> [(Int, a)]
 enum = zip [0..]
 
+-- We're guaranteed to have a path looping back to itself from the start, just
+-- follow it, no need for any state. The maximum distance will then be exactly
+-- half of this (since this is a cartesian grid).
+maxDist :: Node -> M.Map Node [Node] -> Int
+maxDist s n = (loopLength s n) `div` 2
+
+loopLength :: Node -> M.Map Node [Node] -> Int
+loopLength start neighbours = go 0 start start
+  where
+    go c n prev | n == start && prev /= start = c
+    go c n prev = case M.lookup n neighbours of
+      Just ns -> let (next:_) = dropWhile (== prev) ns in go (c+1) next n
+
 dist :: Node -> M.Map Node [Node] -> M.Map Node Int
 dist start neighbours = relax (M.singleton start 0) [start]
   where
@@ -77,7 +90,7 @@ dist start neighbours = relax (M.singleton start 0) [start]
         _ -> (M.insert n (d + 1) dm, q ++ [n])
 
 p1 :: Parsed -> Int
-p1 Parsed { dm } = maximum $ M.elems dm
+p1 Parsed { start, neighbours } = maxDist start neighbours -- maximum $ M.elems dm
 
 data Grid = Grid { gm :: M.Map Node Char, gny :: Int, gnx :: Int }
 
