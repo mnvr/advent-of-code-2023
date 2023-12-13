@@ -4,7 +4,8 @@ import Data.List
 
 main :: IO ()
 -- main = interact $ (++ "\n") . show . p1 . patterns
-main = interact $ (++ "\n") . p2 . patterns
+-- main = interact $ (++ "\n") . p2 . patterns
+main = interact $ (++ "\n") . show . p2min . patterns
 -- main = interact $ (++ "\n") . p2e . patterns
 
 type Pattern = [String]
@@ -52,7 +53,17 @@ p2 ps = concatMap (\(j, p) -> concat $ map (\(i, s, p) -> "variation " ++ show i
 --   where
     -- f p = filter (> 0) $ map (\p -> p1 [p]) (variations p)
 
+-- Not sure what the rules are, since we end up with multiple reflections. Here
+-- we take the smallest from amongst them.
+p2min ps = sum $ map f ps
+ where
+    f p = let vs = variations p in case filter (> 0) (map frow vs) of
+        [] -> minimum (filter (> 0) (map fcol vs))
+        xs -> minimum xs
+
 frow p = (mrow p) * 100
+
+fcol p = (mcol p)
 
 -- Brute force enumeration
 variations :: Pattern -> [Pattern]
