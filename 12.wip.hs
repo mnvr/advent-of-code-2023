@@ -4,7 +4,7 @@ import Data.List (intercalate)
 import Data.Map qualified as M
 
 main :: IO ()
-main = interact $ (++ "\n") . show . p1' . parse
+main = interact $ (++ "\n") . show . p1 . parse
 
 parse :: String -> [([String], [Int])]
 parse = map line . lines
@@ -20,85 +20,53 @@ rc = 1 :: Int
 unfold :: [String] -> [String]
 unfold [s, xs] = [intercalate "?" (replicate rc s), intercalate "," (replicate rc xs)]
 
-p1' :: [([String], [Int])] -> Int
-p1' = sum . map count
-  where count (ss, xs) = sum $ map (`consume` xs) (expand ss)
+p1 = snd . foldl count ((M.empty, M.empty, M.empty), 0)
+  where count (c@(cm, em, vm), s) (ss, xs) =
+           let ((em', vm'), es) = expand (em, vm) ss
+           in foldl f ((cm, em', vm'), s) es
+         where f (c, s) e = let (c', i) = consume c e xs in (c', s + i)
 
-p1 :: [([String], [Int])] -> [Char]
-p1 zz = unlines $ map f zz
-  where
-    f (s, xs) = g s xs
-    g (a:b) (x:xs)
-      | take 1 a == "#" && a == x `replicate` '#' = g b xs
-      | not (null b) && not (null xs) && take 1 (last b) == "#" && (last b) == (last xs) `replicate` '#' = g (a:unlast b) (x:unlast xs)
-      | length a == x = g b xs
-      | not (null b) && not (null xs) && length (last b) == last xs = g (a:unlast b) (x:unlast xs)
-      | length a > x && '#' `elem` (take x a) = let c = (drop (x + 2) a) in g (if null c then b else c:b) xs
-      | not (null b) && not (null xs) && length (last b) > (last xs) && '#' `elem` (take (last xs) (last b)) = let c = (drop ((last xs) + 2) (last b)) in g (if null c then a:(unlast b) else (a:(unlast b) ++ [c])) (x:unlast xs)
-    g [] _ = show 1
-    g _ [] = show 1
-    g [s] [x] | '#' `notElem` s = show $ length s `nCr` x
-              | otherwise = show 1
-    g u v = "reduced to " ++ show u ++ "  " ++ show v ++ " which has " ++ show (p1' [(u, v)]) ++ " arrangements"
+type CM = M.Map ([String], [Int]) Int
+consume :: (CM, EM, VM) -> [String] -> [Int] -> ((CM, EM, VM), Int)
+consume c [] [] = (c, 1)
+consume c _  [] = (c, 0)
+consume c []  _ = (c, 0)
+consume c@(cm, em, vm) (s:ss) (x:xs) = let k = (s:ss, x:xs) in
+  case M.lookup k cm of
+    Just v -> (c, v)
+    Nothing ->
+      let ((cm', em', vm'), v) = if length s /= x then (c, 0)
+                                 else consume c ss xs
+      in ((M.insert k v cm', em', vm'), v)
 
-p1b :: [([String], [Int])] -> [Int]
-p1b zz = map f zz
-  where
-    f (s, xs) = g s xs
-    g (a:b) (x:xs)
-      | take 1 a == "#" && a == x `replicate` '#' = g b xs
-      | not (null b) && not (null xs) && take 1 (last b) == "#" && (last b) == (last xs) `replicate` '#' = g (a:unlast b) (x:unlast xs)
-      | length a == x = g b xs
-      | not (null b) && not (null xs) && length (last b) == last xs = g (a:unlast b) (x:unlast xs)
-      | length a > x && '#' `elem` (take x a) = let c = (drop (x + 2) a) in g (if null c then b else c:b) xs
-      | not (null b) && not (null xs) && length (last b) > (last xs) && '#' `elem` (take (last xs) (last b)) = let c = (drop ((last xs) + 2) (last b)) in g (if null c then a:(unlast b) else (a:(unlast b) ++ [c])) (x:unlast xs)
-    g [] _ = 1
-    g _ [] = 1
-    g [s] [x] | '#' `notElem` s = length s `nCr` x
-              | otherwise = 1
-    g u v = (p1' [(u, v)])
+type EM = M.Map [String] [[String]]
+expand :: (EM, VM) -> [String] -> ((EM, VM), [[String]])
+expand c [] = (c, [[]])
+expand c@(m, vm) k@(s:ss)
+  | '?' `notElem` s = case M.lookup k m of
+    Just v -> (c, v)
+    Nothing ->
+      let ((m', vm'), es) = expand c ss
+          v = map (s:) es
+      in ((M.insert k v m', vm'), v)
+  | otherwise = case M.lookup k m of
+    Just v -> (c, v)
+    Nothing ->
+      let ((m', vm1), es) = expand c ss
+          (vm'', vs) = variations vm1 s
+          v = concatMap (\z -> [words v ++ z | v <- vs]) es
+      in ((M.insert k v m', vm''), v)
 
-unlast = reverse . drop 1 . reverse
-
-nCr n r = fact n `div` fact (n - r)
-fact n = product [1..n]
-
-consume :: [String] -> [Int] -> Int
-consume [] [] = 1
-consume _  [] = 0
-consume []  _ = 0
-consume (s:ss) (x:xs) = if length s /= x then 0 else consume ss xs
-
-expand :: [String] -> [[String]]
-expand [] = [[]]
-expand (s:ss)
-  | '?' `notElem` s = map (s:) (expand ss)
-  | otherwise = concatMap f (expand ss)
-     where f ss = [words v ++ ss | v <- variations s]
-
-variations :: String -> [String]
-variations [] = [[]]
-variations ('#':s) = map ('#':) (variations s)
-variations ('?':s) = concatMap (\s -> ['#':s, ' ':s]) (variations s)
-
-p1m :: [([String], [Int])] -> Int
-p1m = sum . map count
-  where count (ss, xs) = sum $ map (\ss -> consumem M.empty ss xs) (expandm ss)
-
-consumem :: M.Map ([String], [Int]) Int -> [String] -> [Int] -> Int
-consumem m [] [] = 1
-consumem m _  [] = 0
-consumem m []  _ = 0
-consumem m (s:ss) (x:xs) = if length s /= x then 0 else consume ss xs
-
-expandm :: [String] -> [[String]]
-expandm [] = [[]]
-expandm (s:ss)
-  | '?' `notElem` s = map (s:) (expandm ss)
-  | otherwise = concatMap f (expandm ss)
-     where f ss = [words v ++ ss | v <- variationsm s]
-
-variationsm :: String -> [String]
-variationsm [] = [[]]
-variationsm ('#':s) = map ('#':) (variationsm s)
-variationsm ('?':s) = concatMap (\s -> ['#':s, ' ':s]) (variationsm s)
+type VM = M.Map String [String]
+variations :: VM -> String -> (VM, [String])
+variations m [] = (m, [[]])
+variations m k@('#':s) = case M.lookup k m of
+  Just v -> (m, v)
+  Nothing -> let (m', vs) = variations m s
+                 v = map ('#':) vs
+             in (M.insert k v m', v)
+variations m k@('?':s) = case M.lookup k m of
+  Just v -> (m, v)
+  Nothing -> let (m', vs) = variations m s
+                 v = concatMap (\s -> ['#':s, ' ':s]) vs
+             in (M.insert k v m', v)
