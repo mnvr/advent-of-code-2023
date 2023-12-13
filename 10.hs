@@ -38,19 +38,28 @@ parse = mkParsed . chunks . lines
                 (Just n1, Just n2) -> (s, M.insert k (n1, n2) m)
                 _ -> (s, m)
     neighbour :: (String, String, String) -> Char -> (Int, Int) -> (Maybe (Int, Int), Maybe (Int, Int))
-    neighbour (p, c, n) '|' k = (north p k, south n k)
-    neighbour (p, c, n) '-' k = (west c k, east c k)
-    neighbour (p, c, n) 'L' k = (north p k, east c k)
-    neighbour (p, c, n) 'J' k = (north p k, west c k)
-    neighbour (p, c, n) '7' k = (south n k, west c k)
-    neighbour (p, c, n) 'F' k = (south n k, east c k)
-    north p (y, x) = if p !! x `notElem` "|F7S" then Nothing else Just (y - 1, x)
-    south n (y, x) = if n !! x `notElem` "|LJS" then Nothing else Just (y + 1, x)
-    west c (y, x) = if x == 0 || c !! (x - 1) `notElem` "-LFS" then Nothing else Just (y, x - 1)
-    east c (y, x) = if x + 1 == length c || c !! (x + 1) `notElem` "-J7S" then Nothing else Just (y, x + 1)
+    neighbour ck '|' k = (north ck k, south ck k)
+    neighbour ck '-' k = (west ck k, east ck k)
+    neighbour ck 'L' k = (north ck k, east ck k)
+    neighbour ck 'J' k = (north ck k, west ck k)
+    neighbour ck '7' k = (south ck k, west ck k)
+    neighbour ck 'F' k = (south ck k, east ck k)
+    north (p, _, _) (y, x)
+      | p !! x `elem` "|F7S" = Just (y - 1, x)
+      | otherwise = Nothing
+    south (_, _, n) (y, x)
+      | n !! x `elem` "|LJS" = Just (y + 1, x)
+      | otherwise = Nothing
+    west (_, c, _) (y, x)
+      | x > 0 && c !! (x - 1) `elem` "-LFS" = Just (y, x - 1)
+      | otherwise = Nothing
+    east (_, c, _) (y, x)
+      | x + 1 < length c && c !! (x + 1) `elem` "-J7S" = Just (y, x + 1)
+      | otherwise = Nothing
+
     neighboursOfStart :: (String, String, String) -> Char -> (Int, Int) -> (Maybe (Int, Int), Maybe (Int, Int))
-    neighboursOfStart (p, c, n) _ key = case catMaybes [
-        north p key, south n key, west c key, east c key] of
+    neighboursOfStart ck _ key = case catMaybes [
+        north ck key, south ck key, west ck key, east ck key] of
         [a, b] -> (Just a, Just b)
     ensureStart (Just s, m) = (s, m)
     ensureStart _ = error "input does not contain a start node"
