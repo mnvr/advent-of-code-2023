@@ -1,9 +1,9 @@
 import Control.Applicative ((<|>), asum)
 import Control.Arrow ((&&&))
-import Data.List
+import Data.Bits (complementBit)
+import Data.List (transpose)
 import Data.Maybe (fromJust)
-import Numeric
-import Data.Bits
+import Numeric (readBin)
 
 main :: IO ()
 main = interact $ (++ "\n") . show . (p1 &&& p2) . parse

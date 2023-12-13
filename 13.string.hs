@@ -1,9 +1,7 @@
 import Control.Applicative ((<|>), asum)
 import Control.Arrow ((&&&))
-import Data.List
+import Data.List (transpose)
 import Data.Maybe (fromJust)
-import Numeric
-import Data.Bits
 
 -- A variant of 13.hs that directly uses the string representation instead of
 -- first converting them to their bitwise int representations. Somewhat
