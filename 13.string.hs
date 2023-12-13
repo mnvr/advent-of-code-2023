@@ -5,6 +5,11 @@ import Data.Maybe (fromJust)
 import Numeric
 import Data.Bits
 
+-- A variant of 13.hs that directly uses the string representation instead of
+-- first converting them to their bitwise int representations. Somewhat
+-- surprisingly, this is not slower. There is a slight difference when
+-- optimized: under -O2 the bitwise representation version is slightly faster.
+
 main :: IO ()
 main = interact $ (++ "\n") . show . (p1 &&& p2) . parse
 
