@@ -6,8 +6,7 @@ import Numeric
 import Data.Bits
 
 main :: IO ()
--- main = interact $ (++ "\n") . show . p1 . parse
-main = interact $ (++ "\n") . show . p2 . parse
+main = interact $ (++ "\n") . show . (p1 &&& p2) . parse
 
 type Pattern = ([Int], [Int])
 
@@ -22,25 +21,28 @@ parse = from . lines
         [(i, _)] -> i
 
 rIndex :: [Int] -> Maybe Int
-rIndex xs = find f [1..length xs - 1]
+rIndex = asum . rIndices
+
+rIndices :: [Int] -> [Maybe Int]
+rIndices xs = map f [1..length xs - 1]
   where f i = let (a, b) = splitAt i xs
                   j = min (length a) (length b)
-              in take j (reverse a) == take j b
+              in if take j (reverse a) == take j b then Just i else Nothing
 
 p1 :: [Pattern] -> Int
 p1 = sum . map (fromJust . ri)
   where ri (rows, cols) = (*100) <$> rIndex rows <|> rIndex cols
 
--- p2 :: [Pattern] -> Int
-p2 = map findAlternative
+p2 :: [Pattern] -> Int
+p2 = sum . map smudge
 
-findAlternative :: Pattern -> Int
-findAlternative (rows, cols) = fromJust $ (*100) <$> rf <|> rc
+smudge :: Pattern -> Int
+smudge (rows, cols) = fromJust $ (*100) <$> rf <|> rc
   where
     or = rIndex rows
     oc = rIndex cols
-    rf = asum $ filter (/= or) $ map rIndex rowVariants
-    rc = asum $ filter (/= oc) $ map rIndex colVariants
+    rf = asum $ filter (/= or) $ concatMap rIndices rowVariants
+    rc = asum $ filter (/= oc) $ concatMap rIndices colVariants
     rowVariants = [flip y x rows | y <- [0..length rows - 1], x <- [0..length cols - 1]]
     colVariants = [flip x y cols | y <- [0..length rows - 1], x <- [0..length cols - 1]]
     flip y x ns = zipWith (\i r -> if i == y then flipBit x r else r) [0..] ns
