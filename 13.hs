@@ -55,10 +55,22 @@ p2 ps = concatMap (\(j, p) -> concat $ map (\(i, s, p) -> "variation " ++ show i
 
 -- Not sure what the rules are, since we end up with multiple reflections. Here
 -- we take the smallest from amongst them.
+
+-- Produces same output as p2minTooLow
 p2min ps = sum $ map f ps
  where
-    f p = let vs = variations p in case filter (> 0) (map fboth vs) of
+    f = minimum . filter (> 0) . map fboth . variations
+
+p2minTooHigh ps = sum $ map f ps
+ where
+    f p = let vs = variations p in case filter (> 0) (map frow vs) of
         [] -> minimum (filter (> 0) (map fcol vs))
+        xs -> minimum xs
+
+p2minTooLow ps = sum $ map f ps
+ where
+    f p = let vs = variations p in case filter (> 0) (map fcol vs) of
+        [] -> minimum (filter (> 0) (map frow vs))
         xs -> minimum xs
 
 fboth p = (fcol p) + (frow p)
