@@ -20,6 +20,8 @@ patterns = reverse .  last . foldl f ([], []) . lines
 p1 :: [Pattern] -> Int
 p1 = sum . map (\p -> (mrow p) * 100 + (mcol p))
 
+rline p = let r = (mrow p) in if r /= 0 then r * 100 else (mcol p)
+
 mcol :: Pattern -> Int
 mcol p = go 1 (ncol p)
   where
@@ -56,10 +58,17 @@ p2 ps = concatMap (\(j, p) -> concat $ map (\(i, s, p) -> "variation " ++ show i
 -- Not sure what the rules are, since we end up with multiple reflections. Here
 -- we take the smallest from amongst them.
 
--- Produces same output as p2minTooLow
-p2min ps = sum $ map f ps
+
+-- "locate and fix the smudge that causes a different reflection line"
+p2min ps = map f ps
  where
-    f = minimum . filter (> 0) . map fboth . variations
+    f p = filter (> 0) $ map (isDifferent p) $ variations p
+    isDifferent p p' =
+        let r = rline p
+            r' = rline p'
+        in if r /= r' then r' else 0
+        -- in if (c > 0 && c == c') || (r > 0 && r == r') then 0 else r' * 100 + c'
+                    --    in s /= (c * 100 + r)
 
 p2minTooHigh ps = sum $ map f ps
  where
