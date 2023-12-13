@@ -18,7 +18,7 @@ patterns = reverse .  last . foldl f ([], []) . lines
     last (p, ps) = if null p then ps else reverse p : ps
 
 p1 :: [Pattern] -> Int
-p1 = sum . map (\p -> (mrow p) * 100 + (mcol p))
+p1 = sum . map rline -- (\p -> (mrow p) * 100 + (mcol p))
 
 rline p = let r = (mrow p) in if r /= 0 then r * 100 else (mcol p)
 
@@ -60,9 +60,13 @@ p2 ps = concatMap (\(j, p) -> concat $ map (\(i, s, p) -> "variation " ++ show i
 
 
 -- "locate and fix the smudge that causes a different reflection line"
-p2min ps = map f ps
+p2min ps = sum $ map f ps
  where
-    f p = filter (> 0) $ map (isDifferent p) $ variations p
+    f p = case filter (> 0) $ map (isDifferent p) $ variations p of
+        -- [] -> error (show p)
+        [] -> head $ filter (> 0) $ map (rline) $ variations p
+        h:_ -> h
+
     isDifferent p p' =
         let r = rline p
             r' = rline p'
