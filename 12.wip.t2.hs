@@ -28,7 +28,7 @@ ways' f ('?':'.':rs) xs = f rs xs + f ('#':'.':rs) xs
 ways' f ('?':'#':rs) xs = f ('#':'#':rs) xs + f ('#':rs) xs
 ways' f ('?':'?':rs) xs = f ('#':'.':rs) xs + f ('#':'#':rs) xs
 ways' f s (x:rx) | none '.' (take x s) && notAfter x '#' s
-  = 1 + f (drop (x + 1) s) rx
+  = f (drop (x + 1) s) rx
 ways' _ _ _ = 0
 
 after :: Int -> Char -> String -> Bool
