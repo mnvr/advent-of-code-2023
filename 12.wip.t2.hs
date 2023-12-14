@@ -1,6 +1,7 @@
 {-# OPTIONS_GHC -Wno-all #-}
 
-import Data.List
+import Data.List (nub)
+import Debug.Trace (trace)
 
 main :: IO ()
 main = interact $ (++ "\n") . show . p1 . parse
@@ -16,16 +17,19 @@ parse = map line . lines
 p1 = uncurry ways . head
 
 ways :: String -> [Int] -> Int
-ways [] [] = 1
-ways [] [x] = 0
-ways s [] = if none '#' s then 1 else 0
-ways ('.':rs) xs = ways rs xs
-ways ('?':'.':rs) xs = ways rs xs + ways ('#':'.':rs) xs
-ways ('?':'#':rs) xs = ways ('#':'#':rs) xs + ways ('#':rs) xs
-ways ('?':'?':rs) xs = ways ('#':'.':rs) xs + ways ('#':'#':rs) xs
-ways s (x:rx) | none '.' (take x s) && notAfter x '#' s
-  = 1 + ways (drop (x + 1) s) rx
-ways _ _ = 0
+ways = f
+  where f s xs = let z = ways' f s xs in trace ("ways " ++ show s ++ " " ++ show xs ++ " " ++ show z) z
+
+ways' f [] [] = 1
+ways' f [] [x] = 0
+ways' f s [] = if none '#' s then 1 else 0
+ways' f ('.':rs) xs = f rs xs
+ways' f ('?':'.':rs) xs = f rs xs + f ('#':'.':rs) xs
+ways' f ('?':'#':rs) xs = f ('#':'#':rs) xs + f ('#':rs) xs
+ways' f ('?':'?':rs) xs = f ('#':'.':rs) xs + f ('#':'#':rs) xs
+ways' f s (x:rx) | none '.' (take x s) && notAfter x '#' s
+  = 1 + f (drop (x + 1) s) rx
+ways' _ _ _ = 0
 
 after :: Int -> Char -> String -> Bool
 after x c s = only c (take 1 (drop x s))
