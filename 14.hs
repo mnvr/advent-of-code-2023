@@ -4,7 +4,7 @@ import Debug.Trace
 
 main :: IO ()
 -- main = interact $ (++ "\n") . show . (p1 &&& p2) . lines
-main = interact $ (++ "\n") . show . p2b . lines
+main = interact $ (++ "\n") . show . p2s . lines
 -- main = interact $ (++ "\n") . p1 . lines
 
 north, south, east, west, cycle1, cycle1B :: [String] -> [String]
@@ -18,6 +18,11 @@ cycle1B = (\(h:_) -> h) . drop 3 . iterate cycle1
 
 cycleUntilStable :: Int -> [String] -> [String]
 cycleUntilStable c xs = trace ("iteration " ++ show c ++ "\n" ++ unlines xs) $ let ys = cycle1 xs in if xs == ys then ys else cycleUntilStable (c + 1) ys
+
+cycleUntilStable2 c prev xs = trace ("iteration " ++ show c ++ " previous size " ++ show (length prev) ++ "\n" ++ unlines xs) $
+  let ys = cycle1 xs in case findIndex (==ys) prev of
+    Nothing -> cycleUntilStable2 (c + 1) (prev ++ [ys]) ys
+    Just i -> (i, length prev - i)
 
 f :: String -> String
 f s = let (a, b) = span (/= '#') s
@@ -36,5 +41,6 @@ p1 = load . north
 p2 = load . cycle1B
 
 p2v = unlines . cycle1B
-p2s = cycleUntilStable 0
-p2b = load . (\(h:_) -> h) . drop 30000 . iterate cycle1
+-- p2s = cycleUntilStable 0
+p2s = cycleUntilStable2 0 []
+-- p2b = load . (\(h:_) -> h) . drop 30000 . iterate cycle1
