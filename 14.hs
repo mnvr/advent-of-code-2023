@@ -4,7 +4,7 @@ import Debug.Trace
 
 main :: IO ()
 -- main = interact $ (++ "\n") . show . (p1 &&& p2) . lines
-main = interact $ (++ "\n") . show . p2s . lines
+main = interact $ (++ "\n") . show . p2b . lines
 -- main = interact $ (++ "\n") . p1 . lines
 
 north, south, east, west, cycle1, cycle1B :: [String] -> [String]
@@ -37,3 +37,4 @@ p2 = load . cycle1B
 
 p2v = unlines . cycle1B
 p2s = cycleUntilStable 0
+p2b = load . (\(h:_) -> h) . drop 30000 . iterate cycle1
