@@ -1,5 +1,6 @@
 import Data.Bifunctor (first, second)
 import Data.Map qualified as M
+import Data.Set qualified as S
 import Data.Maybe (catMaybes, fromJust)
 import Control.Arrow ((&&&))
 
@@ -11,21 +12,22 @@ type Node = (Int, Int)
 data Parsed = Parsed {
   start :: Node,
   neighbours :: M.Map Node [Node],
-  dm :: M.Map Node Int,
-  ny :: Int,
-  nx :: Int
+  vertices :: S.Set Node
   }
 
 parse :: String -> Parsed
 parse = mkParsed . chunks . lines
   where
-    mkParsed ck@((h, _, _):_) = let (s, nb) = ensureStart (neighbours ck)
-      in Parsed { start = s, neighbours = nb,
-                  dm = dist s nb,
-                  ny = length ck, nx = length h }
+    mkParsed ck = let (s, nb) = ensureStart (neighbours ck)
+      in Parsed { start = s, neighbours = nb, vertices = verts ck }
 
     chunks ls = let g = ground ls in zip3 (g : ls) ls (drop 1 ls ++ [g])
     ground (h:_) = length h `replicate` '.'
+
+    verts ck = foldl f S.empty (enum ck) where
+      f vs (y, (_, l, _)) = foldl g vs (enum l) where
+          g vs (x, ch) | ch `elem` "SFLJ7" = S.insert (y, x) vs
+                      | otherwise = vs
 
     neighbours ck = foldl f (Nothing, M.empty) (enum ck) where
       f m (y, ck@(_, c, _)) = foldl g m (enum c) where
@@ -79,99 +81,52 @@ loopLength start neighbours = go 0 start start
     go c n prev = case M.lookup n neighbours of
       Just ns -> let (next:_) = dropWhile (== prev) ns in go (c+1) next n
 
-dist :: Node -> M.Map Node [Node] -> M.Map Node Int
-dist start neighbours = relax (M.singleton start 0) [start]
+-- The Shoelace formula is an easy to understand (if you see it visually) way to
+-- compute the area of a cartesian polygon. The gist is that we see the polygon
+-- as a composed of trapezoids defined by each consecutive pair of nodes
+-- (ignoring colinear edges). Some of these pairs will have a positive
+-- contribution, others will have a negative contribution. So if we sum them up,
+-- we'll get the area (or its negation, depending on the direction we go, thus
+-- we take the absolute value to ignore that issue).
+
+shoelaceArea :: Node -> M.Map Node [Node] -> S.Set Node -> Int
+shoelaceArea start neighbours vertices = go 0 start start start
   where
-    relax dm [] = dm
-    relax dm (key : q) = case (M.lookup key dm, M.lookup key neighbours) of
-        (Just d, Just ns) -> uncurry relax $ foldl (relaxNeighbour d) (dm, q) ns
-    relaxNeighbour d (dm, q) n = case M.lookup n dm of
-        Just nd | nd <= d + 1 -> (dm, q)
-        _ -> (M.insert n (d + 1) dm, q ++ [n])
+    go a n since prev | n == start && prev /= start = let z = (abs (a + shoelace since n)) `div` 2 in z
+    go a n since prev = case M.lookup n neighbours of
+      Just ns ->  let (next:_) = filter (/= prev) ns in
+        if S.member n vertices then go (a + shoelace since n) next n n else go a next since n
+    shoelace (y, x) (y', x') = let z = area1 (y, x) (y', x') in z
+    area1 (y, x) (y', x') = (y + y') * (x - x')
+
+
+-- Pick's formula gives us the way to relate the area of a polygon with integer
+-- coordinates for all its vertices in terms of the number of integer points
+-- within and on it.
+--
+-- Let i be the number of integer points interior to the polygon. This is what
+-- we wish to find.
+--
+-- Let a be the area of the polygon. This we can find using the shoelace
+-- function above.
+--
+-- Let b be the number of integer points on boundary. This is the pathLength.
+--
+-- Then, the area of this polygon is
+--
+-- A = i + (b/2)  - 1
+--
+-- Or, for us, the number of interior points is
+--
+-- i = A - (b/2) + 1
+interiorPoints i b = i - (b `div` 2) + 1
 
 p1 :: Parsed -> Int
-p1 Parsed { start, neighbours } = maxDist start neighbours -- maximum $ M.elems dm
+p1 Parsed { start, neighbours } = maxDist start neighbours
 
-data Grid = Grid { gm :: M.Map Node Char, gny :: Int, gnx :: Int }
-
-mkGrid :: [String] -> Int -> Int -> Grid
-mkGrid ls ny nx = Grid { gm = mkGridMap ls, gny = ny, gnx = nx }
-
-p2 :: Parsed -> Int
-p2 pr = countEmpty $ gm $ collapse $ mask eg reachable
-  where
-    eg = expand pr
-    reachable = dist (0, 0) (inverseMap eg)
-    countEmpty = length . M.elems . M.filter (== '?')
-
-mkGridMap :: [String] -> M.Map Node Char
-mkGridMap = foldl f M.empty . enum
-  where
-    f m (y, row) = foldl (g y) m (enum row)
-    g y m (x, c) = M.insert (y, x) c m
-
-expand :: Parsed -> Grid
-expand Parsed { neighbours, dm, ny, nx } =
-  Grid { gm = mkGridMap expandLines, gny = eny, gnx = enx }
-  where
-    keys = M.keys dm
-    eny = 3 * (ny + 2)
-    enx = 3 * (nx + 2)
-    expandLines =
-      addBoundaryLines $ concatMap (addBoundary . expandRow) [0..ny-1]
-    expandRow y =
-      foldr (\(c1, c2, c3) ([l1, l2, l3]) -> [c1 ++ l1, c2 ++ l2, c3 ++ l3])
-      [[], [], []] (expandRow' y)
-    expandRow' y = map (\x -> expandCell (y, x)) [0..nx-1]
-    expandCell key
-      | key `elem` keys = expandCell' key (M.lookup key neighbours)
-      | otherwise = ("???", "???", "???")
-    expandCell' key@(y, x) (Just [n1, n2])
-      | n1 == (y, x - 1) && n2 == (y, x + 1) = ("???", "---", "???")
-      | n1 == (y - 1, x) && n2 == (y, x - 1) = ("?|?", "-J?", "???")
-      | n1 == (y + 1, x) && n2 == (y, x - 1) = ("???", "-7?", "?|?")
-      | n1 == (y + 1, x) && n2 == (y, x + 1) = ("???", "?F-", "?|?")
-      | n1 == (y - 1, x) && n2 == (y, x + 1) = ("?|?", "?L-", "???")
-      | n1 == (y - 1, x) && n2 == (y + 1, x) = ("?|?", "?|?", "?|?")
-    boundaryLine = enx `replicate` '#'
-    addBoundary = map (\s -> "###" ++ s ++ "###")
-    addBoundaryLines ls = let bs = 3 `replicate` boundaryLine in bs ++ ls ++ bs
-
--- A neighbour map that connects non-pipe nodes
-inverseMap :: Grid -> M.Map Node [Node]
-inverseMap Grid { gm, gny, gnx } = go
-  where
-    go = foldl f M.empty [0..gny-1]
-    f m y = foldl g m [0..gnx-1]
-      where g m x | isEmpty (y, x) = foldl alterMap m (neighbors (y, x) m)
-                  | otherwise = m
-                      where alterMap m nk =  M.alter af (y, x) m
-                              where af Nothing = Just [nk]
-                                    af (Just xs) = Just (nk : xs)
-    neighbors (y, x) m = catMaybes [
-      ifEmpty (y, x - 1), ifEmpty (y - 1, x),
-      ifEmpty (y, x + 1), ifEmpty (y + 1, x)]
-    ifEmpty key | isEmpty key = Just key
-                | otherwise = Nothing
-    isInBounds (y, x) = y >= 0 && y < gny && x >= 0 && x < gnx
-    isEmpty key = let ch = M.lookup key gm in
-      isInBounds key && ((ch == Just '?') || (ch == Just '#'))
-
-mask :: Grid -> M.Map Node Int -> Grid
-mask Grid { gm, gny, gnx } dm = Grid { gm = go, gny, gnx }
-  where
-    go = M.mapWithKey f gm
-    f key a = if M.member key dm then '#' else a
-
-collapse :: Grid -> Grid
-collapse Grid { gm, gny, gnx } = Grid { gm = cm, gny = cny, gnx = cnx }
-  where
-    cny = (gny `div` 3) - 2
-    cnx = (gnx `div` 3) - 2
-    cm = M.foldrWithKey f M.empty gm
-    f key@(y, x) ch m
-      | isNotBoundary key && y `mod` 3 == 0 && x `mod` 3 == 0 =
-         M.insert ((y - 3) `div` 3, (x - 3) `div` 3) (g key gm) m
-      | otherwise = m
-    isNotBoundary (y, x) = y > 2 && y < gny - 3 && x > 2 && x < gnx - 3
-    g (y, x) m = fromJust $ M.lookup (y+1, x+1) m
+-- p2 :: Parsed -> Int
+p2 Parsed { start, neighbours, vertices } =
+   let len = loopLength start neighbours
+       a = shoelaceArea start neighbours vertices
+       i = interiorPoints a len
+   in i
