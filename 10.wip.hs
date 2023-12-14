@@ -2,12 +2,13 @@ import Data.Bifunctor (first, second)
 import Data.Map qualified as M
 import Data.Maybe (catMaybes, fromJust)
 import Control.Arrow ((&&&))
-import Debug.Trace (trace)
+-- import Debug.Trace (trace)
 
 main :: IO ()
 -- main = interact $ (++ "\n") . show . (p1 &&& p2) . parse
 main = interact $ (++ "\n") . show . p2 . parse
 
+trace x y = y
 type Node = (Int, Int)
 
 data Parsed = Parsed {
@@ -95,15 +96,15 @@ loopLength start neighbours = go 0 start start
 -- we'll get the area (or its negation, depending on the direction we go, thus
 -- we take the absolute value to ignore that issue).
 
-loopArea :: Node -> M.Map Node [Node] -> M.Map Node Char -> Int -> Int
-loopArea start neighbours chars len = go 0 start start start
+shoelaceArea :: Node -> M.Map Node [Node] -> M.Map Node Char -> Int
+shoelaceArea start neighbours chars = go 0 start start start
   where
     -- go a n since prev | n == start && prev /= start = let z = (abs (a + area since n)) `div` 2 in trace ("returning " ++ show z) z
-    go a n since prev | n == start && prev /= start = let z = (abs (a + area since n) - len + 3) `div` 2 in trace ("returning " ++ show z) z
+    go a n since prev | n == start && prev /= start = let z = (abs (a + shoelace since n)) `div` 2 in trace ("returning " ++ show z) z
     go a n since prev = case M.lookup n neighbours of
       Just ns -> trace ("at " ++ show (ch n) ++ " - " ++ show a ++ " " ++ show n ++ " " ++ show since ++ " isEdge " ++ show (isEdge n)) $ let (next:_) = filter (/= prev) ns in
-        if isEdge n then go (a + area since n) next n n else go a next since n
-    area (y, x) (y', x') = let z = area1 (y, x) (y', x') in trace ("area " ++ show (x, y) ++ " " ++ show (x', y') ++ " : "++ show (y + y') ++ " * " ++ show (x - x') ++ " = " ++ show z) z
+        if isEdge n then go (a + shoelace since n) next n n else go a next since n
+    shoelace (y, x) (y', x') = let z = area1 (y, x) (y', x') in trace ("shoelace " ++ show (x, y) ++ " " ++ show (x', y') ++ " : "++ show (y + y') ++ " * " ++ show (x - x') ++ " = " ++ show z) z
     isEdge n = case M.lookup n chars of
       Just c -> c `elem` "SFLJ7"
       _ -> False
@@ -112,6 +113,27 @@ loopArea start neighbours chars len = go 0 start start start
     area1 (y, x) (y', x') = (y + y') * (x - x')
     -- area2 (y, x) (y', x') = y'  * (x - x')
 
+
+-- Pick's formula gives us the way to relate the area of a polygon with integer
+-- coordinates for all its vertices in terms of the number of integer points
+-- within and on it.
+--
+-- Let i be the number of integer points interior to the polygon. This is what
+-- we wish to find.
+--
+-- Let a be the area of the polygon. This we can find using the shoelace
+-- function above.
+--
+-- Let b be the number of integer points on boundary. This is the pathLength.
+--
+-- Then, the area of this polygon is
+--
+-- A = i + (b/2)  - 1
+--
+-- Or, for us, the number of interior points is
+--
+-- i = A - (b/2) + 1
+interiorPoints i b = i - (b `div` 2) + 1
 
 dist :: Node -> M.Map Node [Node] -> M.Map Node Int
 dist start neighbours = relax (M.singleton start 0) [start]
@@ -129,8 +151,9 @@ p1 Parsed { start, neighbours } = maxDist start neighbours -- maximum $ M.elems 
 -- p2 :: Parsed -> Int
 p2 Parsed { start, neighbours, charMap } =
    let len = loopLength start neighbours
-       a = loopArea start neighbours charMap len
-   in trace ("loop area " ++ show a ++ " len " ++ show len) (a)
+       a = shoelaceArea start neighbours charMap
+       i = interiorPoints a len
+   in trace ("loop area " ++ show a ++ " len " ++ show len) i
 
 data Grid = Grid { gm :: M.Map Node Char, gny :: Int, gnx :: Int }
 
