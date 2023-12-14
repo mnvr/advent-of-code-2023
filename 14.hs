@@ -1,38 +1,28 @@
 import Control.Arrow ((&&&))
 import Data.List
--- import Debug.Trace ( trace )
-
-trace _ y = y
 
 main :: IO ()
--- main = interact $ (++ "\n") . show . (p1 &&& p2) . lines
-main = interact $ (++ "\n") . show . p2s . lines
--- main = interact $ (++ "\n") . p1 . lines
+main = interact $ (++ "\n") . show . (p1 &&& p2) . lines
 
 north, south, east, west, cycle1, cycle1B :: [String] -> [String]
 north = transpose . map f . transpose
 west = map f
 south = transpose . map reverse . map f . map reverse . transpose
 east = map reverse . map f . map reverse
-cycle1 = east . south . west . north
-cycle1B = (\(h:_) -> h) . drop 3 . iterate cycle1
--- cycle1B = (\(h:_) -> h) . drop 1000000000 . iterate cycle1
-
-cycleUntilStable :: Int -> [String] -> [String]
-cycleUntilStable c xs = trace ("iteration " ++ show c ++ "\n" ++ unlines xs) $ let ys = cycle1 xs in if xs == ys then ys else cycleUntilStable (c + 1) ys
-
-cycleUntilStable2 n c prev xs = trace ("iteration " ++ show c ++ " previous size " ++ show (length prev) ++ "\n" ++ unlines xs) $
-  let ys = cycle1 xs in case findIndex (==ys) prev of
-    Nothing -> cycleUntilStable2 n (c + 1) (prev ++ [ys]) ys
-    Just i -> let cycleLength = length prev - i
-                  remain = (n - i) `mod` cycleLength
-              in (\(h:_) -> h) $ drop (remain - 1) (drop i prev)
 
 f :: String -> String
+f [] = []
 f s = let (a, b) = span (/= '#') s
-      in (reverse $ sort a) ++ (
-        let (c, d) = break (/= '#') b in c ++ (
-            if null d then [] else f d))
+          (c, d) = break (/= '#') b
+      in reverse (sort a) ++ c ++ f d
+
+cycle1 = east . south . west . north
+cycle1B = go 1000000000 []
+  where go n prev xs = let ys = cycle1 xs in case findIndex (==ys) prev of
+          Nothing -> go n (prev ++ [ys]) ys
+          Just i -> let cycleLength = length prev - i
+                        remain = (n - i) `mod` cycleLength
+                    in (\(h:_) -> h) $ drop (remain - 1) (drop i prev)
 
 load :: [String] -> Int
 load = sum . map g . countdown
@@ -43,8 +33,3 @@ load = sum . map g . countdown
 p1, p2 :: [String] -> Int
 p1 = load . north
 p2 = load . cycle1B
-
-p2v = unlines . cycle1B
--- p2s = cycleUntilStable 0
-p2s = show . load . cycleUntilStable2 1000000000 0 []
--- p2b = load . (\(h:_) -> h) . drop 30000 . iterate cycle1
