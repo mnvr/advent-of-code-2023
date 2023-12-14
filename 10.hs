@@ -9,11 +9,9 @@ main = interact $ (++ "\n") . show . (p1 &&& p2) . parse
 
 type Node = (Int, Int)
 
-data Parsed = Parsed {
-  start :: Node,
-  neighbours :: M.Map Node [Node],
-  vertices :: S.Set Node
-  }
+data Parsed = Parsed { start :: Node
+                     , vertices :: S.Set Node
+                     , neighbours :: M.Map Node [Node] }
 
 parse :: String -> Parsed
 parse = mkParsed . chunks . lines
@@ -68,65 +66,64 @@ parse = mkParsed . chunks . lines
 enum :: [a] -> [(Int, a)]
 enum = zip [0..]
 
--- We're guaranteed to have a path looping back to itself from the start, just
--- follow it, no need for any state. The maximum distance will then be exactly
--- half of this (since this is a cartesian grid).
-maxDist :: Node -> M.Map Node [Node] -> Int
-maxDist s n = (loopLength s n) `div` 2
-
-loopLength :: Node -> M.Map Node [Node] -> Int
-loopLength start neighbours = go 0 start start
+-- We're guaranteed to have a path looping back to itself from the start, and we
+-- can just follow it linearly to count the length on the nodes on it.
+loopLength :: Parsed -> Int
+loopLength Parsed { start, neighbours } = go 0 start start
   where
     go c n prev | n == start && prev /= start = c
     go c n prev = case M.lookup n neighbours of
       Just ns -> let (next:_) = dropWhile (== prev) ns in go (c+1) next n
 
+-- Since this is a cartesian grid, the maximum distance from the start will be
+-- exactly half the length of the loop.
+maxDistanceFromStart :: Parsed -> Int
+maxDistanceFromStart p = (loopLength p) `div` 2
+
 -- The Shoelace formula is an easy to understand (if you see it visually) way to
--- compute the area of a cartesian polygon. The gist is that we see the polygon
--- as a composed of trapezoids defined by each consecutive pair of nodes
--- (ignoring colinear edges). Some of these pairs will have a positive
--- contribution, others will have a negative contribution. So if we sum them up,
--- we'll get the area (or its negation, depending on the direction we go, thus
--- we take the absolute value to ignore that issue).
-
-shoelaceArea :: Node -> M.Map Node [Node] -> S.Set Node -> Int
-shoelaceArea start neighbours vertices = go 0 start start start
+-- compute the area of a cartesian polygon. The gist is that if we can consider
+-- the polygon as a composed of trapezoids defined by each consecutive pair of
+-- vertices. Some of these pairs will have a positive contribution, others will
+-- have a negative contribution. So if we sum them up, we'll get the area.
+--
+-- The resultant value can be negative depending on the direction we go, thus we
+-- take the absolute value to ignore that issue.
+shoelaceArea :: Parsed -> Int
+shoelaceArea Parsed { start, neighbours, vertices } = go 0 start start start
   where
-    go a n since prev | n == start && prev /= start = let z = (abs (a + shoelace since n)) `div` 2 in z
-    go a n since prev = case M.lookup n neighbours of
-      Just ns ->  let (next:_) = filter (/= prev) ns in
-        if S.member n vertices then go (a + shoelace since n) next n n else go a next since n
-    shoelace (y, x) (y', x') = let z = area1 (y, x) (y', x') in z
-    area1 (y, x) (y', x') = (y + y') * (x - x')
+    go s lastVertex prev n | n == start && prev /= start
+      = (abs (s + shoelace lastVertex n)) `div` 2
+    go s lastVertex prev n
+      = let (next:_) = filter (/= prev) (fromJust (M.lookup n neighbours)) in
+        if S.member n vertices
+          then go (s + shoelace lastVertex n) n n next
+          else go s lastVertex n next
+    shoelace (y, x) (y', x') = (y + y') * (x - x')
 
-
--- Pick's formula gives us the way to relate the area of a polygon with integer
--- coordinates for all its vertices in terms of the number of integer points
--- within and on it.
+-- Pick's formula gives us the way to relate the area of a cartesian polygon (a
+-- polygon with integer coordinates for all its vertices) in terms of the number
+-- of integer points within and on it.
 --
 -- Let i be the number of integer points interior to the polygon. This is what
 -- we wish to find.
 --
--- Let a be the area of the polygon. This we can find using the shoelace
+-- Let a be the area of the polygon. This we can find using the shoelaceArea
 -- function above.
 --
--- Let b be the number of integer points on boundary. This is the pathLength.
+-- Let b be the number of integer points on boundary. This is the path length,
+-- given by the loopLength function above.
 --
 -- Then, the area of this polygon is
 --
--- A = i + (b/2)  - 1
+--     A = i + (b/2)  - 1
 --
 -- Or, for us, the number of interior points is
 --
--- i = A - (b/2) + 1
-interiorPoints i b = i - (b `div` 2) + 1
+--     i = A - (b/2) + 1
+--
+interiorPoints :: Int -> Int -> Int
+interiorPoints area b = area - (b `div` 2) + 1
 
-p1 :: Parsed -> Int
-p1 Parsed { start, neighbours } = maxDist start neighbours
-
--- p2 :: Parsed -> Int
-p2 Parsed { start, neighbours, vertices } =
-   let len = loopLength start neighbours
-       a = shoelaceArea start neighbours vertices
-       i = interiorPoints a len
-   in i
+p1, p2 :: Parsed -> Int
+p1 = maxDistanceFromStart
+p2 p = interiorPoints (shoelaceArea p) (loopLength p)
