@@ -95,10 +95,11 @@ loopLength start neighbours = go 0 start start
 -- we'll get the area (or its negation, depending on the direction we go, thus
 -- we take the absolute value to ignore that issue).
 
-loopArea :: Node -> M.Map Node [Node] -> M.Map Node Char -> Int
-loopArea start neighbours chars = go 0 start start start
+loopArea :: Node -> M.Map Node [Node] -> M.Map Node Char -> Int -> Int
+loopArea start neighbours chars len = go 0 start start start
   where
-    go a n since prev | n == start && prev /= start = let z = (abs (a + area since n)) `div` 2 in trace ("returning " ++ show z) z
+    -- go a n since prev | n == start && prev /= start = let z = (abs (a + area since n)) `div` 2 in trace ("returning " ++ show z) z
+    go a n since prev | n == start && prev /= start = let z = (abs (a + area since n) - len + 3) `div` 2 in trace ("returning " ++ show z) z
     go a n since prev = case M.lookup n neighbours of
       Just ns -> trace ("at " ++ show (ch n) ++ " - " ++ show a ++ " " ++ show n ++ " " ++ show since ++ " isEdge " ++ show (isEdge n)) $ let (next:_) = filter (/= prev) ns in
         if isEdge n then go (a + area since n) next n n else go a next since n
@@ -109,6 +110,7 @@ loopArea start neighbours chars = go 0 start start start
     ch n = fromJust $ M.lookup n chars
 
     area1 (y, x) (y', x') = (y + y') * (x - x')
+    -- area2 (y, x) (y', x') = y'  * (x - x')
 
 
 dist :: Node -> M.Map Node [Node] -> M.Map Node Int
@@ -126,9 +128,9 @@ p1 Parsed { start, neighbours } = maxDist start neighbours -- maximum $ M.elems 
 
 -- p2 :: Parsed -> Int
 p2 Parsed { start, neighbours, charMap } =
-   let a = loopArea start neighbours charMap
-       len = loopLength start neighbours
-   in trace ("loop area " ++ show a ++ " len " ++ show len) (a - len)
+   let len = loopLength start neighbours
+       a = loopArea start neighbours charMap len
+   in trace ("loop area " ++ show a ++ " len " ++ show len) (a)
 
 data Grid = Grid { gm :: M.Map Node Char, gny :: Int, gnx :: Int }
 
