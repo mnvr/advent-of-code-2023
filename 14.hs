@@ -1,16 +1,17 @@
 import Control.Arrow ((&&&))
 import Data.List
-import Data.Bifunctor
 import Debug.Trace
 
 main :: IO ()
-main = interact $ (++ "\n") . show . parse
+main = interact $ (++ "\n") . show . p1 . lines
 
-parse = sum . map g . countdown . transpose . map f . transpose . lines
+north :: [String] -> [String]
+north = transpose . map f . transpose
  where
-    f [] = []
     f s = let (a, b) = span (/= '#') s in (reverse $ sort a) ++ (let (c, d) = break (/= '#') b in c ++ (if null d then [] else f d))
-    countdown xs = zip [length xs..] xs
-    -- g (i, s) = (i, (length $ filter (== 'O') s), s)--unt id -- g' (length ls) ls
-    g (i, s) = i * (length $ filter (== 'O') s)--unt id -- g' (length ls) ls
-    -- g' n ls = map (h n) ls
+
+p1 :: [String] -> Int
+p1 = sum . map g . countdown . north
+ where
+    countdown xs = let n = length xs in zip [n,n-1..] xs
+    g (i, s) = i * (length $ filter (== 'O') s)
