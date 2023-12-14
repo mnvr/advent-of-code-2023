@@ -9,7 +9,7 @@ type Galaxy = (Int, Int)
 parse :: String -> [Galaxy]
 parse = concatMap (uncurry row) . enum . lines
   where
-    row y = foldl item []. enum
+    row y = foldl item [] . enum
       where item gs (x, '#') = (y, x) : gs
             item gs _ = gs
 

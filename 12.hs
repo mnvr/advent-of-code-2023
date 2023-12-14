@@ -24,12 +24,11 @@ unfold = map f
   where f (s, xs) = (intercalate "?" (replicate 5 s), concat (replicate 5 xs))
 
 ways :: String -> [Int] -> Int
-ways s xs = evalState (memo s xs) M.empty -- s xs
+ways s = flip evalState M.empty . memo ways' s
   where
-    memo :: String -> [Int] -> State MT Int
-    memo s xs = let key = (s, xs) in gets (M.lookup key) >>= \case
+    memo mf s xs = let key = (s, xs) in gets (M.lookup key) >>= \case
       Just v -> pure v
-      Nothing -> ways' memo s xs >>= \v -> modify (M.insert key v) >> pure v
+      Nothing -> mf (memo mf) s xs >>= \v -> modify (M.insert key v) >> pure v
 
 type MT = M.Map (String, [Int]) Int
 
