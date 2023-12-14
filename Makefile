@@ -35,8 +35,8 @@ check = echo "(`cat answers/$$n-a`,`cat answers/$$n-b`)" > out/expected && \
 	echo "(`cat answers/$$n-a`,`cat answers/$$n-b`)""$(tgreen)"' *'"$(treset)"
 
 stats_set = ts=`cat out/time | grep real | cut -d ' ' -f2`; \
-	ch=`wc -m < $$hs | tr -d ' '`; \
-	nl=`wc -l < $$hs | tr -d ' '`; \
+	ch=`sed '/^-- /d' $$hs | wc -m | tr -d ' '`; \
+	nl=`sed '/^-- /d' $$hs | wc -l | tr -d ' '`; \
 
 stats = $(stats_set) \
 	cs=`test $$ch -lt 999 && echo "$$ch chars "`; \

@@ -21,7 +21,7 @@ parse = mkParsed . chunks . lines
 
     chunks ls = let g = ground ls in zip3 (g : ls) ls (drop 1 ls ++ [g])
     ground (h:_) = length h `replicate` '.'
-
+    enum = zip [0..]
     verts ck = foldl f S.empty (enum ck) where
       f vs (y, (_, l, _)) = foldl g vs (enum l) where
           g vs (x, ch) | ch `elem` "SFLJ7" = S.insert (y, x) vs
@@ -44,27 +44,19 @@ parse = mkParsed . chunks . lines
     neighbour ck '7' k = catMaybes [south ck k, west ck k]
     neighbour ck 'F' k = catMaybes [south ck k, east ck k]
 
-    north (p, _, _) (y, x)
-      | p !! x `elem` "|F7S" = Just (y - 1, x)
-      | otherwise = Nothing
-    south (_, _, n) (y, x)
-      | n !! x `elem` "|LJS" = Just (y + 1, x)
-      | otherwise = Nothing
-    west (_, c, _) (y, x)
-      | x > 0 && c !! (x - 1) `elem` "-LFS" = Just (y, x - 1)
-      | otherwise = Nothing
-    east (_, c, _) (y, x)
-      | x + 1 < length c && c !! (x + 1) `elem` "-J7S" = Just (y, x + 1)
-      | otherwise = Nothing
+    north (p, _, _) (y, x) = if p !! x `elem` "|F7S"
+      then Just (y - 1, x) else Nothing
+    south (_, _, n) (y, x) = if n !! x `elem` "|LJS"
+      then Just (y + 1, x) else Nothing
+    west (_, c, _) (y, x) = if x > 0 && c !! (x - 1) `elem` "-LFS"
+      then Just (y, x - 1) else Nothing
+    east (_, c, _) (y, x) = if x + 1 < length c && c !! (x + 1) `elem` "-J7S"
+      then Just (y, x + 1) else Nothing
 
     neighboursOfStart ck _ key = catMaybes [
         north ck key, south ck key, west ck key, east ck key]
-
     ensureStart (Just s, m) = (s, m)
     ensureStart _ = error "input does not contain a start node"
-
-enum :: [a] -> [(Int, a)]
-enum = zip [0..]
 
 -- We're guaranteed to have a path looping back to itself from the start, and we
 -- can just follow it linearly to count the length on the nodes on it.
