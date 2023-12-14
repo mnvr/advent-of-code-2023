@@ -1,8 +1,9 @@
 import Data.List (nub, intercalate)
 import Data.Map qualified as M
+import Control.Arrow ((&&&))
 
 main :: IO ()
-main = interact $ (++ "\n") . show . p2 . parse
+main = interact $ (++ "\n") . show . (p1 &&& p2) . parse
 
 parse :: String -> [(String, [Int])]
 parse = map line . lines
@@ -22,7 +23,6 @@ unfold = map f
 ways :: String -> [Int] -> Int
 ways s xs = snd $ memo M.empty s xs
   where
-    memo :: M.Map (String, [Int]) Int -> String -> [Int] -> (M.Map (String, [Int]) Int, Int)
     memo m s xs = let key = (s, xs) in case M.lookup key m of
       Just v -> (m, v)
       Nothing -> let (m', v) = ways' memo m s xs
@@ -41,9 +41,6 @@ ways' f m ('?':rs) xs = let (m', a) = f m rs xs
 ways' f m s (x:rx) | length s >= x && none '.' (take x s) && notAfter x '#' s
   = f m (drop (x + 1) s) rx
 ways' _ m _ _= (m, 0)
-
-after :: Int -> Char -> String -> Bool
-after x c s = only c (take 1 (drop x s))
 
 notAfter :: Int -> Char -> String -> Bool
 notAfter x c s = none c (take 1 (drop x s))
