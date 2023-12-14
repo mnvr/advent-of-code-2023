@@ -30,8 +30,7 @@ expand by gs = map f gs
         adjustX = maybe (length missingX) id (findIndex (> x) missingX)
 
 pairs :: [a] -> [(a, a)]
-pairs gs = concatMap f [0 .. length gs - 1]
-  where f i = let u = gs !! i in map (u,) (drop (i + 1) gs)
+pairs gs = concat $ zipWith f [0..] gs where f i u = map (u,) (drop (i + 1) gs)
 
 dist :: Galaxy -> Galaxy -> Int
 dist (y, x) (y', x') = abs (y - y') + abs (x - x')
