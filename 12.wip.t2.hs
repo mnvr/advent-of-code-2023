@@ -27,7 +27,7 @@ ways' f [] [x] = 0
 ways' f s [] = if none '#' s then 1 else 0
 ways' f ('.':rs) xs = f rs xs
 ways' f ('?':rs) xs = f rs xs + f ('#':rs) xs
-ways' f s (x:rx) | none '.' (take x s) && notAfter x '#' s
+ways' f s (x:rx) | length s >= x && none '.' (take x s) && notAfter x '#' s
   = f (drop (x + 1) s) rx
 ways' _ _ _ = 0
 
