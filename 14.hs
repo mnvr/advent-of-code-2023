@@ -1,8 +1,10 @@
 import Control.Arrow ((&&&))
 import Data.List
+import Debug.Trace
 
 main :: IO ()
-main = interact $ (++ "\n") . show . (p1 &&& p2) . lines
+-- main = interact $ (++ "\n") . show . (p1 &&& p2) . lines
+main = interact $ (++ "\n") . show . p2s . lines
 -- main = interact $ (++ "\n") . p1 . lines
 
 north, south, east, west, cycle1, cycle1B :: [String] -> [String]
@@ -13,6 +15,9 @@ east = map reverse . map f . map reverse
 cycle1 = east . south . west . north
 cycle1B = (\(h:_) -> h) . drop 3 . iterate cycle1
 -- cycle1B = (\(h:_) -> h) . drop 1000000000 . iterate cycle1
+
+cycleUntilStable :: Int -> [String] -> [String]
+cycleUntilStable c xs = trace ("iteration " ++ show c ++ "\n" ++ unlines xs) $ let ys = cycle1 xs in if xs == ys then ys else cycleUntilStable (c + 1) ys
 
 f :: String -> String
 f s = let (a, b) = span (/= '#') s
@@ -31,3 +36,4 @@ p1 = load . north
 p2 = load . cycle1B
 
 p2v = unlines . cycle1B
+p2s = cycleUntilStable 0
