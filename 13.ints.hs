@@ -1,29 +1,34 @@
 import Control.Applicative ((<|>), asum)
 import Control.Arrow ((&&&))
+import Data.Bits (complementBit)
 import Data.List (transpose)
 import Data.Maybe (fromJust)
-
--- A variant of 13.hs that directly uses the string representation instead of
--- first converting them to their bitwise int representations. Somewhat
--- surprisingly, this is not slower. There is a slight difference when
--- optimized: under -O2 the bitwise representation version is slightly faster.
+import Numeric (readBin)
 
 main :: IO ()
 main = interact $ (++ "\n") . show . (p1 &&& p2) . parse
 
-type Pattern = ([String], [String])
+-- A variant of 13.hs that uses more explicit reflection testing. Additionally,
+-- it also uses an integer representation, although that doesn't make too big of
+-- a difference in runtime (compared to this same code, but using the strings
+-- themselves for various checks below).
+
+type Pattern = ([Int], [Int])
 
 parse :: String -> [Pattern]
 parse = from . lines
   where
     from [] = []
     from ls = let (pl, rest) = span (/= "") ls in pat pl : from (drop 1 rest)
-    pat = id &&& transpose
+    pat = ints &&& ints . transpose
+    ints = map int
+    int s = case readBin $ map (\c -> if c == '.' then '0' else '1') s of
+        [(i, _)] -> i
 
-rIndex :: [String] -> Maybe Int
+rIndex :: [Int] -> Maybe Int
 rIndex = asum . rIndices
 
-rIndices :: [String] -> [Maybe Int]
+rIndices :: [Int] -> [Maybe Int]
 rIndices xs = map f [1..length xs - 1]
   where f i = let (a, b) = splitAt i xs
                   j = min (length a) (length b)
@@ -46,6 +51,4 @@ smudge (rows, cols) = fromJust $ (*100) <$> rf <|> rc
     rowVariants = [flip y x rows | y <- [0..length rows - 1], x <- [0..length cols - 1]]
     colVariants = [flip x y cols | y <- [0..length rows - 1], x <- [0..length cols - 1]]
     flip y x ns = zipWith (\i r -> if i == y then flipBit x r else r) [0..] ns
-    flipBit x s = let (a, b:c) = splitAt x s in a ++ [flipC b] ++ c
-    flipC '.' = '#'
-    flipC '#' = '.'
+    flipBit x n = n `complementBit` x

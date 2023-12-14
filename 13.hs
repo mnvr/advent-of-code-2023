@@ -1,49 +1,35 @@
-import Control.Applicative ((<|>), asum)
+import Control.Applicative ((<|>))
 import Control.Arrow ((&&&))
-import Data.Bits (complementBit)
-import Data.List (transpose)
+import Data.List (transpose, find)
 import Data.Maybe (fromJust)
-import Numeric (readBin)
 
 main :: IO ()
 main = interact $ (++ "\n") . show . (p1 &&& p2) . parse
 
-type Pattern = ([Int], [Int])
+type Pattern = [String]
 
 parse :: String -> [Pattern]
 parse = from . lines
   where
     from [] = []
-    from ls = let (pl, rest) = span (/= "") ls in pat pl : from (drop 1 rest)
-    pat = ints &&& ints . transpose
-    ints = map int
-    int s = case readBin $ map (\c -> if c == '.' then '0' else '1') s of
-        [(i, _)] -> i
+    from ls = let (pl, rest) = span (/= "") ls in pl : from (drop 1 rest)
 
-rIndex :: [Int] -> Maybe Int
-rIndex = asum . rIndices
+-- For all splits, find the differences across the reflection line. For part 1,
+-- where the mirroring is perfect, the won't be any difference. For part 2,
+-- where there's a single smidge, there'll be exactly one difference.
 
-rIndices :: [Int] -> [Maybe Int]
-rIndices xs = map f [1..length xs - 1]
-  where f i = let (a, b) = splitAt i xs
-                  j = min (length a) (length b)
-              in if take j (reverse a) == take j b then Just i else Nothing
+reflectionLine :: Int -> [String] -> Maybe Int
+reflectionLine dx xs = find f [1..length xs - 1]
+  where f i = let (a, b) = splitAt i xs in difference (reverse a) b == dx
 
-p1 :: [Pattern] -> Int
-p1 = sum . map (fromJust . ri)
-  where ri (rows, cols) = (*100) <$> rIndex rows <|> rIndex cols
+difference :: [String] -> [String] -> Int
+difference xs = sum . zipWith rd xs
+  where rd r = sum . zipWith (\c1 c2 -> if c1 == c2 then 0 else 1) r
 
-p2 :: [Pattern] -> Int
-p2 = sum . map smudge
+solve :: Int -> [Pattern] -> Int
+solve dx = sum . map (fromJust . f)
+ where f p = (*100) <$> reflectionLine dx p <|> reflectionLine dx (transpose p)
 
-smudge :: Pattern -> Int
-smudge (rows, cols) = fromJust $ (*100) <$> rf <|> rc
-  where
-    or = rIndex rows
-    oc = rIndex cols
-    rf = asum $ filter (/= or) $ concatMap rIndices rowVariants
-    rc = asum $ filter (/= oc) $ concatMap rIndices colVariants
-    rowVariants = [flip y x rows | y <- [0..length rows - 1], x <- [0..length cols - 1]]
-    colVariants = [flip x y cols | y <- [0..length rows - 1], x <- [0..length cols - 1]]
-    flip y x ns = zipWith (\i r -> if i == y then flipBit x r else r) [0..] ns
-    flipBit x n = n `complementBit` x
+p1, p2 :: [Pattern] -> Int
+p1 = solve 0
+p2 = solve 1
