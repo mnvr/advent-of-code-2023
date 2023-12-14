@@ -1,6 +1,8 @@
 import Control.Arrow ((&&&))
 import Data.List
-import Debug.Trace
+-- import Debug.Trace ( trace )
+
+trace _ y = y
 
 main :: IO ()
 -- main = interact $ (++ "\n") . show . (p1 &&& p2) . lines
@@ -19,10 +21,12 @@ cycle1B = (\(h:_) -> h) . drop 3 . iterate cycle1
 cycleUntilStable :: Int -> [String] -> [String]
 cycleUntilStable c xs = trace ("iteration " ++ show c ++ "\n" ++ unlines xs) $ let ys = cycle1 xs in if xs == ys then ys else cycleUntilStable (c + 1) ys
 
-cycleUntilStable2 c prev xs = trace ("iteration " ++ show c ++ " previous size " ++ show (length prev) ++ "\n" ++ unlines xs) $
+cycleUntilStable2 n c prev xs = trace ("iteration " ++ show c ++ " previous size " ++ show (length prev) ++ "\n" ++ unlines xs) $
   let ys = cycle1 xs in case findIndex (==ys) prev of
-    Nothing -> cycleUntilStable2 (c + 1) (prev ++ [ys]) ys
-    Just i -> (i, length prev - i)
+    Nothing -> cycleUntilStable2 n (c + 1) (prev ++ [ys]) ys
+    Just i -> let cycleLength = length prev - i
+                  remain = (n - i) `mod` cycleLength
+              in (\(h:_) -> h) $ drop (remain - 1) (drop i prev)
 
 f :: String -> String
 f s = let (a, b) = span (/= '#') s
@@ -42,5 +46,5 @@ p2 = load . cycle1B
 
 p2v = unlines . cycle1B
 -- p2s = cycleUntilStable 0
-p2s = cycleUntilStable2 0 []
+p2s = show . load . cycleUntilStable2 1000000000 0 []
 -- p2b = load . (\(h:_) -> h) . drop 30000 . iterate cycle1
