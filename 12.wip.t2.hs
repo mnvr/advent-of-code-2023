@@ -14,12 +14,14 @@ parse = map line . lines
     comma c = if c == ',' then ' ' else c
 
 -- p1 :: [(String, [Int])] -> Int
-p1 = uncurry ways . head
+p1 = sum . map (uncurry ways)
 
 ways :: String -> [Int] -> Int
-ways = f
+ways = ways' ways
+ways_ = f
   where f s xs = let z = ways' f s xs in trace ("ways " ++ show s ++ " " ++ show xs ++ " " ++ show z) z
 
+ways' :: Num a => ([Char] -> [Int] -> a) -> [Char] -> [Int] -> a
 ways' f [] [] = 1
 ways' f [] [x] = 0
 ways' f s [] = if none '#' s then 1 else 0
