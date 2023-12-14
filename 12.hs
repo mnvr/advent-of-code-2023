@@ -1,6 +1,9 @@
+{-# LANGUAGE LambdaCase #-}
+
 import Data.List (nub, intercalate)
 import Data.Map qualified as M
 import Control.Arrow ((&&&))
+import Control.Monad.State
 
 main :: IO ()
 main = interact $ (++ "\n") . show . (p1 &&& p2) . parse
@@ -21,26 +24,24 @@ unfold = map f
   where f (s, xs) = (intercalate "?" (replicate 5 s), concat (replicate 5 xs))
 
 ways :: String -> [Int] -> Int
-ways s xs = snd $ memo M.empty s xs
+ways s xs = evalState (memo s xs) M.empty -- s xs
   where
-    memo m s xs = let key = (s, xs) in case M.lookup key m of
-      Just v -> (m, v)
-      Nothing -> let (m', v) = ways' memo m s xs
-                 in (M.insert key v m', v)
+    memo :: String -> [Int] -> State MT Int
+    memo s xs = let key = (s, xs) in gets (M.lookup key) >>= \case
+      Just v -> pure v
+      Nothing -> ways' memo s xs >>= \v -> modify (M.insert key v) >> pure v
 
 type MT = M.Map (String, [Int]) Int
 
-ways' :: (MT -> String -> [Int] -> (MT, Int)) -> MT -> String -> [Int] -> (MT, Int)
-ways' f m [] [] = (m, 1)
-ways' f m [] [x] = (m, 0)
-ways' f m s [] = (m, if none '#' s then 1 else 0)
-ways' f m ('.':rs) xs = f m rs xs
-ways' f m ('?':rs) xs = let (m', a) = f m rs xs
-                            (m'', b) = f m' ('#':rs) xs
-                        in (m'', a + b)
-ways' f m s (x:rx) | length s >= x && none '.' (take x s) && notAfter x '#' s
-  = f m (drop (x + 1) s) rx
-ways' _ m _ _= (m, 0)
+ways' :: (String -> [Int] -> State MT Int) -> String -> [Int] -> State MT Int
+ways' f [] [] = pure 1
+ways' f [] [x] = pure 0
+ways' f s [] = pure (if none '#' s then 1 else 0)
+ways' f ('.':rs) xs = f rs xs
+ways' f ('?':rs) xs = f rs xs >>= \a -> f ('#':rs) xs >>= \b -> pure (a + b)
+ways' f s (x:rx) | length s >= x && none '.' (take x s) && notAfter x '#' s
+  = f (drop (x + 1) s) rx
+ways' _ _ _= pure 0
 
 notAfter :: Int -> Char -> String -> Bool
 notAfter x c s = none c (take 1 (drop x s))
