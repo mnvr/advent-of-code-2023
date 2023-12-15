@@ -17,12 +17,16 @@ f s = let (a, b) = span (/= '#') s
       in reverse (sort a) ++ c ++ f d
 
 cycle1 = east . south . west . north
-cycle1B = go 1000000000 []
-  where go n prev xs = let ys = cycle1 xs in case findIndex (==ys) prev of
-          Nothing -> go n (prev ++ [ys]) ys
-          Just i -> let cycleLength = length prev - i
-                        remain = (n - i) `mod` cycleLength
-                    in (\(h:_) -> h) $ drop (remain - 1) (drop i prev)
+cycle1B xs = go 1000000000 [(load xs, xs)] xs
+  where
+    go n prev xs =
+      let key = (load &&& id) $ cycle1 xs in case findIndex (==key) prev of
+          Nothing -> go n (key : prev) (snd key)
+          Just i ->
+            let cycleLength = i + 1
+                offset =  length prev - (i + 1)
+                remain = (n - offset) `mod` cycleLength
+            in (\(h:_)-> snd h) $ drop remain $ drop offset $ reverse prev
 
 load :: [String] -> Int
 load = sum . map g . countdown
