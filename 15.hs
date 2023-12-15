@@ -25,7 +25,7 @@ decode s = case break (`elem` "-=") s of
     (a, '-':b) -> (Remove a, hash a)
     (a, '=':b) -> (Replace (a, read b), hash a)
 
--- p2 :: [String] -> Int
+p2 :: [String] -> Int
 p2 = power . foldl f boxes . map decode
   where
     boxes = take 256 $ repeat []
