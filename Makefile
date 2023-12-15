@@ -26,74 +26,81 @@ tstart = \033[0G
 latest = n=`ls -t *.hs | head -1 | cut -f1 -d.`; \
 	eg=`ls -t examples/$$n* | head -1`; \
 	in="inputs/$$n"; \
-	hs=`ls -t *.hs | head -1`; \
+	f=`ls -t *.hs | head -1`; \
 	mkdir -p out
 
 latestSwift = n=`ls -t *.swift | head -1 | cut -f1 -d.`; \
 	eg=`ls -t examples/$$n* | head -1`; \
 	in="inputs/$$n"; \
-	sw=`ls -t *.swift | head -1`; \
+	f=`ls -t *.swift | head -1`; \
 	mkdir -p out
 
+# The output of Haskell programs is "(p1,p2)"
 check = echo "(`cat answers/$$n-a`,`cat answers/$$n-b`)" > out/expected && \
 	if diff --color=always --unified out/expected out/actual; then true; else \
 	echo "$(tbold)""ERROR: The program's output did not match the expected output""$(treset)" && exit 1; fi && \
 	echo "(`cat answers/$$n-a`,`cat answers/$$n-b`)""$(tgreen)"' *'"$(treset)"
 
+# The output of Swift programs is "p1 p2"
+checkSwift = echo "`cat answers/$$n-a` `cat answers/$$n-b`" > out/expected && \
+	if diff --color=always --unified out/expected out/actual; then true; else \
+	echo "$(tbold)""ERROR: The program's output did not match the expected output""$(treset)" && exit 1; fi && \
+	echo "`cat answers/$$n-a` `cat answers/$$n-b`""$(tgreen)"' *'"$(treset)"
+
 stats_set = ts=`cat out/time | grep real | cut -d ' ' -f2`; \
-	ch=`sed '/^-- /d' $$hs | wc -m | tr -d ' '`; \
-	nl=`sed '/^-- /d' $$hs | wc -l | tr -d ' '`; \
+	ch=`sed '/^-- /d' $$f | wc -m | tr -d ' '`; \
+	nl=`sed '/^-- /d' $$f | wc -l | tr -d ' '`; \
 
 stats = $(stats_set) \
 	cs=`test $$ch -lt 999 && echo "$$ch chars "`; \
-	echo "$(tdim)"$$hs $$cs$$nl lines"$(treset)" $$ts s
+	echo "$(tdim)"$$f $$cs$$nl lines"$(treset)" $$ts s
 
 example:
 	@ft=`ls -t *.swift *.hs | head -1 | cut -f2 -d.`; \
 	if test "$$ft" == "swift"; then $(exampleSwift); else $(exampleHaskell); fi
 
 exampleHaskell = $(latest) && \
-	echo "$(tdim)""cat $$eg | runghc $$hs""$(treset)" && \
-	cat $$eg | runghc $$hs
+	echo "$(tdim)""cat $$eg | runghc $$f""$(treset)" && \
+	cat $$eg | runghc $$f
 
 exampleSwift = $(latestSwift) && \
-	echo "$(tdim)""cat $$eg | swift $$sw""$(treset)" && \
-	cat $$eg | swift $$sw
+	echo "$(tdim)""cat $$eg | swift $$f""$(treset)" && \
+	cat $$eg | swift $$f
 
 test:
 	@ft=`ls -t *.swift *.hs | head -1 | cut -f2 -d.`; \
 	if test "$$ft" == "swift"; then $(testSwift); else $(testHaskell); fi
 
 testHaskell = $(latest) && \
-	echo "$(tdim)""cat $$in | runghc $$hs""$(treset)" && \
+	echo "$(tdim)""cat $$in | runghc $$f""$(treset)" && \
 	echo "$(tdim)"'echo "(`cat answers/'$$n'-a`,`cat answers/'$$n'-b`)"'"$(treset)" && \
-	cat $$in | command time -p -o out/time runghc $$hs | tee out/actual && \
+	cat $$in | command time -p -o out/time runghc $$f | tee out/actual && \
 	$(check) && \
 	$(stats)
 
 testSwift = $(latestSwift) && \
-	echo "$(tdim)""cat $$in | swift $$sw""$(treset)" && \
+	echo "$(tdim)""cat $$in | swift $$f""$(treset)" && \
 	echo "$(tdim)"'echo "(`cat answers/'$$n'-a`,`cat answers/'$$n'-b`)"'"$(treset)" && \
-	cat $$in | command time -p -o out/time swift $$sw | tee out/actual && \
-	$(check) && \
+	cat $$in | command time -p -o out/time swift $$f | tee out/actual && \
+	$(checkSwift) && \
 	$(stats)
 
 o:
 	@$(latest) && \
-	echo "$(tdim)""ghc -O -outputdir out -o out/$$n $$hs""$(treset)" && \
+	echo "$(tdim)""ghc -O -outputdir out -o out/$$n $$f""$(treset)" && \
 	echo "$(tdim)""cat $$in | ./out/$$n""$(treset)" && \
 	echo "$(tdim)"'echo "(`cat answers/'$$n'-a`,`cat answers/'$$n'-b`)"'"$(treset)" && \
-	ghc -O -outputdir out -o out/$$n $$hs && \
+	ghc -O -outputdir out -o out/$$n $$f && \
 	cat $$in | command time -p -o out/time ./out/$$n | tee out/actual && \
 	$(check) && \
 	$(stats)
 
 o2:
 	@$(latest) && \
-	echo "$(tdim)""ghc -O2 -outputdir out -o out/$$n $$hs""$(treset)" && \
+	echo "$(tdim)""ghc -O2 -outputdir out -o out/$$n $$f""$(treset)" && \
 	echo "$(tdim)""cat $$in | ./out/$$n""$(treset)" && \
 	echo "$(tdim)"'echo "(`cat answers/'$$n'-a`,`cat answers/'$$n'-b`)"'"$(treset)" && \
-	ghc -O2 -outputdir out -o out/$$n $$hs && \
+	ghc -O2 -outputdir out -o out/$$n $$f && \
 	cat $$in | command time -p -o out/time ./out/$$n | tee out/actual && \
 	$(check) && \
 	$(stats)
@@ -109,26 +116,26 @@ verify:
 	mkdir -p out && \
 	ls -r *.hs | grep -v wip | cut -f1 -d. | uniq | while read n; do \
 	  in="inputs/$$n"; \
-      hs="$$n.hs"; \
-	  pghc="ghc -O2 -outputdir out -o out/$$n $$hs" \
+      f="$$n.hs"; \
+	  pghc="ghc -O2 -outputdir out -o out/$$n $$f" \
 	  pprog=`echo $$pc | cut -c $$pi`; \
 	  export pi=`expr 1 + $$pi`; \
 	  psuffix="   $$pprog"; \
       printf "$(tclear)$(tstart)$$pprefix  $(tdim)$$pghc$(treset)$$psuffix" && \
-      ghc -O2 -outputdir out -o out/$$n $$hs >/dev/null 2>&1 ; \
+      ghc -O2 -outputdir out -o out/$$n $$f >/dev/null 2>&1 ; \
 	done && \
 	echo "$(tclear)$(tstart)$$pprefix done" && \
 	rm -f "out/stats" && \
 	ls -r *.hs | grep -v wip | cut -f1 -d. | uniq | while read n; do \
 	  in="inputs/$$n"; \
-	  hs="$$n.hs"; \
+	  f="$$n.hs"; \
 	  output=`cat $$in | command time -p -o out/time ./out/$$n | tee out/actual | tr '\n' ' '` && \
 	  echo "(`cat answers/$$n-a`,`cat answers/$$n-b`)" > out/expected && \
 	  if diff --color=always --unified out/expected out/actual; then true; else \
 	  echo "$(tbold)""ERROR: The program's output did not match the expected output""$(treset)" && exit 1; fi && \
 	  $(stats_set) \
 	  cs=`if test $$ch -lt 999; then echo "$$ch chars"; else echo ">1k chars"; fi`; \
-	  echo "$$hs $$cs $$nl lines $$ts s\t$(tgreen)$$output$(treset)" && \
+	  echo "$$f $$cs $$nl lines $$ts s\t$(tgreen)$$output$(treset)" && \
 	  echo "$$ch $$nl $$ts" >> out/stats ; \
 	done && \
 	printf "ch" && cat out/stats | cut -d ' ' -f 1 | $(awk_stats) && \
@@ -139,16 +146,16 @@ run-all:
 	@ls -r *.hs | cut -f1 -d. | uniq | while read n; do \
 	  in="inputs/$$n"; \
       for hs in $$n*.hs; do \
-      echo "$(tdim)""cat $$in | runghc $$hs""$(treset)" && \
-	  cat $$in | runghc $$hs && \
+      echo "$(tdim)""cat $$in | runghc $$f""$(treset)" && \
+	  cat $$in | runghc $$f && \
 	  echo "(`cat answers/$$n-a`,`cat answers/$$n-b`)" ; \
 	  done; \
 	done
 
 min:
-	@hs=`ls -t *.hs | grep -v '.min.hs' | head -1`; mkdir -p out && \
-	echo "$(tdim)""./tools/min.sh $$hs""$(treset)" && \
-	./tools/min.sh $$hs
+	@f=`ls -t *.hs | grep -v '.min.hs' | head -1`; mkdir -p out && \
+	echo "$(tdim)""./tools/min.sh $$f""$(treset)" && \
+	./tools/min.sh $$f
 
 clean:
 	rm -rf out
