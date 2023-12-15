@@ -29,6 +29,12 @@ latest = n=`ls -t *.hs | head -1 | cut -f1 -d.`; \
 	hs=`ls -t *.hs | head -1`; \
 	mkdir -p out
 
+latestSwift = n=`ls -t *.swift | head -1 | cut -f1 -d.`; \
+	eg=`ls -t examples/$$n* | head -1`; \
+	in="inputs/$$n"; \
+	sw=`ls -t *.swift | head -1`; \
+	mkdir -p out
+
 check = echo "(`cat answers/$$n-a`,`cat answers/$$n-b`)" > out/expected && \
 	if diff --color=always --unified out/expected out/actual; then true; else \
 	echo "$(tbold)""ERROR: The program's output did not match the expected output""$(treset)" && exit 1; fi && \
@@ -50,18 +56,25 @@ exampleHaskell = $(latest) && \
 	echo "$(tdim)""cat $$eg | runghc $$hs""$(treset)" && \
 	cat $$eg | runghc $$hs
 
-exampleSwift = n=`ls -t *.swift | head -1 | cut -f1 -d.`; \
-	eg=`ls -t examples/$$n* | head -1`; \
-	in="inputs/$$n"; \
-	sw=`ls -t *.swift | head -1`; \
+exampleSwift = $(latestSwift) && \
 	echo "$(tdim)""cat $$eg | swift $$sw""$(treset)" && \
 	cat $$eg | swift $$sw
 
 test:
-	@$(latest) && \
+	@ft=`ls -t *.swift *.hs | head -1 | cut -f2 -d.`; \
+	if test "$$ft" == "swift"; then $(testSwift); else $(testHaskell); fi
+
+testHaskell = $(latest) && \
 	echo "$(tdim)""cat $$in | runghc $$hs""$(treset)" && \
 	echo "$(tdim)"'echo "(`cat answers/'$$n'-a`,`cat answers/'$$n'-b`)"'"$(treset)" && \
 	cat $$in | command time -p -o out/time runghc $$hs | tee out/actual && \
+	$(check) && \
+	$(stats)
+
+testSwift = $(latestSwift) && \
+	echo "$(tdim)""cat $$in | swift $$sw""$(treset)" && \
+	echo "$(tdim)"'echo "(`cat answers/'$$n'-a`,`cat answers/'$$n'-b`)"'"$(treset)" && \
+	cat $$in | command time -p -o out/time swift $$sw | tee out/actual && \
 	$(check) && \
 	$(stats)
 
