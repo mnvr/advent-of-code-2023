@@ -124,6 +124,19 @@ verify:
       ghc -O2 -outputdir out -o out/$$n $$f >/dev/null 2>&1 ; \
 	done && \
 	echo "$(tclear)$(tstart)$$pprefix done" && \
+	export pi=1; \
+	pprefix="Warming disk caches..." ; \
+	ls -r *.hs | grep -v wip | cut -f1 -d. | uniq | while read n; do \
+	  in="inputs/$$n"; \
+      f="$$n.hs"; \
+	  pf="$$f" \
+	  pprog=`echo $$pc | cut -c $$pi`; \
+	  export pi=`expr 1 + $$pi`; \
+	  psuffix="   $$pprog"; \
+      printf "$(tclear)$(tstart)$$pprefix  $(tdim)$$pf$(treset)$$psuffix" && \
+      cat $$in | ./out/$$n >/dev/null 2>&1 ; \
+	done && \
+	echo "$(tclear)$(tstart)$$pprefix done" && \
 	rm -f "out/stats" && \
 	ls -r *.hs | grep -v wip | cut -f1 -d. | uniq | while read n; do \
 	  in="inputs/$$n"; \
