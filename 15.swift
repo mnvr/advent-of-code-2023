@@ -8,7 +8,8 @@ while let line = readLine() {
     }
 }
 // print(s)
-print(boxes)
+// print(boxes)
+print(power(boxes: boxes))
 
 func hash<S: StringProtocol>(_ s: S) -> Int {
     var v = 0;
@@ -27,11 +28,11 @@ enum Op {
 
 struct Lens {
     let label: String
-    let value: Int
+    let length: Int
 
-    init<S: StringProtocol>(label: S, value: S) {
+    init<S: StringProtocol>(label: S, length: S) {
         self.label = String(label)
-        self.value = Int(value, radix: 10)!
+        self.length = Int(length, radix: 10)!
     }
 }
 
@@ -53,7 +54,7 @@ func decode<S: StringProtocol>(_ s: S) -> Action {
     if splits.count == 1 {
         return Action(.remove(String(splits[0])), box: box)
     }
-    return Action(.replace(Lens(label: splits[0], value: splits[1])), box: box)
+    return Action(.replace(Lens(label: splits[0], length: splits[1])), box: box)
 }
 
 func modify(_ boxes: [Box], action: Action) -> [Box] {
@@ -80,4 +81,14 @@ func modify(box: Box, action: Action) -> Box {
             }
     }
     return box
+}
+
+func power(boxes: [Box]) -> Int {
+    var s = 0
+    for (i, box) in boxes.enumerated() {
+        for (j, lens) in box.enumerated() {
+            s += (i + 1) * (j + 1) * lens.length
+        }
+    }
+    return s
 }
