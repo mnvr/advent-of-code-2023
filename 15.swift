@@ -18,26 +18,35 @@ func hash<S: StringProtocol>(_ s: S) -> Int {
 }
 
 enum Op {
-    case remove
-    case replace(Int)
+    case remove(String)
+    case replace(Lens)
+}
+
+struct Lens {
+    let label: String
+    let value: Int
+
+    init<S: StringProtocol>(label: S, value: S) {
+        self.label = String(label)
+        self.value = Int(value, radix: 10)!
+    }
 }
 
 struct Action {
-    let box: Int
-    let label: String
     let op: Op
+    let box: Int
 
-    init<S: StringProtocol>(label: S, op: Op) {
-        self.box = hash(label)
-        self.label = String(label)
+    init(_ op: Op, box: Int) {
         self.op = op
+        self.box = box
     }
 }
 
 func decode<S: StringProtocol>(_ s: S) -> Action {
     let splits = s.split { $0 == "=" || $0 == "-" }
+    let box = hash(splits[0])
     if splits.count == 1 {
-        return Action(label: splits[0], op: .remove)
+        return Action(.remove(String(splits[0])), box: box)
     }
-    return Action(label: splits[0], op: .replace(Int(splits[1], radix: 10)!))
+    return Action(.replace(Lens(label: splits[0], value: splits[1])), box: box)
 }
