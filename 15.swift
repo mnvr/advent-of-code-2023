@@ -3,7 +3,7 @@ var boxes: [Box] = Array(repeating: [], count: 256)
 while let line = readLine() {
     for word in line.split(separator: ",") {
         s += hash(word)
-        boxes = modify(boxes, action: decode(word))
+        boxes = modify(boxes, step: decode(word))
     }
 }
 print(s, power(boxes: boxes))
@@ -35,7 +35,7 @@ struct Lens {
 
 typealias Box = [Lens]
 
-struct Action {
+struct Step {
     let op: Op
     let box: Int
 
@@ -45,24 +45,24 @@ struct Action {
     }
 }
 
-func decode<S: StringProtocol>(_ s: S) -> Action {
+func decode<S: StringProtocol>(_ s: S) -> Step {
     let splits = s.split { $0 == "=" || $0 == "-" }
     let box = hash(splits[0])
     if splits.count == 1 {
-        return Action(.remove(String(splits[0])), box: box)
+        return Step(.remove(String(splits[0])), box: box)
     }
-    return Action(.replace(Lens(label: splits[0], length: splits[1])), box: box)
+    return Step(.replace(Lens(label: splits[0], length: splits[1])), box: box)
 }
 
-func modify(_ boxes: [Box], action: Action) -> [Box] {
+func modify(_ boxes: [Box], step: Step) -> [Box] {
     var boxes = boxes;
-    boxes[action.box] = modify(box: boxes[action.box], action: action)
+    boxes[step.box] = modify(box: boxes[step.box], step: step)
     return boxes
 }
 
-func modify(box: Box, action: Action) -> Box {
+func modify(box: Box, step: Step) -> Box {
     var box = box
-    switch action.op {
+    switch step.op {
         case .remove(let label):
             box.removeAll(where: { $0.label == label })
         case .replace(let lens):
