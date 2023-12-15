@@ -16,7 +16,6 @@ tdim = \033[2;80m
 treset = \033[0m
 tbold = \033[1;1m
 tgreen = \033[0;32m
-tlpurple = \033[1;35m
 
 # Clear the current line
 tclear = \033[2K
@@ -140,7 +139,7 @@ verify:
 	done && \
 	printf "ch" && cat out/stats | cut -d ' ' -f 1 | $(awk_stats) && \
 	printf "nl" && cat out/stats | cut -d ' ' -f 2 | $(awk_stats) && \
-	printf "$(tlpurple)ts" && cat out/stats | cut -d ' ' -f 3 | $(awk_stats_f) && printf "$(treset)"
+	printf "$(tbold)ts" && cat out/stats | cut -d ' ' -f 3 | $(awk_stats_f) && printf "$(treset)"
 
 run-all:
 	@ls -r *.hs | cut -f1 -d. | uniq | while read n; do \
