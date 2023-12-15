@@ -6,7 +6,7 @@ while let line = readLine() {
         boxes = modify(boxes, step: decode(word))
     }
 }
-print(s, power(boxes: boxes))
+print(s, power(boxes))
 
 func hash<S: StringProtocol>(_ s: S) -> Int {
     var v = 0;
@@ -38,20 +38,16 @@ typealias Box = [Lens]
 struct Step {
     let op: Op
     let box: Int
-
-    init(_ op: Op, box: Int) {
-        self.op = op
-        self.box = box
-    }
 }
 
 func decode<S: StringProtocol>(_ s: S) -> Step {
     let splits = s.split { $0 == "=" || $0 == "-" }
     let box = hash(splits[0])
     if splits.count == 1 {
-        return Step(.remove(String(splits[0])), box: box)
+        return Step(op: .remove(String(splits[0])), box: box)
     }
-    return Step(.replace(Lens(label: splits[0], length: splits[1])), box: box)
+    let lens = Lens(label: splits[0], length: splits[1]);
+    return Step(op: .replace(lens), box: box)
 }
 
 func modify(_ boxes: [Box], step: Step) -> [Box] {
@@ -64,13 +60,14 @@ func modify(box: Box, step: Step) -> Box {
     var box = box
     switch step.op {
         case .remove(let label):
-            box.removeAll(where: { $0.label == label })
+            box.removeAll { $0.label == label }
         case .replace(let lens):
             var found = false
             for (i, l) in box.enumerated() {
                 if l.label == lens.label {
                     box[i] = lens
                     found = true
+                    break
                 }
             }
             if !found {
@@ -80,7 +77,7 @@ func modify(box: Box, step: Step) -> Box {
     return box
 }
 
-func power(boxes: [Box]) -> Int {
+func power(_ boxes: [Box]) -> Int {
     var s = 0
     for (i, box) in boxes.enumerated() {
         for (j, lens) in box.enumerated() {
