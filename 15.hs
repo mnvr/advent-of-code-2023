@@ -1,7 +1,8 @@
 import Data.Char (ord)
+import Control.Arrow ((&&&))
 
 main :: IO ()
-main = interact $ (++ "\n") . show . p2 . steps . lines
+main = interact $ (++ "\n") . show . (p1 &&& p2) . steps . lines
 
 steps :: [String] -> [String]
 steps = concatMap f
@@ -25,7 +26,7 @@ decode s = case break (`elem` "-=") s of
     (a, '=':b) -> (Replace (a, read b), hash a)
 
 -- p2 :: [String] -> Int
-p2 = filter (not . null) . foldl f boxes . map decode
+p2 = power . foldl f boxes . map decode
   where
     boxes = take 256 $ repeat []
     f bs = (`modify` bs)
@@ -42,3 +43,6 @@ p2 = filter (not . null) . foldl f boxes . map decode
               | otherwise = (Just lens, lens' : box)
         append (Nothing, box) = box
         append (Just lens, box) = lens : box
+    power = sum . zipWith pb [1..]
+    pb i = sum . zipWith (p i) [1..]
+    p i j (_, v) = i * j * v
