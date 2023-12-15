@@ -3,13 +3,10 @@ var boxes: [Box] = Array(repeating: [], count: 256)
 while let line = readLine() {
     for word in line.split(separator: ",") {
         s += hash(word)
-        // print(decode(word))
         boxes = modify(boxes, action: decode(word))
     }
 }
-// print(s)
-// print(boxes)
-print(power(boxes: boxes))
+print(s, power(boxes: boxes))
 
 func hash<S: StringProtocol>(_ s: S) -> Int {
     var v = 0;
