@@ -55,7 +55,7 @@ stats = $(stats_set) \
 	echo "$(tdim)"$$f $$cs$$nl lines"$(treset)" $$ts s
 
 example:
-	@ft=`ls -t *.swift *.hs | head -1 | cut -f2 -d.`; \
+	@ft=`ls -t *.swift *.hs | head -1 | tr '.' '\n' | tail -1`; \
 	if test "$$ft" == "swift"; then $(exampleSwift); else $(exampleHaskell); fi
 
 exampleHaskell = $(latest) && \
@@ -67,7 +67,7 @@ exampleSwift = $(latestSwift) && \
 	cat $$eg | swift $$f
 
 test:
-	@ft=`ls -t *.swift *.hs | head -1 | cut -f2 -d.`; \
+	@ft=`ls -t *.swift *.hs | head -1 | tr '.' '\n' | tail -1`; \
 	if test "$$ft" == "swift"; then $(testSwift); else $(testHaskell); fi
 
 testHaskell = $(latest) && \
@@ -85,7 +85,7 @@ testSwift = $(latestSwift) && \
 	$(stats)
 
 o:
-	@ft=`ls -t *.swift *.hs | head -1 | cut -f2 -d.`; \
+	@ft=`ls -t *.swift *.hs | head -1 | tr '.' '\n' | tail -1`; \
 	if test "$$ft" == "swift"; then $(oSwift); else $(oHaskell); fi
 
 oHaskell = $(latest) && \
