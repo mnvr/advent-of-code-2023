@@ -46,7 +46,7 @@ func decode<S: StringProtocol>(_ s: S) -> Step {
     if splits.count == 1 {
         return Step(op: .remove(String(splits[0])), box: box)
     }
-    let lens = Lens(label: splits[0], length: splits[1]);
+    let lens = Lens(label: splits[0], length: splits[1])
     return Step(op: .replace(lens), box: box)
 }
 
