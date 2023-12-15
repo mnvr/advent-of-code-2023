@@ -1,11 +1,14 @@
 var s = 0
+var boxes: [Box] = Array(repeating: [], count: 256)
 while let line = readLine() {
     for word in line.split(separator: ",") {
         s += hash(word)
-        print(decode(word))
+        // print(decode(word))
+        boxes = modify(boxes, action: decode(word))
     }
 }
 // print(s)
+print(boxes)
 
 func hash<S: StringProtocol>(_ s: S) -> Int {
     var v = 0;
@@ -32,6 +35,8 @@ struct Lens {
     }
 }
 
+typealias Box = [Lens]
+
 struct Action {
     let op: Op
     let box: Int
@@ -49,4 +54,30 @@ func decode<S: StringProtocol>(_ s: S) -> Action {
         return Action(.remove(String(splits[0])), box: box)
     }
     return Action(.replace(Lens(label: splits[0], value: splits[1])), box: box)
+}
+
+func modify(_ boxes: [Box], action: Action) -> [Box] {
+    var boxes = boxes;
+    boxes[action.box] = modify(box: boxes[action.box], action: action)
+    return boxes
+}
+
+func modify(box: Box, action: Action) -> Box {
+    var box = box
+    switch action.op {
+        case .remove(let label):
+            box.removeAll(where: { $0.label == label })
+        case .replace(let lens):
+            var found = false
+            for (i, l) in box.enumerated() {
+                if l.label == lens.label {
+                    box[i] = lens
+                    found = true
+                }
+            }
+            if !found {
+                box.append(lens)
+            }
+    }
+    return box
 }
