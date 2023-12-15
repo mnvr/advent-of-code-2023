@@ -85,13 +85,25 @@ testSwift = $(latestSwift) && \
 	$(stats)
 
 o:
-	@$(latest) && \
+	@ft=`ls -t *.swift *.hs | head -1 | cut -f2 -d.`; \
+	if test "$$ft" == "swift"; then $(oSwift); else $(oHaskell); fi
+
+oHaskell = $(latest) && \
 	echo "$(tdim)""ghc -O -outputdir out -o out/$$n $$f""$(treset)" && \
 	echo "$(tdim)""cat $$in | ./out/$$n""$(treset)" && \
 	echo "$(tdim)"'echo "(`cat answers/'$$n'-a`,`cat answers/'$$n'-b`)"'"$(treset)" && \
 	ghc -O -outputdir out -o out/$$n $$f && \
 	cat $$in | command time -p -o out/time ./out/$$n | tee out/actual && \
 	$(check) && \
+	$(stats)
+
+oSwift = $(latestSwift) && \
+	echo "$(tdim)""swiftc -O -o out/$$n.sw $$f""$(treset)" && \
+	echo "$(tdim)""cat $$in | ./out/$$n.sw""$(treset)" && \
+	echo "$(tdim)"'echo "`cat answers/'$$n'-a` `cat answers/'$$n'-b`"'"$(treset)" && \
+	swiftc -O -o out/$$n.sw $$f && \
+	cat $$in | command time -p -o out/time ./out/$$n.sw | tee out/actual && \
+	$(checkSwift) && \
 	$(stats)
 
 o2:
