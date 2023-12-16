@@ -4,22 +4,20 @@ while let line = readLine() {
 }
 let ny = grid.count
 let nx = grid.first?.count ?? 0
-var visited = Set<Beam>()
-if (nx > 0) {
-    trace(beam: Beam(ix: [0, 0], d: .r), visited: &visited)
-}
-print(tileCount(visited))
+
+var f = energized(by: Beam(ix: [0, 0], d: .r))
 
 var m = 0
 for y in 0..<ny {
-    trace(beam: Beam(ix: [0, y], d: .r), visited: &visited)
-    trace(beam: Beam(ix: [nx - 1, y], d: .l), visited: &visited)
+    m = max(m, energized(by: Beam(ix: [0, y], d: .r)))
+    m = max(m, energized(by: Beam(ix: [nx - 1, y], d: .l)))
 }
 for x in 0..<nx {
-    trace(beam: Beam(ix: [x, 0], d: .d), visited: &visited)
-    trace(beam: Beam(ix: [x, ny - 1], d: .u), visited: &visited)
+    m = max(m, energized(by: Beam(ix: [x, 0], d: .d)))
+    m = max(m, energized(by: Beam(ix: [x, ny - 1], d: .u)))
 }
-print(tileCount(visited))
+
+print(f, m)
 
 typealias Grid = [String]
 // This is an (Int, Int), but Swift doesn't synthesize Hashable for tuples.
@@ -53,6 +51,12 @@ struct Beam: Hashable {
     var reflectR: Beam { Beam(ix: [ix[0] + 1, ix[1]], d: .r) }
     var reflectU: Beam { Beam(ix: [ix[0], ix[1] - 1], d: .u) }
     var reflectD: Beam { Beam(ix: [ix[0], ix[1] + 1], d: .d) }
+}
+
+func energized(by beam: Beam) -> Int {
+    var visited = Set<Beam>()
+    trace(beam: beam, visited: &visited)
+    return tileCount(visited)
 }
 
 func tileCount(_ visited: Set<Beam>) -> Int {
