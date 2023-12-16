@@ -19,9 +19,10 @@ parse = mkC . concatMap (uncurry f) . zip [0..] . lines
         mkC xs = Contraption (M.fromList xs) (fst $ last xs)
 
 -- p1 = length . M.keys . flood
-p1 c = showTiles c (flood c)
+p1 c = let ft = (flood c) in (showTiles c ft ++ "\n" ++ show (length $ M.keys ft))
 
-data Direction = R | L | U | D deriving (Eq, Show)
+
+data Direction = R | L | U | D deriving (Ord, Eq, Show)
 type Beam = (Ix, Direction)
 
 flood :: Contraption -> Tiles
@@ -36,11 +37,11 @@ flood ctrp@Contraption { grid, mi = (mx, my) } =
     -- can't visit any more new tiles.
     trace m _ [] = m
     trace m visited (b@(t, d):bs)
-      | S.member t visited = T.trace ("already visited " ++ show t) $ trace m visited bs
+      | S.member b visited = T.trace ("already visited " ++ show b) $ trace m visited bs
       | otherwise = T.trace ("visiting " ++ show t) $
         let c = fromJust $ M.lookup t grid
             m' = M.alter incr t m
-            v' = (S.insert t visited)
+            v' = (S.insert b visited)
             recurse z = T.trace ("recursing " ++ show z) $ trace m' v' z
         in case c of
           '.' -> recurse (step b ++ bs)
