@@ -21,7 +21,7 @@ p1 = (`energized` ((0, 0), R))
 p2 :: Contraption -> Int
 p2 contraption = maximum $ map (energized contraption) $ edgeBeams contraption
 
-data Direction = R | L | U | D deriving (Ord, Eq, Show)
+data Direction = R | L | U | D deriving (Ord, Eq)
 type Beam = (Ix, Direction)
 
 energized :: Contraption -> Beam -> Int
