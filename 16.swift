@@ -59,8 +59,8 @@ func tileCount(_ visited: Set<Beam>) -> Int {
     Set(visited.map({$0.ix})).count
 }
 
-func item(at beam: Beam) -> Character {
-    grid[beam.ix[1]][beam.ix[0]].rawValue
+func item(at beam: Beam) -> Item {
+    grid[beam.ix[1]][beam.ix[0]]
 }
 
 func trace(beam: Beam, visited: inout Set<Beam>) {
@@ -68,31 +68,34 @@ func trace(beam: Beam, visited: inout Set<Beam>) {
         return
     }
 
-    let next: [Beam]
+    var beam = beam
+    var next: [Beam]?
+    while isInBounds(beam) && next == nil {
+        visited.insert(beam)
 
-    switch item(at: beam) {
-        case "|" where isHorizontal(beam): next = beam.vsplit
-        case "-" where isVertical(beam):   next = beam.hsplit
-        case "/":
+        switch item(at: beam) {
+        case .vbar where isHorizontal(beam): next = beam.vsplit
+        case .hbar where isVertical(beam):   next = beam.hsplit
+        case .fslash:
             switch beam.d {
                 case .l: next = [beam.reflectD]
                 case .r: next = [beam.reflectU]
                 case .u: next = [beam.reflectR]
                 case .d: next = [beam.reflectL]
             }
-        case "\\":
+        case .bslash:
             switch beam.d {
                 case .l: next = [beam.reflectU]
                 case .r: next = [beam.reflectD]
                 case .u: next = [beam.reflectL]
                 case .d: next = [beam.reflectR]
             }
-        default: next = [beam.step]
+        default:
+            beam = beam.step
+        }
     }
 
-    visited.insert(beam)
-
-    for n in next {
+    for n in next ?? [] {
         if isInBounds(n) {
             trace(beam: n, visited: &visited)
         }
