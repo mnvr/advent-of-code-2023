@@ -40,25 +40,29 @@ flood Contraption { grid, mi = (mx, my) } =
             v' = (S.insert t visited)
             recurse = trace m' v'
         in case c of
-          '.' -> recurse bs
-          '-' | isHorizontal b -> recurse bs
+          '.' -> recurse (step b ++ bs)
+          '-' | isHorizontal b -> recurse (step b ++ bs)
               | otherwise -> recurse (bs ++ hsplit t)
-          '|' | isVertical b -> recurse bs
+          '|' | isVertical b -> recurse (step b ++ bs)
               | otherwise -> recurse (bs ++ vsplit t)
-          '\\' | d == R -> recurse (bs ++ reflectD t)
-               | d == L -> recurse (bs ++ reflectU t)
-               | d == U -> recurse (bs ++ reflectL t)
-               | d == D -> recurse (bs ++ reflectR t)
-          '/'  | d == R -> recurse (bs ++ reflectU t)
-               | d == L -> recurse (bs ++ reflectD t)
-               | d == U -> recurse (bs ++ reflectR t)
-               | d == D -> recurse (bs ++ reflectL t)
+          '\\' | d == R -> recurse (reflectD t ++ bs)
+               | d == L -> recurse (reflectU t ++ bs)
+               | d == U -> recurse (reflectL t ++ bs)
+               | d == D -> recurse (reflectR t ++ bs)
+          '/'  | d == R -> recurse (reflectU t ++ bs)
+               | d == L -> recurse (reflectD t ++ bs)
+               | d == U -> recurse (reflectR t ++ bs)
+               | d == D -> recurse (reflectL t ++ bs)
     tile (t, _) = t
     isHorizontal (_, d) = d == L || d == R
     isVertical = not . isHorizontal
     hsplit (x, y) = prune [((x - 1, y), L), ((x + 1, y), R)]
     vsplit (x, y) = prune [((x, y - 1), U), ((x, y + 1), D)]
     prune = filter (\((x, y), _) -> x > 0 && y > 0 && x <= mx && y <= my )
+    step ((x, y), R) = prune [((x + 1, y), R)]
+    step ((x, y), L) = prune [((x - 1, y), L)]
+    step ((x, y), U) = prune [((x, y - 1), U)]
+    step ((x, y), D) = prune [((x, y + 1), D)]
     reflectU (x, y) = prune [((x, y - 1), U)]
     reflectD (x, y) = prune [((x, y + 1), D)]
     reflectL (x, y) = prune [((x - 1, y), L)]
