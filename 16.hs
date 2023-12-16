@@ -1,6 +1,6 @@
 import Data.Map qualified as M
 import Data.Set qualified as S
-import Data.Maybe (fromJust, fromMaybe)
+import Data.Maybe (fromJust)
 import Control.Arrow ((&&&))
 
 main :: IO ()
