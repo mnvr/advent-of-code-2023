@@ -1,11 +1,10 @@
 import Data.List (nub, intercalate)
-import Control.Arrow ((&&&))
 
 -- The un-memoized, original formulation of 12.hs. Is only good enough for the
 -- examples, not the full input.
 
 main :: IO ()
-main = interact $ (++ "\n") . show . (p1 &&& p2) . parse
+main = interact $ (++ "\n") . show . p2 . parse
 
 parse :: String -> [(String, [Int])]
 parse = map line . lines
