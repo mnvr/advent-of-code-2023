@@ -9,7 +9,7 @@ main = interact $ (++ "\n") . show . (p1 &&& p2) . parse
 type Ix = (Int, Int)
 data Contraption = Contraption { grid :: M.Map Ix Char, mi :: Ix }
   deriving Show
-type Tiles = M.Map Ix Int
+type Tiles = S.Set Ix
 
 parse :: String -> Contraption
 parse = mkC . concatMap (uncurry f) . zip [0..] . lines
@@ -21,7 +21,7 @@ p1 :: Contraption -> Int
 p1 = (`energized` ((0, 0), R))
 
 energized :: Contraption -> Beam -> Int
-energized contraption = length . M.keys . flood contraption
+energized contraption = S.size . flood contraption
 
 p2 :: Contraption -> Int
 p2 contraption = maximum $ map (energized contraption) $ edgeBeams contraption
@@ -30,7 +30,7 @@ data Direction = R | L | U | D deriving (Ord, Eq, Show)
 type Beam = (Ix, Direction)
 
 flood :: Contraption -> Beam -> Tiles
-flood ctrp@Contraption { grid, mi = (mx, my) } start = go M.empty [start]
+flood ctrp@Contraption { grid, mi = (mx, my) } start = go S.empty [start]
   where
     -- go through all the pending beams that we haven't traced yet
     go :: Tiles -> [Beam] -> Tiles
@@ -43,7 +43,7 @@ flood ctrp@Contraption { grid, mi = (mx, my) } start = go M.empty [start]
       | S.member b visited = trace m visited bs
       | otherwise =
         let c = fromJust $ M.lookup t grid
-        in trace (M.alter incr t m)
+        in trace (S.insert t m)
                  (S.insert b visited)
                  (filter inBounds (next b c) ++ bs)
 
