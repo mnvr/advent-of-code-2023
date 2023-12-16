@@ -34,6 +34,7 @@ p2 contraption = maximum $ map (energized contraption) $ edgeBeams contraption
 data Direction = R | L | U | D deriving (Ord, Eq, Show)
 type Beam = (Ix, Direction)
 
+-- type Mk = Tiles (S.Set )
 flood :: Contraption -> Beam -> Tiles
 flood ctrp@Contraption { grid, mi = (mx, my) } start = go M.empty [start]
   where
@@ -48,25 +49,24 @@ flood ctrp@Contraption { grid, mi = (mx, my) } start = go M.empty [start]
       | S.member b visited = t_trace ("already visited " ++ show b) $ trace m visited bs
       | otherwise = t_trace ("visiting " ++ show t) $
         let c = fromJust $ M.lookup t grid
-            m' = M.alter incr t m
-            v' = (S.insert b visited)
-            recurse z = t_trace ("recursing " ++ show z) $ trace m' v' z
-        in case c of
-          '.' -> recurse (next b bs)
-          '-' | isHorizontal b -> recurse (next b bs)
-              -- | otherwise -> recurse (bs ++ hsplit t)
-              | otherwise -> recurse (hsplit2 b bs)
-          '|' | isVertical b -> recurse (next b bs)
-              -- | otherwise -> recurse (bs ++ vsplit t)
-              | otherwise -> recurse (vsplit2 b bs)
-          '\\' | d == R -> recurse (reflectD b bs)
-               | d == L -> recurse (reflectU b bs)
-               | d == U -> recurse (reflectL b bs)
-               | d == D -> recurse (reflectR b bs)
-          '/'  | d == R -> recurse (reflectU b bs)
-               | d == L -> recurse (reflectD b bs)
-               | d == U -> recurse (reflectR b bs)
-               | d == D -> recurse (reflectL b bs)
+            ns = case c of
+              '.' -> [step b]
+              '-' | isHorizontal b -> [step b]
+                  | otherwise -> [splitL b, splitR b]
+              '|' | isVertical b -> [step b]
+                  | otherwise -> [splitU b, splitD b]
+              '\\' | d == R -> [reflectD' b]
+                   | d == L -> [reflectU' b]
+                   | d == U -> [reflectL' b]
+                   | d == D -> [reflectR' b]
+              '/'  | d == R -> [reflectU' b]
+                   | d == L -> [reflectD' b]
+                   | d == U -> [reflectR' b]
+                   | d == D -> [reflectL' b]
+            fns = filter (\b' -> inBounds b' && not (S.member b' visited)) ns
+            -- fns = filter (\b' -> inBounds b') ns
+        in if null fns then trace (M.alter incr t m) visited bs
+           else trace (M.alter incr t m) (S.insert b visited) (fns ++ bs)
     tile (t, _) = t
     isHorizontal (_, d) = d == L || d == R
     isVertical = not . isHorizontal
