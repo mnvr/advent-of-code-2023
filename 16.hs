@@ -8,8 +8,6 @@ main = interact $ (++ "\n") . show . (p1 &&& p2) . parse
 
 type Ix = (Int, Int)
 data Contraption = Contraption { grid :: M.Map Ix Char, mi :: Ix }
-  deriving Show
-type Tiles = S.Set Ix
 
 parse :: String -> Contraption
 parse = mkC . concatMap (uncurry f) . zip [0..] . lines
@@ -20,32 +18,26 @@ parse = mkC . concatMap (uncurry f) . zip [0..] . lines
 p1 :: Contraption -> Int
 p1 = (`energized` ((0, 0), R))
 
-energized :: Contraption -> Beam -> Int
-energized contraption = S.size . flood contraption
-
 p2 :: Contraption -> Int
 p2 contraption = maximum $ map (energized contraption) $ edgeBeams contraption
 
-data Direction = R | L | U | D deriving (Ord, Eq, Show)
+data Direction = R | L | U | D deriving (Ord, Eq)
 type Beam = (Ix, Direction)
 
-flood :: Contraption -> Beam -> Tiles
-flood ctrp@Contraption { grid, mi = (mx, my) } start = go S.empty [start]
+energized :: Contraption -> Beam -> Int
+energized Contraption { grid, mi = (mx, my) } start =
+  trace 0 S.empty S.empty [start]
   where
-    -- go through all the pending beams that we haven't traced yet
-    go :: Tiles -> [Beam] -> Tiles
-    go m [] = m
-    go m (b:beams) = go (trace m S.empty [b]) beams
-    -- trace a single beam all the way through, splitting it if needed, until it
-    -- can't visit any more new tiles.
-    trace m _ [] = m
-    trace m visited (b@(t, d):bs)
-      | S.member b visited = trace m visited bs
+    trace :: Int -> S.Set Ix -> S.Set Beam -> [Beam] -> Int
+    trace c _ _ [] = c
+    trace c m visited (b@(t, d):bs)
+      | S.member b visited = trace c m visited bs
       | otherwise =
-        let c = fromJust $ M.lookup t grid
-        in trace (S.insert t m)
+        let ch = fromJust $ M.lookup t grid
+        in trace (c + (if S.member t m then 0 else 1))
+                 (S.insert t m)
                  (S.insert b visited)
-                 (filter inBounds (next b c) ++ bs)
+                 (filter inBounds (next b ch) ++ bs)
 
     next b '.' = [step b]
     next b '-'
@@ -65,9 +57,9 @@ flood ctrp@Contraption { grid, mi = (mx, my) } start = go S.empty [start]
       | d == U = [reflectR b]
       | d == D = [reflectL b]
 
+    inBounds ((x, y), _) = x >= 0 && y >= 0 && x <= mx && y <= my
     isHorizontal (_, d) = d == L || d == R
     isVertical = not . isHorizontal
-    inBounds = (\((x, y), _) -> x >= 0 && y >= 0 && x <= mx && y <= my)
     step ((x, y), R) = ((x + 1, y), R)
     step ((x, y), L) = ((x - 1, y), L)
     step ((x, y), U) = ((x, y - 1), U)
@@ -80,10 +72,6 @@ flood ctrp@Contraption { grid, mi = (mx, my) } start = go S.empty [start]
     reflectD ((x, y), _) = ((x, y + 1), D)
     reflectL ((x, y), _) = ((x - 1, y), L)
     reflectR ((x, y), _) = ((x + 1, y), R)
-
-    incr (Just i) = Just (i + 1)
-    incr Nothing = Just 1
-
 
 edgeBeams :: Contraption -> [Beam]
 edgeBeams Contraption { mi = (mx, my) } = concatMap line [0..my]
