@@ -49,6 +49,7 @@ flood ctrp@Contraption { grid, mi = (mx, my) } start = go M.empty [start]
       | S.member b visited = t_trace ("already visited " ++ show b) $ trace m visited bs
       | otherwise = t_trace ("visiting " ++ show t) $
         let c = fromJust $ M.lookup t grid
+            m' = M.alter incr t m
             ns = case c of
               '.' -> [step b]
               '-' | isHorizontal b -> [step b]
@@ -63,10 +64,12 @@ flood ctrp@Contraption { grid, mi = (mx, my) } start = go M.empty [start]
                    | d == L -> [reflectD' b]
                    | d == U -> [reflectR' b]
                    | d == D -> [reflectL' b]
-            fns = filter (\b' -> inBounds b' && not (S.member b' visited)) ns
-            -- fns = filter (\b' -> inBounds b') ns
-        in if null fns then trace (M.alter incr t m) visited bs
-           else trace (M.alter incr t m) (S.insert b visited) (fns ++ bs)
+            fns = filter (\b' -> inBounds b') ns
+        in case fns of
+          [] -> trace m' visited bs
+          [p] -> trace m' (S.insert b visited) (p:bs)
+          [p,q] -> trace m' (S.insert b visited) (p:q:bs)
+
     tile (t, _) = t
     isHorizontal (_, d) = d == L || d == R
     isVertical = not . isHorizontal
