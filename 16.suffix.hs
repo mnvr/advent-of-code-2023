@@ -52,61 +52,33 @@ flood ctrp@Contraption { grid, mi = (mx, my) } start = go M.empty [start]
             v' = (S.insert b visited)
             recurse z = t_trace ("recursing " ++ show z) $ trace m' v' z
         in case c of
-          '.' -> recurse (next b bs)
-          '-' | isHorizontal b -> recurse (next b bs)
-              -- | otherwise -> recurse (bs ++ hsplit t)
-              | otherwise -> recurse (hsplit2 b bs)
-          '|' | isVertical b -> recurse (next b bs)
-              -- | otherwise -> recurse (bs ++ vsplit t)
-              | otherwise -> recurse (vsplit2 b bs)
-          '\\' | d == R -> recurse (reflectD b bs)
-               | d == L -> recurse (reflectU b bs)
-               | d == U -> recurse (reflectL b bs)
-               | d == D -> recurse (reflectR b bs)
-          '/'  | d == R -> recurse (reflectU b bs)
-               | d == L -> recurse (reflectD b bs)
-               | d == U -> recurse (reflectR b bs)
-               | d == D -> recurse (reflectL b bs)
+          '.' -> recurse (step b ++ bs)
+          '-' | isHorizontal b -> recurse (step b ++ bs)
+              | otherwise -> recurse (bs ++ hsplit t)
+          '|' | isVertical b -> recurse (step b ++ bs)
+              | otherwise -> recurse (bs ++ vsplit t)
+          '\\' | d == R -> recurse (reflectD t ++ bs)
+               | d == L -> recurse (reflectU t ++ bs)
+               | d == U -> recurse (reflectL t ++ bs)
+               | d == D -> recurse (reflectR t ++ bs)
+          '/'  | d == R -> recurse (reflectU t ++ bs)
+               | d == L -> recurse (reflectD t ++ bs)
+               | d == U -> recurse (reflectR t ++ bs)
+               | d == D -> recurse (reflectL t ++ bs)
     tile (t, _) = t
     isHorizontal (_, d) = d == L || d == R
     isVertical = not . isHorizontal
     hsplit (x, y) = prune [((x - 1, y), L), ((x + 1, y), R)]
     vsplit (x, y) = prune [((x, y - 1), U), ((x, y + 1), D)]
-    splitL ((x, y), _) = ((x - 1, y), L)
-    splitR ((x, y), _) = ((x + 1, y), R)
-    splitU ((x, y), _) = ((x, y - 1), U)
-    splitD ((x, y), _) = ((x, y + 1), D)
-    hsplit2 b bs =
-      let l = splitL b
-          r = splitR b
-      in if inBounds l && inBounds r then l:r:bs
-         else if inBounds l then l:bs
-         else if inBounds r then r:bs
-         else bs
-    vsplit2 b bs =
-      let u = splitU b
-          d = splitD b
-      in if inBounds u && inBounds d then u:d:bs
-         else if inBounds u then u:bs
-         else if inBounds d then d:bs
-         else bs
-
-    inBounds = (\((x, y), _) -> x >= 0 && y >= 0 && x <= mx && y <= my)
-    prune = filter inBounds
-    next b bs = let n = step b in if inBounds n then n:bs else bs
-    step ((x, y), R) = ((x + 1, y), R)
-    step ((x, y), L) = ((x - 1, y), L)
-    step ((x, y), U) = ((x, y - 1), U)
-    step ((x, y), D) = ((x, y + 1), D)
-    reflectU' ((x, y), _) = ((x, y - 1), U)
-    reflectD' ((x, y), _) = ((x, y + 1), D)
-    reflectL' ((x, y), _) = ((x - 1, y), L)
-    reflectR' ((x, y), _) = ((x + 1, y), R)
-
-    reflectU b bs = let b' = reflectU' b in if inBounds b' then b' : bs else bs
-    reflectD b bs = let b' = reflectD' b in if inBounds b' then b' : bs else bs
-    reflectL b bs = let b' = reflectL' b in if inBounds b' then b' : bs else bs
-    reflectR b bs = let b' = reflectR' b in if inBounds b' then b' : bs else bs
+    prune = filter (\((x, y), _) -> x >= 0 && y >= 0 && x <= mx && y <= my )
+    step ((x, y), R) = prune [((x + 1, y), R)]
+    step ((x, y), L) = prune [((x - 1, y), L)]
+    step ((x, y), U) = prune [((x, y - 1), U)]
+    step ((x, y), D) = prune [((x, y + 1), D)]
+    reflectU (x, y) = prune [((x, y - 1), U)]
+    reflectD (x, y) = prune [((x, y + 1), D)]
+    reflectL (x, y) = prune [((x - 1, y), L)]
+    reflectR (x, y) = prune [((x + 1, y), R)]
 
     incr (Just i) = Just (i + 1)
     incr Nothing = Just 1
