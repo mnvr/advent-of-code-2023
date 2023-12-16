@@ -1,4 +1,4 @@
-import Data.Array qualified as A
+import Data.Map qualified as M
 import Data.Set qualified as S
 import Data.Maybe (fromJust)
 import Control.Arrow ((&&&))
@@ -7,15 +7,13 @@ main :: IO ()
 main = interact $ (++ "\n") . show . (p1 &&& p2) . parse
 
 type Ix = (Int, Int)
-data Grid = Grid { chars :: A.Array Ix Char, mx, my :: Int }
+data Grid = Grid { chars :: M.Map Ix Char, mi :: Ix }
 
 parse :: String -> Grid
-parse = mkC . lines
-  where
-    mkC xs = let mx = length (xs !! 0) - 1
-                 my = length xs - 1
-                 axs = [((x, y), xs !! y !! x) | x <- [0..mx], y <- [0..my]]
-             in Grid (A.array ((0, 0), (mx, my)) axs) mx my
+parse = mkC . concatMap (uncurry f) . zip [0..] . lines
+  where f y = map (uncurry g) . zip [0..]
+          where g x = ((x, y),)
+        mkC xs = Grid (M.fromList xs) (fst $ last xs)
 
 p1 :: Grid -> Int
 p1 = (`energized` ((0, 0), R))
@@ -27,7 +25,7 @@ data Direction = R | L | U | D deriving (Ord, Eq)
 type Beam = (Ix, Direction)
 
 energized :: Grid -> Beam -> Int
-energized Grid { chars, mx, my } start =
+energized Grid { chars, mi = (mx, my) } start =
   count $ trace S.empty [start]
   where
     count = S.size . S.map fst
@@ -56,7 +54,7 @@ energized Grid { chars, mx, my } start =
       else ([b], [])
 
     inBounds ((x, y), _) = x >= 0 && y >= 0 && x <= mx && y <= my
-    char b = chars A.! fst b
+    char b = fromJust $ M.lookup (fst b) chars
     isHorizontal (_, d) = d == L || d == R
     isVertical = not . isHorizontal
     step ((x, y), R) = ((x + 1, y), R)
@@ -71,7 +69,7 @@ energized Grid { chars, mx, my } start =
     reflectR ((x, y), _) = ((x + 1, y), R)
 
 edges :: Grid -> [Beam]
-edges Grid { mx, my } = concat [
+edges Grid { mi = (mx, my) } = concat [
   [b | y <- [0..my], b <- [((0, y), R), ((mx, y), L)]],
   [((x, 0),  D) | x <- [0..mx]],
   [((x, my),  U) | x <- [0..mx]]]
