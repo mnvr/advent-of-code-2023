@@ -65,10 +65,7 @@ flood ctrp@Contraption { grid, mi = (mx, my) } start = go M.empty [start]
                    | d == U -> [reflectR' b]
                    | d == D -> [reflectL' b]
             fns = filter (\b' -> inBounds b') ns
-        in case fns of
-          [] -> trace m' visited bs
-          [p] -> trace m' (S.insert b visited) (p:bs)
-          [p,q] -> trace m' (S.insert b visited) (p:q:bs)
+        in trace m' (S.insert b visited) (fns ++ bs)
 
     tile (t, _) = t
     isHorizontal (_, d) = d == L || d == R
