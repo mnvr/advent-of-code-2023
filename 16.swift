@@ -2,7 +2,24 @@ var grid: Grid = []
 while let line = readLine() {
     grid.append(line)
 }
-print(energized(start: Beam(ix: [0, 0], d: .r)))
+let ny = grid.count
+let nx = grid.first?.count ?? 0
+var visited = Set<Beam>()
+if (nx > 0) {
+    trace(beam: Beam(ix: [0, 0], d: .r), visited: &visited)
+}
+print(tileCount(visited))
+
+var m = 0
+for y in 0..<ny {
+    trace(beam: Beam(ix: [0, y], d: .r), visited: &visited)
+    trace(beam: Beam(ix: [nx - 1, y], d: .l), visited: &visited)
+}
+for x in 0..<nx {
+    trace(beam: Beam(ix: [x, 0], d: .d), visited: &visited)
+    trace(beam: Beam(ix: [x, ny - 1], d: .u), visited: &visited)
+}
+print(tileCount(visited))
 
 typealias Grid = [String]
 // This is an (Int, Int), but Swift doesn't synthesize Hashable for tuples.
@@ -38,10 +55,8 @@ struct Beam: Hashable {
     var reflectD: Beam { Beam(ix: [ix[0], ix[1] + 1], d: .d) }
 }
 
-func energized(start: Beam) -> Int {
-    var visited = Set<Beam>()
-    trace(beam: start, visited: &visited);
-    return Set(visited.map({$0.ix})).count
+func tileCount(_ visited: Set<Beam>) -> Int {
+    Set(visited.map({$0.ix})).count
 }
 
 func item(at beam: Beam) -> Character {
