@@ -30,13 +30,13 @@ energized Contraption { grid, mi = (mx, my) } start =
   where
     trace :: Int -> S.Set Ix -> S.Set Beam -> [Beam] -> Int
     trace c _ _ [] = c
-    trace c m visited (b@(t, d):bs)
-      | S.member b visited = trace c m visited bs
+    trace c visited processed (b@(t, d):bs)
+      | S.member b processed = trace c visited processed bs
       | otherwise =
         let ch = fromJust $ M.lookup t grid
-        in trace (c + (if S.member t m then 0 else 1))
-                 (S.insert t m)
-                 (S.insert b visited)
+        in trace (c + (if S.member t visited then 0 else 1))
+                 (S.insert t visited)
+                 (S.insert b processed)
                  (filter inBounds (next b ch) ++ bs)
 
     next b '.' = [step b]
