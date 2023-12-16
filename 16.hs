@@ -1,11 +1,11 @@
 import Data.Map qualified as M
 import Data.Set qualified as S
-import Data.Maybe (fromJust)
+import Data.Maybe (fromJust, fromMaybe)
 
 import Debug.Trace qualified as T
 
 main :: IO ()
-main = interact $ (++ "\n") . show . p1 . parse
+main = interact $ (++ "\n") . p1 . parse
 
 type Ix = (Int, Int)
 data Contraption = Contraption { grid :: M.Map Ix Char, mi :: Ix }
@@ -18,19 +18,20 @@ parse = mkC . concatMap (uncurry f) . zip [0..] . lines
           where g x = ((x, y),)
         mkC xs = Contraption (M.fromList xs) (fst $ last xs)
 
-p1 = length . M.keys . flood
+-- p1 = length . M.keys . flood
+p1 c = showTiles c (flood c)
 
 data Direction = R | L | U | D deriving (Eq, Show)
 type Beam = (Ix, Direction)
 
 flood :: Contraption -> Tiles
-flood Contraption { grid, mi = (mx, my) } =
+flood ctrp@Contraption { grid, mi = (mx, my) } =
     go M.empty [((0, 0), R)] -- introduce a beam at (0,0), going right
   where
     -- go through all the pending beams that we haven't traced yet
     go :: Tiles -> [Beam] -> Tiles
-    go m [] = m
-    go m (b:beams) = go (trace m S.empty [b]) beams
+    go m [] = T.trace (showTiles ctrp m) $ m
+    go m (b:beams) = T.trace (showTiles ctrp m) $ go (trace m S.empty [b]) beams
     -- trace a single beam all the way through, splitting it if needed, until it
     -- can't visit any more new tiles.
     trace m _ [] = m
@@ -72,3 +73,8 @@ flood Contraption { grid, mi = (mx, my) } =
 
     incr (Just i) = Just (i + 1)
     incr Nothing = Just 1
+
+showTiles :: Contraption -> Tiles -> String
+showTiles Contraption { mi = (mx, my) } t = unlines (map line [0..my])
+  where line y = concatMap g [0..mx]
+          where g x = show $ fromMaybe 0 $ M.lookup (x, y) t
