@@ -7,25 +7,25 @@ main :: IO ()
 main = interact $ (++ "\n") . show . (p1 &&& p2) . parse
 
 type Ix = (Int, Int)
-data Contraption = Contraption { grid :: M.Map Ix Char, mi :: Ix }
+data Grid = Grid { chars :: M.Map Ix Char, mi :: Ix }
 
-parse :: String -> Contraption
+parse :: String -> Grid
 parse = mkC . concatMap (uncurry f) . zip [0..] . lines
   where f y = map (uncurry g) . zip [0..]
           where g x = ((x, y),)
-        mkC xs = Contraption (M.fromList xs) (fst $ last xs)
+        mkC xs = Grid (M.fromList xs) (fst $ last xs)
 
-p1 :: Contraption -> Int
+p1 :: Grid -> Int
 p1 = (`energized` ((0, 0), R))
 
-p2 :: Contraption -> Int
-p2 contraption = maximum $ map (energized contraption) $ edgeBeams contraption
+p2 :: Grid -> Int
+p2 contraption = maximum $ map (energized contraption) $ edges contraption
 
 data Direction = R | L | U | D deriving (Ord, Eq)
 type Beam = (Ix, Direction)
 
-energized :: Contraption -> Beam -> Int
-energized Contraption { grid, mi = (mx, my) } start =
+energized :: Grid -> Beam -> Int
+energized Grid { chars, mi = (mx, my) } start =
   count $ trace S.empty [start]
   where
     count = S.size . S.map fst
@@ -55,7 +55,7 @@ energized Contraption { grid, mi = (mx, my) } start =
       else ([b], [])
 
     inBounds ((x, y), _) = x >= 0 && y >= 0 && x <= mx && y <= my
-    char b = fromJust $ M.lookup (fst b) grid
+    char b = fromJust $ M.lookup (fst b) chars
     isHorizontal (_, d) = d == L || d == R
     isVertical = not . isHorizontal
     step ((x, y), R) = ((x + 1, y), R)
@@ -71,8 +71,8 @@ energized Contraption { grid, mi = (mx, my) } start =
     reflectL ((x, y), _) = ((x - 1, y), L)
     reflectR ((x, y), _) = ((x + 1, y), R)
 
-edgeBeams :: Contraption -> [Beam]
-edgeBeams Contraption { mi = (mx, my) } = concatMap line [0..my]
+edges :: Grid -> [Beam]
+edges Grid { mi = (mx, my) } = concatMap line [0..my]
   where line y | y == 0  = map (\x -> ((x, y), D)) [0..mx]
                | y == my = map (\x -> ((x, y), U)) [0..mx]
                | otherwise = [((0, y), R), ((mx, y), L)]
