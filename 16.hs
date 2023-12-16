@@ -2,6 +2,8 @@ import Data.Map qualified as M
 import Data.Set qualified as S
 import Data.Maybe (fromJust)
 
+import Debug.Trace qualified as T
+
 main :: IO ()
 main = interact $ (++ "\n") . show . p1 . parse
 
@@ -16,9 +18,9 @@ parse = mkC . concatMap (uncurry f) . zip [0..] . lines
           where g x = ((x, y),)
         mkC xs = Contraption (M.fromList xs) (fst $ last xs)
 
-p1 = flood
+p1 = length . M.keys . flood
 
-data Direction = R | L | U | D deriving Eq
+data Direction = R | L | U | D deriving (Eq, Show)
 type Beam = (Ix, Direction)
 
 flood :: Contraption -> Tiles
@@ -33,12 +35,12 @@ flood Contraption { grid, mi = (mx, my) } =
     -- can't visit any more new tiles.
     trace m _ [] = m
     trace m visited (b@(t, d):bs)
-      | S.member t visited = trace m visited bs
-      | otherwise =
+      | S.member t visited = T.trace ("already visited " ++ show t) $ trace m visited bs
+      | otherwise = T.trace ("visiting " ++ show t) $
         let c = fromJust $ M.lookup t grid
             m' = M.alter incr t m
             v' = (S.insert t visited)
-            recurse = trace m' v'
+            recurse z = T.trace ("recursing " ++ show z) $ trace m' v' z
         in case c of
           '.' -> recurse (step b ++ bs)
           '-' | isHorizontal b -> recurse (step b ++ bs)
@@ -58,7 +60,7 @@ flood Contraption { grid, mi = (mx, my) } =
     isVertical = not . isHorizontal
     hsplit (x, y) = prune [((x - 1, y), L), ((x + 1, y), R)]
     vsplit (x, y) = prune [((x, y - 1), U), ((x, y + 1), D)]
-    prune = filter (\((x, y), _) -> x > 0 && y > 0 && x <= mx && y <= my )
+    prune = filter (\((x, y), _) -> x >= 0 && y >= 0 && x <= mx && y <= my )
     step ((x, y), R) = prune [((x + 1, y), R)]
     step ((x, y), L) = prune [((x - 1, y), L)]
     step ((x, y), U) = prune [((x, y - 1), U)]
