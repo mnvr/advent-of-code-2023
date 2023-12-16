@@ -1,13 +1,14 @@
 import Data.Map qualified as M
 import Data.Set qualified as S
 import Data.Maybe (fromJust, fromMaybe)
+import Control.Arrow ((&&&))
 
 import Debug.Trace qualified as T
 
 t_trace x y = y
 
 main :: IO ()
-main = interact $ (++ "\n") . show . p2 . parse
+main = interact $ (++ "\n") . show . (p1 &&& p2) . parse
 
 type Ix = (Int, Int)
 data Contraption = Contraption { grid :: M.Map Ix Char, mi :: Ix }
@@ -29,9 +30,6 @@ energized contraption = length . M.keys . flood contraption
 
 p2 :: Contraption -> Int
 p2 contraption = maximum $ map (energized contraption) $ edgeBeams contraption
-
-edgeBeams :: Contraption -> [Beam]
-edgeBeams contraption =  [((0, 0), R)]
 
 data Direction = R | L | U | D deriving (Ord, Eq, Show)
 type Beam = (Ix, Direction)
@@ -89,3 +87,9 @@ showTiles :: Contraption -> Tiles -> String
 showTiles Contraption { mi = (mx, my) } t = unlines (map line [0..my])
   where line y = concatMap g [0..mx]
           where g x = show $ fromMaybe 0 $ M.lookup (x, y) t
+
+edgeBeams :: Contraption -> [Beam]
+edgeBeams Contraption { mi = (mx, my) } = concatMap line [0..my]
+  where line y | y == 0  = map (\x -> ((x, y), D)) [0..mx]
+               | y == my = map (\x -> ((x, y), U)) [0..mx]
+               | otherwise = [((0, y), R), ((mx, y), L)]
