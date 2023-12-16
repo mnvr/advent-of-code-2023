@@ -41,7 +41,7 @@ struct Beam: Hashable {
 func energized(start: Beam) -> Int {
     var visited = Set<Beam>()
     trace(beam: start, visited: &visited);
-    return visited.count
+    return Set(visited.map({$0.ix})).count
 }
 
 func item(at beam: Beam) -> Character {
