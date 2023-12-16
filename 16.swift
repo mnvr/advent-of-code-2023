@@ -2,21 +2,9 @@ var grid: Grid = []
 while let line = readLine() {
     grid.append(line)
 }
-let ny = grid.count
-let nx = grid.first?.count ?? 0
 
 var f = energized(by: Beam(ix: [0, 0], d: .r))
-
-var m = 0
-for y in 0..<ny {
-    m = max(m, energized(by: Beam(ix: [0, y], d: .r)))
-    m = max(m, energized(by: Beam(ix: [nx - 1, y], d: .l)))
-}
-for x in 0..<nx {
-    m = max(m, energized(by: Beam(ix: [x, 0], d: .d)))
-    m = max(m, energized(by: Beam(ix: [x, ny - 1], d: .u)))
-}
-
+var m = edges().map({ energized(by: $0) }).max() ?? 0
 print(f, m)
 
 typealias Grid = [String]
@@ -116,4 +104,20 @@ func isInBounds(_ beam: Beam) -> Bool {
     let x = beam.ix[0]
     let y = beam.ix[1]
     return x >= 0 && x < grid[0].count && y >= 0 && y < grid.count
+}
+
+func edges() -> [Beam] {
+    let ny = grid.count
+    let nx = grid.first?.count ?? 0
+
+    var result: [Beam] = []
+    for y in 0..<ny {
+        result.append(Beam(ix: [0, y], d: .r))
+        result.append(Beam(ix: [nx - 1, y], d: .l))
+    }
+    for x in  0..<nx {
+        result.append(Beam(ix: [x, 0], d: .d))
+        result.append(Beam(ix: [x, ny - 1], d: .u))
+    }
+    return result
 }
