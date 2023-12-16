@@ -4,8 +4,10 @@ import Data.Maybe (fromJust, fromMaybe)
 
 import Debug.Trace qualified as T
 
+t_trace x y = y
+
 main :: IO ()
-main = interact $ (++ "\n") . p1 . parse
+main = interact $ (++ "\n") . show . p2 . parse
 
 type Ix = (Int, Int)
 data Contraption = Contraption { grid :: M.Map Ix Char, mi :: Ix }
@@ -19,30 +21,38 @@ parse = mkC . concatMap (uncurry f) . zip [0..] . lines
         mkC xs = Contraption (M.fromList xs) (fst $ last xs)
 
 -- p1 = length . M.keys . flood
-p1 c = let ft = (flood c) in (showTiles c ft ++ "\n" ++ show (length $ M.keys ft))
+-- p1 c = let ft = (flood c) in (showTiles c ft ++ "\n" ++ show (length $ M.keys ft))
+p1 = (`energized` ((0, 0), R))
 
+energized :: Contraption -> Beam -> Int
+energized contraption = length . M.keys . flood contraption
+
+p2 :: Contraption -> Int
+p2 contraption = maximum $ map (energized contraption) $ edgeBeams contraption
+
+edgeBeams :: Contraption -> [Beam]
+edgeBeams contraption =  [((0, 0), R)]
 
 data Direction = R | L | U | D deriving (Ord, Eq, Show)
 type Beam = (Ix, Direction)
 
-flood :: Contraption -> Tiles
-flood ctrp@Contraption { grid, mi = (mx, my) } =
-    go M.empty [((0, 0), R)] -- introduce a beam at (0,0), going right
+flood :: Contraption -> Beam -> Tiles
+flood ctrp@Contraption { grid, mi = (mx, my) } start = go M.empty [start]
   where
     -- go through all the pending beams that we haven't traced yet
     go :: Tiles -> [Beam] -> Tiles
-    go m [] = T.trace (showTiles ctrp m) $ m
-    go m (b:beams) = T.trace (showTiles ctrp m) $ go (trace m S.empty [b]) beams
+    go m [] = t_trace (showTiles ctrp m) $ m
+    go m (b:beams) = t_trace (showTiles ctrp m) $ go (trace m S.empty [b]) beams
     -- trace a single beam all the way through, splitting it if needed, until it
     -- can't visit any more new tiles.
     trace m _ [] = m
     trace m visited (b@(t, d):bs)
-      | S.member b visited = T.trace ("already visited " ++ show b) $ trace m visited bs
-      | otherwise = T.trace ("visiting " ++ show t) $
+      | S.member b visited = t_trace ("already visited " ++ show b) $ trace m visited bs
+      | otherwise = t_trace ("visiting " ++ show t) $
         let c = fromJust $ M.lookup t grid
             m' = M.alter incr t m
             v' = (S.insert b visited)
-            recurse z = T.trace ("recursing " ++ show z) $ trace m' v' z
+            recurse z = t_trace ("recursing " ++ show z) $ trace m' v' z
         in case c of
           '.' -> recurse (step b ++ bs)
           '-' | isHorizontal b -> recurse (step b ++ bs)
