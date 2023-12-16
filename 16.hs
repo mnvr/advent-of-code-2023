@@ -21,43 +21,42 @@ p1 = (`energized` ((0, 0), R))
 p2 :: Contraption -> Int
 p2 contraption = maximum $ map (energized contraption) $ edgeBeams contraption
 
-data Direction = R | L | U | D deriving (Ord, Eq)
+data Direction = R | L | U | D deriving (Ord, Eq, Show)
 type Beam = (Ix, Direction)
 
 energized :: Contraption -> Beam -> Int
 energized Contraption { grid, mi = (mx, my) } start =
   trace 0 S.empty S.empty [start]
   where
-    trace :: Int -> S.Set Ix -> S.Set Beam -> [Beam] -> Int
-    trace c _ _ [] = c
-    trace c visited processed (b@(t, d):bs)
+    trace c a b [] = c
+    trace c visited processed (b:bs)
       | S.member b processed = trace c visited processed bs
       | otherwise =
-        let ch = fromJust $ M.lookup t grid
-        in trace (c + (if S.member t visited then 0 else 1))
-                 (S.insert t visited)
-                 (S.insert b processed)
-                 (filter inBounds (next b ch) ++ bs)
+        let (ray, beams) = until b (char b)
+        in trace (c + (length $ filter (\b -> not $ S.member (fst b) visited) ray))
+                 (foldl (\s b -> S.insert (fst b) s) visited ray)
+                 (foldl (\s b -> S.insert b s) processed ray)
+                 (bs ++ filter inBounds beams)
 
-    next b '.' = [step b]
-    next b '-'
-      | isHorizontal b = [step b]
-      | otherwise = [splitL b, splitR b]
-    next b '|'
-      | isVertical b = [step b]
-      | otherwise = [splitU b, splitD b]
-    next b@(_, d) '\\'
-      | d == R = [reflectD b]
-      | d == L = [reflectU b]
-      | d == U = [reflectL b]
-      | d == D = [reflectR b]
-    next b@(_, d) '/'
-      | d == R = [reflectU b]
-      | d == L = [reflectD b]
-      | d == U = [reflectR b]
-      | d == D = [reflectL b]
+    until b '|' | isHorizontal b = ([b], [splitU b, splitD b])
+    until b '-' | isVertical b = ([b], [splitL b, splitR b])
+    until b@(_, d) '\\'
+      | d == R = ([b], [reflectD b])
+      | d == L = ([b], [reflectU b])
+      | d == U = ([b], [reflectL b])
+      | d == D = ([b], [reflectR b])
+    until b@(_, d) '/'
+      | d == R = ([b], [reflectU b])
+      | d == L = ([b], [reflectD b])
+      | d == U = ([b], [reflectR b])
+      | d == D = ([b], [reflectL b])
+    until b _ =
+      let n = step b in
+      if inBounds n then let (ray, beams) = until n (char n) in (b : ray, beams)
+      else ([b], [])
 
     inBounds ((x, y), _) = x >= 0 && y >= 0 && x <= mx && y <= my
+    char b = fromJust $ M.lookup (fst b) grid
     isHorizontal (_, d) = d == L || d == R
     isVertical = not . isHorizontal
     step ((x, y), R) = ((x + 1, y), R)
