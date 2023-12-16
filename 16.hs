@@ -19,7 +19,7 @@ p1 :: Grid -> Int
 p1 = (`energized` ((0, 0), R))
 
 p2 :: Grid -> Int
-p2 contraption = maximum $ map (energized contraption) $ edges contraption
+p2 grid = maximum $ map (energized grid) $ edges grid
 
 data Direction = R | L | U | D deriving (Ord, Eq)
 type Beam = (Ix, Direction)
@@ -37,8 +37,8 @@ energized Grid { chars, mi = (mx, my) } start =
         in trace (foldl (\s b -> S.insert b s) processed ray)
                  (bs ++ filter inBounds beams)
 
-    until b '|' | isHorizontal b = ([b], [splitU b, splitD b])
-    until b '-' | isVertical b = ([b], [splitL b, splitR b])
+    until b '|' | isHorizontal b = ([b], splitV b)
+    until b '-' | isVertical b =   ([b], splitH b)
     until b@(_, d) '\\'
       | d == R = ([b], [reflectD b])
       | d == L = ([b], [reflectU b])
@@ -49,8 +49,7 @@ energized Grid { chars, mi = (mx, my) } start =
       | d == L = ([b], [reflectD b])
       | d == U = ([b], [reflectR b])
       | d == D = ([b], [reflectL b])
-    until b _ =
-      let n = step b in
+    until b _ = let n = step b in
       if inBounds n then let (ray, beams) = until n (char n) in (b : ray, beams)
       else ([b], [])
 
@@ -62,10 +61,8 @@ energized Grid { chars, mi = (mx, my) } start =
     step ((x, y), L) = ((x - 1, y), L)
     step ((x, y), U) = ((x, y - 1), U)
     step ((x, y), D) = ((x, y + 1), D)
-    splitL ((x, y), _) = ((x - 1, y), L)
-    splitR ((x, y), _) = ((x + 1, y), R)
-    splitU ((x, y), _) = ((x, y - 1), U)
-    splitD ((x, y), _) = ((x, y + 1), D)
+    splitH ((x, y), _) = [((x - 1, y), L), ((x + 1, y), R)]
+    splitV ((x, y), _) = [((x, y - 1), U), ((x, y + 1), D)]
     reflectU ((x, y), _) = ((x, y - 1), U)
     reflectD ((x, y), _) = ((x, y + 1), D)
     reflectL ((x, y), _) = ((x - 1, y), L)
