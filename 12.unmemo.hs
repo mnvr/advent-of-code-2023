@@ -1,9 +1,11 @@
-import Data.List (nub)
+import Data.List (nub, intercalate)
+import Control.Arrow ((&&&))
 
--- The un-memoized, original formulation of 12.hs. Is only good enough for p1.
+-- The un-memoized, original formulation of 12.hs. Is only good enough for the
+-- examples, not the full input.
 
 main :: IO ()
-main = interact $ (++ "\n") . show . p1 . parse
+main = interact $ (++ "\n") . show . (p1 &&& p2) . parse
 
 parse :: String -> [(String, [Int])]
 parse = map line . lines
@@ -12,8 +14,13 @@ parse = map line . lines
         [s, num] -> (s, map read $ words $ map comma num)
     comma c = if c == ',' then ' ' else c
 
-p1 :: [(String, [Int])] -> Int
+p1, p2 :: [(String, [Int])] -> Int
 p1 = sum . map (uncurry ways)
+p2 = p1 . unfold
+
+unfold :: [(String, [Int])] -> [(String, [Int])]
+unfold = map f
+  where f (s, xs) = (intercalate "?" (replicate 5 s), concat (replicate 5 xs))
 
 ways :: String -> [Int] -> Int
 ways [] [] = 1
