@@ -72,7 +72,7 @@ energized Grid { chars, mi = (mx, my) } start =
     reflectR ((x, y), _) = ((x + 1, y), R)
 
 edges :: Grid -> [Beam]
-edges Grid { mi = (mx, my) } = concatMap line [0..my]
-  where line y | y == 0  = map (\x -> ((x, y), D)) [0..mx]
-               | y == my = map (\x -> ((x, y), U)) [0..mx]
-               | otherwise = [((0, y), R), ((mx, y), L)]
+edges Grid { mi = (mx, my) } = concat [
+  [b | y <- [0..my], b <- [((0, y), R), ((mx, y), L)]],
+  [((x, 0),  D) | x <- [0..mx]],
+  [((x, my),  U) | x <- [0..mx]]]
