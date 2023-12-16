@@ -16,7 +16,7 @@ parse = mkC . concatMap (uncurry f) . zip [0..] . lines
           where g x = ((x, y),)
         mkC xs = Contraption (M.fromList xs) (fst $ last xs)
 
-p1 = id
+p1 = flood
 
 data Direction = R | L | U | D deriving Eq
 type Beam = (Ix, Direction)
@@ -28,29 +28,41 @@ flood Contraption { grid, mi = (mx, my) } =
     -- go through all the pending beams that we haven't traced yet
     go :: Tiles -> [Beam] -> Tiles
     go m [] = m
-    go m (b:beams) = go (trace m [b] S.empty) beams
+    go m (b:beams) = go (trace m S.empty [b]) beams
     -- trace a single beam all the way through, splitting it if needed, until it
     -- can't visit any more new tiles.
-    trace m [] _ = m
-    trace m (b:bs) visited
-      | S.member (tile b) visited = trace m bs visited
+    trace m _ [] = m
+    trace m visited (b@(t, d):bs)
+      | S.member t visited = trace m visited bs
       | otherwise =
-        let t = (tile b)
-            c = fromJust $ M.lookup t grid
+        let c = fromJust $ M.lookup t grid
             m' = M.alter incr t m
             v' = (S.insert t visited)
+            recurse = trace m' v'
         in case c of
-          '.' -> trace m' bs v'
-          '-' | isHorizontal b -> trace m' bs v'
-              | otherwise -> trace m' (bs ++ hsplit t) v'
-          '|' | isVertical b -> trace m' bs v'
-              | otherwise -> trace m' (bs ++ vsplit t) v'
+          '.' -> recurse bs
+          '-' | isHorizontal b -> recurse bs
+              | otherwise -> recurse (bs ++ hsplit t)
+          '|' | isVertical b -> recurse bs
+              | otherwise -> recurse (bs ++ vsplit t)
+          '\\' | d == R -> recurse (bs ++ reflectD t)
+               | d == L -> recurse (bs ++ reflectU t)
+               | d == U -> recurse (bs ++ reflectL t)
+               | d == D -> recurse (bs ++ reflectR t)
+          '/'  | d == R -> recurse (bs ++ reflectU t)
+               | d == L -> recurse (bs ++ reflectD t)
+               | d == U -> recurse (bs ++ reflectR t)
+               | d == D -> recurse (bs ++ reflectL t)
     tile (t, _) = t
     isHorizontal (_, d) = d == L || d == R
     isVertical = not . isHorizontal
     hsplit (x, y) = prune [((x - 1, y), L), ((x + 1, y), R)]
     vsplit (x, y) = prune [((x, y - 1), U), ((x, y + 1), D)]
     prune = filter (\((x, y), _) -> x > 0 && y > 0 && x <= mx && y <= my )
+    reflectU (x, y) = prune [((x, y - 1), U)]
+    reflectD (x, y) = prune [((x, y + 1), D)]
+    reflectL (x, y) = prune [((x - 1, y), L)]
+    reflectR (x, y) = prune [((x + 1, y), R)]
 
     incr (Just i) = Just (i + 1)
     incr Nothing = Just 1
