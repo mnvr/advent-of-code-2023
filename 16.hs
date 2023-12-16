@@ -26,16 +26,15 @@ type Beam = (Ix, Direction)
 
 energized :: Contraption -> Beam -> Int
 energized Contraption { grid, mi = (mx, my) } start =
-  trace 0 S.empty S.empty [start]
+  count $ trace S.empty [start]
   where
-    trace c a b [] = c
-    trace c visited processed (b:bs)
-      | S.member b processed = trace c visited processed bs
+    count = S.size . S.map fst
+    trace processed [] = processed
+    trace processed (b:bs)
+      | S.member b processed = trace processed bs
       | otherwise =
         let (ray, beams) = until b (char b)
-        in trace (c + (length $ filter (\b -> not $ S.member (fst b) visited) ray))
-                 (foldl (\s b -> S.insert (fst b) s) visited ray)
-                 (foldl (\s b -> S.insert b s) processed ray)
+        in trace (foldl (\s b -> S.insert b s) processed ray)
                  (bs ++ filter inBounds beams)
 
     until b '|' | isHorizontal b = ([b], [splitU b, splitD b])
