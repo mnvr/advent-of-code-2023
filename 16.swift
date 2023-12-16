@@ -1,13 +1,21 @@
 var grid: Grid = []
 while let line = readLine() {
-    grid.append(line)
+    grid.append(items(line))
 }
 
 var f = energized(by: Beam(ix: [0, 0], d: .r))
 var m = edges().map({ energized(by: $0) }).max() ?? 0
 print(f, m)
 
-typealias Grid = [String]
+enum Item: Character {
+    case dot = ".", hbar = "-", vbar = "|", fslash = "/", bslash = "\\"
+}
+
+func items(_ s: String) -> [Item] {
+    s.compactMap { Item(rawValue: $0) }
+}
+
+typealias Grid = [[Item]]
 // This is an (Int, Int), but Swift doesn't synthesize Hashable for tuples.
 typealias Ix = [Int]
 enum Direction { case l, r, u, d }
@@ -52,8 +60,7 @@ func tileCount(_ visited: Set<Beam>) -> Int {
 }
 
 func item(at beam: Beam) -> Character {
-    let line = grid[beam.ix[1]]
-    return line[line.index(line.startIndex, offsetBy: beam.ix[0])]
+    grid[beam.ix[1]][beam.ix[0]].rawValue
 }
 
 func trace(beam: Beam, visited: inout Set<Beam>) {
