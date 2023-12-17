@@ -71,7 +71,8 @@ energized Grid { chars, mx, my } start =
     reflectR ((x, y), _) = ((x + 1, y), R)
 
 edges :: Grid -> [Beam]
-edges Grid { mx, my } = concat [
-  [b | y <- [0..my], b <- [((0, y), R), ((mx, y), L)]],
-  [((x, 0),  D) | x <- [0..mx]],
-  [((x, my),  U) | x <- [0..mx]]]
+edges Grid { mx, my } =
+  ((, R) <$> (0,  ) <$> [0..my]) <>
+  ((, L) <$> (my, ) <$> [0..my]) <>
+  ((, D) <$> (,  0) <$> [0..mx]) <>
+  ((, U) <$> (, my) <$> [0..mx])
