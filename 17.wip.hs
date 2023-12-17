@@ -37,7 +37,7 @@ path Grid { gv, mi } start =
     inBounds' (mx, my) (x, y) = x >= 0 && y >= 0 && x <= mx && y <= my
     go :: Ix -> Ix -> Int -> S.Set (Int, Int) -> Int -> Int
     go p _ _ _ c | p == mi = c
-    go p _ _ visited c | S.member (pair p) visited = c
+    -- go p _ _ visited c | S.member (pair p) visited = c
     go p h movesSinceTurn visited c =
         let visited' = S.insert (pair p) visited
             c' = c + value p
