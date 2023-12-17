@@ -73,8 +73,12 @@ struct Grid {
     }
 
     func showDistances(
-        distances: [Index: Int], parents: [Index: Index]
+        distances: [Index: Int], parents: [Index: Index],
+        selectedPath: Set<Index>
     ) -> String {
+        let tHighlight = "\u{001B}[1;33m"
+        let tReset = "\u{001B}[0m"
+
         func parent(_ u: Index) -> String? {
             guard let p = parents[u] else { return nil }
             switch (p.x - u.x, p.y - u.y) {
@@ -90,10 +94,16 @@ struct Grid {
         for (y, row) in items.enumerated() {
             for (x, item) in row.enumerated() {
                 let u = Index(x: x, y: y)
+                if selectedPath.contains(u) {
+                    result.append(tHighlight);
+                }
                 if let d = distances[u], let p = parent(u) {
                     result.append("\(p) \(item) \(d)\t")
                 } else {
                     result.append("  \(item)\t")
+                }
+                if selectedPath.contains(u) {
+                    result.append(tReset);
                 }
             }
             result.append("\n")
@@ -143,7 +153,15 @@ func shortestPath(
     }
 
     defer {
-        let vis = grid.showDistances(distances: distance, parents: parent)
+        var selectedPath = Set([start, end])
+        var u = end
+        while let v = parent[u], v != start {
+            selectedPath.insert(v)
+            u = v
+        }
+
+        let vis = grid.showDistances(
+            distances: distance, parents: parent, selectedPath: selectedPath)
         print(vis, terminator: "")
     }
 
