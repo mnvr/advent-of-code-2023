@@ -72,14 +72,28 @@ struct Grid {
         at(v)
     }
 
-    func showDistances(distances: [Index: Int]) -> String {
+    func showDistances(
+        distances: [Index: Int], parents: [Index: Index]
+    ) -> String {
+        func parent(_ u: Index) -> String? {
+            guard let p = parents[u] else { return nil }
+            switch (p.x - u.x, p.y - u.y) {
+                case (-1, 0): return "←"
+                case (1, 0): return "→"
+                case (0, -1): return "↑"
+                case (0, 1): return "↓"
+                default: return "⥀"
+            }
+        }
+
         var result = [String]()
         for (y, row) in items.enumerated() {
             for (x, item) in row.enumerated() {
-                if let d = distances[Index(x: x, y: y)] {
-                    result.append("\(item) \(d)\t")
+                let u = Index(x: x, y: y)
+                if let d = distances[u], let p = parent(u) {
+                    result.append("\(p) \(item) \(d)\t")
                 } else {
-                    result.append("\(item)\t")
+                    result.append("  \(item)\t")
                 }
             }
             result.append("\n")
@@ -106,6 +120,7 @@ func shortestPath(
     var pending = startHeadings.map { (start, $0, 0) }
     var visited = Set<Grid.Index>()
     var distance = [start: 0]
+    var parent = [start: start]
 
     // The real algorithm requires a data structure that allows us to quickly
     // find the element with the least associated value, and pop it efficiently.
@@ -127,7 +142,10 @@ func shortestPath(
         return result
     }
 
-    defer { print(grid.showDistances(distances: distance), terminator: "") }
+    defer {
+        let vis = grid.showDistances(distances: distance, parents: parent)
+        print(vis, terminator: "")
+    }
 
     while let us = popNearest() {
         for (u, uh, usteps) in us {
@@ -141,6 +159,7 @@ func shortestPath(
                 let w = grid.edgeWeight(from: u, to: v)
                 if dv > du + w {
                     distance[v] = du + w
+                    parent[v] = u
                 }
                 pending.append((v, vh, vsteps))
             }
