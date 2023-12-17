@@ -48,7 +48,7 @@ struct Grid<T> {
     }
 
     /// Precondition: v must be adjacent to u
-    func distance( from u: Index, to v: Index) -> Int {
+    func edgeWeight( from u: Index, to v: Index) -> Int {
         if let d = at(u) as? Int {
             return d
         }
@@ -128,8 +128,9 @@ func shortestPath<T>(
         let du = distance[u]!
         visit?(u, grid.at(u))
         for v in grid.adjacent(u) {
+            if visited.contains(v) { continue }
             let dv = distance[v] ?? Int.max
-            let w = grid.distance(from: u, to: v)
+            let w = grid.edgeWeight(from: u, to: v)
             if dv > du + w {
                 distance[v] = du + w
             }
