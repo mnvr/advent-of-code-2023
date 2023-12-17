@@ -14,6 +14,10 @@ struct Grid<T> {
     struct Index: Hashable {
         let x: Int
         let y: Int
+
+        static func + (u: Index, v: Index) -> Index {
+            Index(x: u.x + v.x, y: u.y + v.y)
+        }
     }
 
     let items: [[T]]
@@ -21,16 +25,50 @@ struct Grid<T> {
 
     init(items: [[T]]) {
         self.items = items
-        self.maxIndex = Index(x: items[0].count, y: items.count)
+        self.maxIndex = Index(x: items[0].count - 1, y: items.count - 1)
+    }
+
+    private func inBounds(u: Index) -> Bool {
+        u.x >= 0 && u.y >= 0 && u.x <= maxIndex.x && u.y <= maxIndex.y
+    }
+
+    func at(_ u: Index) -> T {
+        items[u.y][u.x]
+    }
+
+    func adjacent(_ u: Index) -> [Index] {
+        [ u + Index(x: +1, y: 0),
+          u + Index(x: -1, y: 0),
+          u + Index(x: 0, y: -1),
+          u + Index(x: 0, y: +1),
+        ].filter(inBounds)
     }
 }
 
-func dfs<T>(grid: Grid<T>, start: Grid<T>.Index, visit: (T) -> Void) {
-    // var visited = Set<Grid<T>.Index>()
-    print("helol")
+typealias Visitor<T> = (Grid<T>.Index, T) -> Void
+
+func makePrintVisitor<T>(_ label: String) -> Visitor<T> {
+    return { u, item in
+        print("\(label) visiting item \(item) at index \(u)")
+    }
+}
+
+/// This DFS, and BFS below, are Swift ports of
+/// https://mrmr.io/random-mutations.
+
+func dfs<T>(grid: Grid<T>, start: Grid<T>.Index, visit: Visitor<T>) {
+    var pending = [start]
+    var visited = Set<Grid<T>.Index>()
+    while let u = pending.popLast() {
+        if !visited.insert(u).inserted { continue }
+        visit(u, grid.at(u))
+        for v in grid.adjacent(u) {
+            pending.append(v)
+        }
+    }
 }
 
 let input = readInput()
 let grid = Grid(items: input)
 print(grid)
-dfs(grid: grid, start: .init(x: 0, y: 0)) { print($0) }
+dfs(grid: grid, start: .init(x: 0, y: 0), visit: makePrintVisitor("dfs"))
