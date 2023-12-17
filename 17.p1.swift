@@ -69,7 +69,7 @@ struct Grid {
     }
 
     func edgeWeight( from u: Index, to v: Index) -> Int {
-        at(u)
+        at(v)
     }
 }
 
@@ -85,10 +85,10 @@ func makePrintVisitor(_ label: String) -> Visitor {
 ///
 /// If end is not reachable from start, return nil.
 func shortestPath(
-    grid: Grid, start: Grid.Index, startHeading: Grid.Index,
+    grid: Grid, start: Grid.Index, startHeadings: [Grid.Index],
     end: Grid.Index, visit: Visitor?
 ) -> Int? {
-    var pending = [(start, startHeading, 0)]
+    var pending = startHeadings.map { (start, $0, 0) }
     var visited = Set<Grid.Index>()
     var distance = [start: 0]
 
@@ -132,8 +132,12 @@ let input = readInput()
 let grid = Grid(items: input)
 print(grid)
 let sp = shortestPath(
-    grid: grid, start: .init(x: 0, y: 0), startHeading: .init(x: 1, y: 0),
-    end: grid.maxIndex, visit: makePrintVisitor("shortest-path"))
+    grid: grid,
+    start: .init(x: 0, y: 0),
+    startHeadings: [.init(x: 1, y: 0), .init(x: 0, y: 1)],
+    end: grid.maxIndex,
+    visit: makePrintVisitor("shortest-path")
+)
 print("shortest-path-result", sp ?? -1)
 
 // print(grid.adjacentCandidates(.init(x: 1, y: 1), heading: .init(x: 1, y: 0)))
