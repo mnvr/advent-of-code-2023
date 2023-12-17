@@ -68,7 +68,24 @@ func dfs<T>(grid: Grid<T>, start: Grid<T>.Index, visit: Visitor<T>) {
     }
 }
 
+func bfs<T>(grid: Grid<T>, start: Grid<T>.Index, visit: Visitor<T>) {
+    var pending = [start]
+    var visited = Set<Grid<T>.Index>()
+    // Unlike popLast which is O(1), removeFirst is O(n), which makes traversal
+    // inefficient. For real programs, consider using a data structure that
+    // provides a "popFirst", e.g. the Dequeue in the Swift Collections package.
+    while !pending.isEmpty {
+        let u = pending.removeFirst()
+        if !visited.insert(u).inserted { continue }
+        visit(u, grid.at(u))
+        for v in grid.adjacent(u) {
+            pending.append(v)
+        }
+    }
+}
+
 let input = readInput()
 let grid = Grid(items: input)
 print(grid)
 dfs(grid: grid, start: .init(x: 0, y: 0), visit: makePrintVisitor("dfs"))
+bfs(grid: grid, start: .init(x: 0, y: 0), visit: makePrintVisitor("bfs"))
