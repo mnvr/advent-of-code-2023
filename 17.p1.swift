@@ -19,16 +19,17 @@ struct Grid {
 
         /// Multiplication by i (the complex number, √-1).
         ///
-        /// Corresponds to a 90-deg counterclockwise rotation.
+        /// Corresponds to a 90-deg counterclockwise rotation on our grid's
+        /// coordinate system.
         func rotatedLeft() -> Index {
-            Index(x: -y, y: x)
+            Index(x: y, y: -x)
         }
 
         /// Multiplication by -i (the complex number, -√-1).
         ///
         /// Corresponds to a 90-deg clockwise rotation.
         func rotatedRight() -> Index {
-            Index(x: y, y: -x)
+            Index(x: -y, y: x)
         }
     }
 
@@ -127,3 +128,5 @@ let sp = shortestPath(
     grid: grid, start: .init(x: 0, y: 0), startHeading: .init(x: 1, y: 0),
     end: grid.maxIndex, visit: makePrintVisitor("shortest-path"))
 print("shortest-path-result", sp ?? -1)
+
+print(grid.adjacentCandidates(.init(x: 1, y: 1), heading: .init(x: 0, y: -1)))
