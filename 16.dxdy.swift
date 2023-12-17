@@ -40,45 +40,40 @@ struct Beam: Hashable {
 
 func energized(by beam: Beam) -> Int {
     var visited = Set<Beam>()
-    var next = [beam]
-    var bt = beam
+    trace(beam: beam, visited: &visited)
+    return Set(visited.map({ [$0.x, $0.y] })).count
+}
 
-    while var beam = next.popLast() {
-        if visited.contains(beam) {
-            continue
-        }
+func trace(beam: Beam, visited: inout Set<Beam>) {
+    var (beam, bt) = (beam, beam)
+    while isInBounds(beam) && !visited.contains(beam) {
+        visited.insert(beam)
 
-        while isInBounds(beam) {
-            visited.insert(beam)
-
-            switch item(at: beam) {
-            case .vbar where beam.isHorizontal:
-                (beam, bt) = beam.vsplit
-                next.append(bt)
-            case .hbar where beam.isVertical:
-                (beam, bt) = beam.hsplit
-                next.append(bt)
-            case .fslash:
-                switch (beam.dx, beam.dy) {
-                    case (-1, 0): beam = beam.reflectD
-                    case (+1, 0): beam = beam.reflectU
-                    case (0, -1): beam = beam.reflectR
-                    default: beam = beam.reflectL
-                }
-            case .bslash:
-                switch (beam.dx, beam.dy) {
-                    case (-1, 0): beam = beam.reflectU
-                    case (+1, 0): beam = beam.reflectD
-                    case (0, -1): beam = beam.reflectL
-                    default: beam = beam.reflectR
-                }
-            default:
-                beam = beam.step
+        switch item(at: beam) {
+        case .vbar where beam.isHorizontal:
+            (beam, bt) = beam.vsplit
+            trace(beam: bt, visited: &visited)
+        case .hbar where beam.isVertical:
+            (beam, bt) = beam.hsplit
+            trace(beam: bt, visited: &visited)
+        case .fslash:
+            switch (beam.dx, beam.dy) {
+                case (-1, 0): beam = beam.reflectD
+                case (+1, 0): beam = beam.reflectU
+                case (0, -1): beam = beam.reflectR
+                default: beam = beam.reflectL
             }
+        case .bslash:
+            switch (beam.dx, beam.dy) {
+                case (-1, 0): beam = beam.reflectU
+                case (+1, 0): beam = beam.reflectD
+                case (0, -1): beam = beam.reflectL
+                default: beam = beam.reflectR
+            }
+        default:
+            beam = beam.step
         }
     }
-
-    return Set(visited.map({ [$0.x, $0.y] })).count
 }
 
 func isInBounds(_ beam: Beam) -> Bool {
