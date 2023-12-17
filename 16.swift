@@ -53,15 +53,13 @@ func energized(by beam: Beam) -> Int {
 }
 
 func trace(beam: Beam, visited: inout Set<Beam>) {
-    if visited.contains(beam) {
-        return
-    }
-
     var (beam, bt) = (beam, beam)
     var next: [Beam] = []
 
     while isInBounds(beam) {
-        visited.insert(beam)
+        if !visited.insert(beam).inserted {
+            break
+        }
 
         switch item(at: beam) {
         case .vbar where beam.isHorizontal:
@@ -89,7 +87,7 @@ func trace(beam: Beam, visited: inout Set<Beam>) {
         }
     }
 
-    next.filter(isInBounds).forEach { trace(beam: $0, visited: &visited) }
+    next.forEach { trace(beam: $0, visited: &visited) }
 }
 
 func isInBounds(_ beam: Beam) -> Bool {
