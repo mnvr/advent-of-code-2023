@@ -49,16 +49,23 @@ struct Grid {
         items[u.y][u.x]
     }
 
-    func adjacent(_ u: Index, heading: Index) -> [(Index, Index)] {
-        adjacentCandidates(u, heading: heading).filter { inBounds(u: $0.0) }
+    func adjacent(
+        _ u: Index, heading: Index, steps: Int
+    ) -> [(Index, Index, Int)] {
+        adjacentCandidates(u, heading: heading, steps: steps)
+            .filter { inBounds(u: $0.0) }
     }
 
-    func adjacentCandidates(_ u: Index, heading h: Index) -> [(Index, Index)] {
+    func adjacentCandidates(
+        _ u: Index, heading h: Index, steps s: Int
+    ) -> [(Index, Index, Int)] {
         let hl = h.rotatedLeft()
         let hr = h.rotatedRight()
-        return [ (u + h, h),
-                 (u + hl, hl),
-                 (u + hr, hr) ]
+        if s < 2 {
+            return [(u + h, h, s + 1), (u + hl, hl, 0), (u + hr, hr, 0)]
+        } else {
+            return [(u + hl, hl, 0), (u + hr, hr, 0)]
+        }
     }
 
     func edgeWeight( from u: Index, to v: Index) -> Int {
@@ -66,11 +73,11 @@ struct Grid {
     }
 }
 
-typealias Visitor = (Grid.Index, Grid.Index, Int) -> Void
+typealias Visitor = (Grid.Index, Grid.Index, Int, Int) -> Void
 
 func makePrintVisitor(_ label: String) -> Visitor {
-    return { u, heading, item in
-        print("\(label) visiting item \(item) at index \(u), heading \(heading)")
+    return { u, heading, steps, item in
+        print("\(label) visiting item \(item) at index \(u) heading \(heading) steps \(steps)")
     }
 }
 
@@ -81,7 +88,7 @@ func shortestPath(
     grid: Grid, start: Grid.Index, startHeading: Grid.Index,
     end: Grid.Index, visit: Visitor?
 ) -> Int? {
-    var pending = [(start, startHeading)]
+    var pending = [(start, startHeading, 0)]
     var visited = Set<Grid.Index>()
     var distance = [start: 0]
 
@@ -90,10 +97,10 @@ func shortestPath(
     // Here we do an (inefficient) simulation using only the standard library
     // data structures. For real programs, consider using a priority queue, like
     // the Heap in the Swift Collections package.
-    func popNearest() -> (Grid.Index, Grid.Index)? {
+    func popNearest() -> (Grid.Index, Grid.Index, Int)? {
         var ui: Int?
         var ud = Int.max
-        for (vi, (v, vh)) in pending.enumerated() {
+        for (vi, (v, _, _)) in pending.enumerated() {
             if let vd = distance[v], vd < ud {
                 ui = vi
                 ud = vd
@@ -103,18 +110,18 @@ func shortestPath(
         return nil
     }
 
-    while let (u, uh) = popNearest(), u != end {
+    while let (u, uh, usteps) = popNearest(), u != end {
         if !visited.insert(u).inserted { continue }
         let du = distance[u]!
-        visit?(u, uh, grid.at(u))
-        for (v, vh) in grid.adjacent(u, heading: uh) {
+        visit?(u, uh, usteps, grid.at(u))
+        for (v, vh, vsteps) in grid.adjacent(u, heading: uh, steps: usteps) {
             if visited.contains(v) { continue }
             let dv = distance[v] ?? Int.max
             let w = grid.edgeWeight(from: u, to: v)
             if dv > du + w {
                 distance[v] = du + w
             }
-            pending.append((v, vh))
+            pending.append((v, vh, vsteps))
         }
     }
 
@@ -129,4 +136,4 @@ let sp = shortestPath(
     end: grid.maxIndex, visit: makePrintVisitor("shortest-path"))
 print("shortest-path-result", sp ?? -1)
 
-print(grid.adjacentCandidates(.init(x: 1, y: 1), heading: .init(x: 0, y: -1)))
+// print(grid.adjacentCandidates(.init(x: 1, y: 1), heading: .init(x: 1, y: 0)))
