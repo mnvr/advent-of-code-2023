@@ -68,8 +68,23 @@ struct Grid {
         }
     }
 
-    func edgeWeight( from u: Index, to v: Index) -> Int {
+    func edgeWeight(from u: Index, to v: Index) -> Int {
         at(v)
+    }
+
+    func showDistances(distances: [Index: Int]) -> String {
+        var result = [String]()
+        for (y, row) in items.enumerated() {
+            for (x, item) in row.enumerated() {
+                if let d = distances[Index(x: x, y: y)] {
+                    result.append("\(item) \(d)\t")
+                } else {
+                    result.append("\(item)\t")
+                }
+            }
+            result.append("\n")
+        }
+        return result.joined()
     }
 }
 
@@ -125,6 +140,8 @@ func shortestPath(
         }
     }
 
+    print(grid.showDistances(distances: distance), terminator: "")
+
     return distance[end]
 }
 
@@ -139,5 +156,4 @@ let sp = shortestPath(
     visit: makePrintVisitor("shortest-path")
 )
 print("shortest-path-result", sp ?? -1)
-
 // print(grid.adjacentCandidates(.init(x: 1, y: 1), heading: .init(x: 1, y: 0)))
