@@ -112,37 +112,42 @@ func shortestPath(
     // Here we do an (inefficient) simulation using only the standard library
     // data structures. For real programs, consider using a priority queue, like
     // the Heap in the Swift Collections package.
-    func popNearest() -> (Grid.Index, Grid.Index, Int)? {
-        var ui: Int?
+    func popNearest() -> [(Grid.Index, Grid.Index, Int)]? {
+        var u: Grid.Index?
         var ud = Int.max
         for (vi, (v, _, _)) in pending.enumerated() {
             if let vd = distance[v], vd < ud {
-                ui = vi
+                u = v
                 ud = vd
             }
         }
-        if let ui { return pending.remove(at: ui) }
-        return nil
+        guard let u else { return nil }
+        let result = pending.filter { $0.0 == u }
+        pending.removeAll { $0.0 == u }
+        return result
     }
 
-    while let (u, uh, usteps) = popNearest(), u != end {
-        if !visited.insert(u).inserted { continue }
-        let du = distance[u]!
-        visit?(u, uh, usteps, grid.at(u))
-        for (v, vh, vsteps) in grid.adjacent(u, heading: uh, steps: usteps) {
-            if visited.contains(v) { continue }
-            let dv = distance[v] ?? Int.max
-            let w = grid.edgeWeight(from: u, to: v)
-            if dv > du + w {
-                distance[v] = du + w
+    defer { print(grid.showDistances(distances: distance), terminator: "") }
+
+    while let us = popNearest() {
+        for (u, uh, usteps) in us {
+            if (u == end) { return distance[end] }
+            if !visited.insert(u).inserted { continue }
+            let du = distance[u]!
+            visit?(u, uh, usteps, grid.at(u))
+            for (v, vh, vsteps) in grid.adjacent(u, heading: uh, steps: usteps) {
+                if visited.contains(v) { continue }
+                let dv = distance[v] ?? Int.max
+                let w = grid.edgeWeight(from: u, to: v)
+                if dv > du + w {
+                    distance[v] = du + w
+                }
+                pending.append((v, vh, vsteps))
             }
-            pending.append((v, vh, vsteps))
         }
     }
 
-    print(grid.showDistances(distances: distance), terminator: "")
-
-    return distance[end]
+    return nil
 }
 
 let input = readInput()
