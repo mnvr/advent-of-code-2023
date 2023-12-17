@@ -37,11 +37,22 @@ struct Grid<T> {
     }
 
     func adjacent(_ u: Index) -> [Index] {
+        adjacentCandidates(u).filter(inBounds)
+    }
+
+    func adjacentCandidates(_ u: Index) -> [Index] {
         [ u + Index(x: +1, y: 0),
           u + Index(x: -1, y: 0),
           u + Index(x: 0, y: -1),
-          u + Index(x: 0, y: +1),
-        ].filter(inBounds)
+          u + Index(x: 0, y: +1) ]
+    }
+
+    /// Precondition: v must be adjacent to u
+    func distance( from u: Index, to v: Index) -> Int {
+        if let d = at(u) as? Int {
+            return d
+        }
+        return 0
     }
 }
 
@@ -84,8 +95,56 @@ func bfs<T>(grid: Grid<T>, start: Grid<T>.Index, visit: Visitor<T>) {
     }
 }
 
+/// Find the shortest path between `start` and `end` using Dijkstra's algorithm.
+///
+/// If end is not reachable from start, return nil.
+func shortestPath<T>(
+    grid: Grid<T>, start: Grid<T>.Index, end: Grid<T>.Index, visit: Visitor<T>?
+) -> Int? {
+    var pending = [start]
+    var visited = Set<Grid<T>.Index>()
+    var distance = [start: 0]
+
+    // The real algorithm requires a data structure that allows us to quickly
+    // find the element with the least associated value, and pop it efficiently.
+    // Here we do an (inefficient) simulation using only the standard library
+    // data structures. For real programs, consider using a priority queue, like
+    // the Heap in the Swift Collections package.
+    func popNearest() -> Grid<T>.Index? {
+        var ui: Int?
+        var ud = Int.max
+        for (vi, v) in pending.enumerated() {
+            if let vd = distance[v], vd < ud {
+                ui = vi
+                ud = vd
+            }
+        }
+        if let ui { return pending.remove(at: ui) }
+        return nil
+    }
+
+    while let u = popNearest(), u != end {
+        if !visited.insert(u).inserted { continue }
+        let du = distance[u]!
+        visit?(u, grid.at(u))
+        for v in grid.adjacent(u) {
+            let dv = distance[v] ?? Int.max
+            let w = grid.distance(from: u, to: v)
+            if dv > du + w {
+                distance[v] = du + w
+            }
+            pending.append(v)
+        }
+    }
+
+    return distance[end]
+}
+
 let input = readInput()
 let grid = Grid(items: input)
 print(grid)
 dfs(grid: grid, start: .init(x: 0, y: 0), visit: makePrintVisitor("dfs"))
 bfs(grid: grid, start: .init(x: 0, y: 0), visit: makePrintVisitor("bfs"))
+let sp = shortestPath(grid: grid, start: .init(x: 0, y: 0), end: grid.maxIndex,
+                      visit: makePrintVisitor("shortest-path"))
+print("shortest-path-result", sp ?? -1)
