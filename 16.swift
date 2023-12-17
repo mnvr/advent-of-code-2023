@@ -32,12 +32,12 @@ struct Beam: Hashable {
         }
     }
 
-    var hsplit: [Beam] {
-        [Beam(x: x - 1, y: y, d: .l),  Beam(x: x + 1, y: y, d: .r)]
+    var hsplit: (Beam, Beam) {
+        (Beam(x: x - 1, y: y, d: .l),  Beam(x: x + 1, y: y, d: .r))
     }
 
-    var vsplit: [Beam] {
-        [Beam(x: x, y: y - 1, d: .u),  Beam(x: x, y: y + 1, d: .d)]
+    var vsplit: (Beam, Beam) {
+        (Beam(x: x, y: y - 1, d: .u),  Beam(x: x, y: y + 1, d: .d))
     }
 
     var reflectL: Beam { Beam(x: x - 1, y: y, d: .l) }
@@ -57,35 +57,39 @@ func trace(beam: Beam, visited: inout Set<Beam>) {
         return
     }
 
-    var beam = beam
-    var next: [Beam]?
+    var (beam, bt) = (beam, beam)
+    var next: [Beam] = []
 
-    while isInBounds(beam) && next == nil {
+    while isInBounds(beam) {
         visited.insert(beam)
 
         switch item(at: beam) {
-        case .vbar where beam.isHorizontal: next = beam.vsplit
-        case .hbar where beam.isVertical:   next = beam.hsplit
+        case .vbar where beam.isHorizontal:
+            (beam, bt) = beam.vsplit
+            next.append(bt)
+        case .hbar where beam.isVertical:
+            (beam, bt) = beam.hsplit
+            next.append(bt)
         case .fslash:
             switch beam.d {
-                case .l: next = [beam.reflectD]
-                case .r: next = [beam.reflectU]
-                case .u: next = [beam.reflectR]
-                case .d: next = [beam.reflectL]
+                case .l: beam = beam.reflectD
+                case .r: beam = beam.reflectU
+                case .u: beam = beam.reflectR
+                case .d: beam = beam.reflectL
             }
         case .bslash:
             switch beam.d {
-                case .l: next = [beam.reflectU]
-                case .r: next = [beam.reflectD]
-                case .u: next = [beam.reflectL]
-                case .d: next = [beam.reflectR]
+                case .l: beam = beam.reflectU
+                case .r: beam = beam.reflectD
+                case .u: beam = beam.reflectL
+                case .d: beam = beam.reflectR
             }
         default:
             beam = beam.step
         }
     }
 
-    next?.filter(isInBounds).forEach { trace(beam: $0, visited: &visited) }
+    next.filter(isInBounds).forEach { trace(beam: $0, visited: &visited) }
 }
 
 func isInBounds(_ beam: Beam) -> Bool {

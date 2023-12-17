@@ -46,6 +46,7 @@ func energized(by beam: Beam) -> Int {
 
 func trace(beam: Beam, visited: inout Set<Beam>) {
     var (beam, bt) = (beam, beam)
+
     while isInBounds(beam) && !visited.contains(beam) {
         visited.insert(beam)
 
