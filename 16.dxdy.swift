@@ -22,14 +22,14 @@ struct Beam: Hashable {
 
     var step: Beam { Beam(x: x + dx, y: y + dy, dx: dx, dy: dy) }
 
-    var hsplit: [Beam] {
-        [Beam(x: x - 1, y: y, dx: -1, dy: 0),
-         Beam(x: x + 1, y: y, dx: +1, dy: 0)]
+    var hsplit: (Beam, Beam) {
+        (Beam(x: x - 1, y: y, dx: -1, dy: 0),
+         Beam(x: x + 1, y: y, dx: +1, dy: 0))
     }
 
-    var vsplit: [Beam] {
-        [Beam(x: x, y: y - 1, dx: 0, dy: -1),
-         Beam(x: x, y: y + 1, dx: 0, dy: +1)]
+    var vsplit: (Beam, Beam) {
+        (Beam(x: x, y: y - 1, dx: 0, dy: -1),
+         Beam(x: x, y: y + 1, dx: 0, dy: +1))
     }
 
     var reflectL: Beam { Beam(x: x - 1, y: y, dx: -1, dy: 0) }
@@ -40,44 +40,45 @@ struct Beam: Hashable {
 
 func energized(by beam: Beam) -> Int {
     var visited = Set<Beam>()
-    trace(beam: beam, visited: &visited)
-    return Set(visited.map({ [$0.x, $0.y] })).count
-}
+    var next = [beam]
+    var bt = beam
 
-func trace(beam: Beam, visited: inout Set<Beam>) {
-    if visited.contains(beam) {
-        return
-    }
+    while var beam = next.popLast() {
+        if visited.contains(beam) {
+            continue
+        }
 
-    var beam = beam
-    var next: [Beam]?
+        while isInBounds(beam) {
+            visited.insert(beam)
 
-    while isInBounds(beam) && next == nil {
-        visited.insert(beam)
-
-        switch item(at: beam) {
-        case .vbar where beam.isHorizontal: next = beam.vsplit
-        case .hbar where beam.isVertical:   next = beam.hsplit
-        case .fslash:
-            switch (beam.dx, beam.dy) {
-                case (-1, 0): next = [beam.reflectD]
-                case (+1, 0): next = [beam.reflectU]
-                case (0, -1): next = [beam.reflectR]
-                default: next = [beam.reflectL]
+            switch item(at: beam) {
+            case .vbar where beam.isHorizontal:
+                (beam, bt) = beam.vsplit
+                next.append(bt)
+            case .hbar where beam.isVertical:
+                (beam, bt) = beam.hsplit
+                next.append(bt)
+            case .fslash:
+                switch (beam.dx, beam.dy) {
+                    case (-1, 0): beam = beam.reflectD
+                    case (+1, 0): beam = beam.reflectU
+                    case (0, -1): beam = beam.reflectR
+                    default: beam = beam.reflectL
+                }
+            case .bslash:
+                switch (beam.dx, beam.dy) {
+                    case (-1, 0): beam = beam.reflectU
+                    case (+1, 0): beam = beam.reflectD
+                    case (0, -1): beam = beam.reflectL
+                    default: beam = beam.reflectR
+                }
+            default:
+                beam = beam.step
             }
-        case .bslash:
-            switch (beam.dx, beam.dy) {
-                case (-1, 0): next = [beam.reflectU]
-                case (+1, 0): next = [beam.reflectD]
-                case (0, -1): next = [beam.reflectL]
-                default: next = [beam.reflectR]
-            }
-        default:
-            beam = beam.step
         }
     }
 
-    next?.filter(isInBounds).forEach { trace(beam: $0, visited: &visited) }
+    return Set(visited.map({ [$0.x, $0.y] })).count
 }
 
 func isInBounds(_ beam: Beam) -> Bool {
