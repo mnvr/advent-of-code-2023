@@ -3,6 +3,9 @@ while let line = readLine() {
     grid.append(items(line))
 }
 
+let ny = grid.count
+let nx = grid.first?.count ?? 0
+
 var f = energized(by: Beam(x: 0, y: 0, d: .r))
 var m = edges().map({ energized(by: $0) }).max() ?? 0
 print(f, m)
@@ -14,7 +17,7 @@ enum Item: Character {
 func items(_ s: String) -> [Item] { s.compactMap { Item(rawValue: $0) } }
 func item(at beam: Beam) -> Item { grid[beam.y][beam.x] }
 
-enum Direction { case l, r, u, d }
+enum Direction: Int { case l, r, u, d }
 
 struct Beam: Hashable {
     let x, y: Int
@@ -46,20 +49,40 @@ struct Beam: Hashable {
     var reflectD: Beam { Beam(x: x, y: y + 1, d: .d) }
 }
 
+typealias Visited = [[Bool]]
+
 func energized(by beam: Beam) -> Int {
-    var visited = Set<Beam>()
+    // It is much faster to use 4 arrays (one for each direction) to keep track
+    // of visited beams instead of a Set<Beam>().
+    var visited: [Visited] = Array(
+        repeating: Array(repeating: Array(repeating: false, count: nx), count: ny),
+        count: 4)
+
     trace(beam: beam, visited: &visited)
-    return Set(visited.map({ [$0.x, $0.y] })).count
+
+    var count = 0
+    for y in 0..<ny {
+        for x in 0..<nx {
+            for d in 0..<4 {
+                if visited[d][y][x] {
+                    count += 1
+                    break
+                }
+            }
+        }
+    }
+    return count
 }
 
-func trace(beam: Beam, visited: inout Set<Beam>) {
+func trace(beam: Beam, visited: inout [Visited]) {
     var (beam, bt) = (beam, beam)
     var next: [Beam] = []
 
     while isInBounds(beam) {
-        if !visited.insert(beam).inserted {
+        if visited[beam.d.rawValue][beam.y][beam.x] {
             break
         }
+        visited[beam.d.rawValue][beam.y][beam.x] = true
 
         switch item(at: beam) {
         case .vbar where beam.isHorizontal:
@@ -93,13 +116,10 @@ func trace(beam: Beam, visited: inout Set<Beam>) {
 func isInBounds(_ beam: Beam) -> Bool {
     let x = beam.x
     let y = beam.y
-    return x >= 0 && x < grid[0].count && y >= 0 && y < grid.count
+    return x >= 0 && x < nx && y >= 0 && y < ny
 }
 
 func edges() -> [Beam] {
-    let ny = grid.count
-    let nx = grid.first?.count ?? 0
-
     var result: [Beam] = []
     for y in 0..<ny {
         result.append(Beam(x: 0, y: y, d: .r))
