@@ -124,7 +124,7 @@ func shortestPath(
     grid: Grid, start: Grid.Index, startHeadings: [Grid.Index],
     end: Grid.Index, visit: Visitor?
 ) -> Int? {
-    var pending = startHeadings.map { (start, $0, 0) }
+    var pending = startHeadings.map { (start, $0, 1) }
     var visited = Set<Grid.Index>()
     var distance = [start: 0]
     var parent = [start: start]
