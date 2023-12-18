@@ -83,10 +83,10 @@ struct Grid {
         func parent(_ u: Index) -> String? {
             guard let p = parents[u] else { return nil }
             switch (p.x - u.x, p.y - u.y) {
-                case (-1, 0): return "←"
-                case (1, 0): return "→"
-                case (0, -1): return "↑"
-                case (0, 1): return "↓"
+                case (-1, 0): return "→"
+                case (1, 0): return "←"
+                case (0, -1): return "↓"
+                case (0, 1): return "↑"
                 default: return "⥀"
             }
         }
