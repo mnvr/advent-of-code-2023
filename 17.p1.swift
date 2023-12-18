@@ -76,7 +76,8 @@ struct Grid {
         distances: [Index: Int], parents: [Index: Index],
         selectedPath: Set<Index>
     ) -> String {
-        let tHighlight = "\u{001B}[1;33m"
+        let tHighlight = "\u{001B}[0;0m"
+        let tDim = "\u{001B}[2;80m"
         let tReset = "\u{001B}[0m"
 
         func parent(_ u: Index) -> String? {
@@ -94,17 +95,13 @@ struct Grid {
         for (y, row) in items.enumerated() {
             for (x, item) in row.enumerated() {
                 let u = Index(x: x, y: y)
-                if selectedPath.contains(u) {
-                    result.append(tHighlight);
-                }
+                result.append(selectedPath.contains(u) ? tHighlight : tDim);
                 if let d = distances[u], let p = parent(u) {
                     result.append("\(p) \(item) \(d)\t")
                 } else {
                     result.append("  \(item)\t")
                 }
-                if selectedPath.contains(u) {
-                    result.append(tReset);
-                }
+                result.append(tReset);
             }
             result.append("\n")
         }
@@ -131,6 +128,7 @@ func shortestPath(
     var visited = Set<Grid.Index>()
     var distance = [start: 0]
     var parent = [start: start]
+    var iterations = 0
 
     // The real algorithm requires a data structure that allows us to quickly
     // find the element with the least associated value, and pop it efficiently.
@@ -138,21 +136,26 @@ func shortestPath(
     // data structures. For real programs, consider using a priority queue, like
     // the Heap in the Swift Collections package.
     func popNearest() -> [(Grid.Index, Grid.Index, Int)]? {
-        var u: Grid.Index?
+        // var u: Grid.Index?
         var ud = Int.max
+        var ui: Int?
         for (vi, (v, _, _)) in pending.enumerated() {
             if let vd = distance[v], vd < ud {
-                u = v
+                // u = v
                 ud = vd
+                ui = vi
             }
         }
-        guard let u else { return nil }
-        let result = pending.filter { $0.0 == u }
-        pending.removeAll { $0.0 == u }
-        return result
+        if let ui { return [pending.remove(at: ui)] }
+        print("nothing to return from pending \(pending)")
+        return nil
+        // guard let u else { return nil }
+        // let result = pending.filter { $0.0 == u }
+        // pending.removeAll { $0.0 == u }
+        // return result
     }
 
-    defer {
+    func show() {
         var selectedPath = Set([start, end])
         var u = end
         while let v = parent[u], v != start {
@@ -160,17 +163,26 @@ func shortestPath(
             u = v
         }
 
+        print("after \(iterations) iterations")
         let vis = grid.showDistances(
             distances: distance, parents: parent, selectedPath: selectedPath)
         print(vis, terminator: "")
     }
 
+    defer { show() }
+
     while let us = popNearest() {
         for (u, uh, usteps) in us {
-            if (u == end) { return distance[end] }
+            // if (u == end) { return distance[end] }
+
+            iterations += 1
+            if (iterations % 100 == 0) {
+                show()
+            }
+
             if !visited.insert(u).inserted { continue }
             let du = distance[u]!
-            visit?(u, uh, usteps, grid.at(u))
+            // visit?(u, uh, usteps, grid.at(u))
             for (v, vh, vsteps) in grid.adjacent(u, heading: uh, steps: usteps) {
                 if visited.contains(v) { continue }
                 let dv = distance[v] ?? Int.max
@@ -184,12 +196,12 @@ func shortestPath(
         }
     }
 
-    return nil
+    return distance[end]
 }
 
 let input = readInput()
 let grid = Grid(items: input)
-print(grid)
+// print(grid)
 let sp = shortestPath(
     grid: grid,
     start: .init(x: 0, y: 0),
