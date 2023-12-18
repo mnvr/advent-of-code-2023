@@ -95,15 +95,28 @@ func bfs<T>(grid: Grid<T>, start: Grid<T>.Index, visit: Visitor<T>) {
     }
 }
 
+typealias VisitorDijkstra<T> = (
+    Int, [Grid<T>.Index: Int], [Grid<T>.Index: Grid<T>.Index]
+) -> Void
+
+func makePrintVisitorDijkstra<T>(_ label: String) -> VisitorDijkstra<T> {
+    return { iteration, distances, parents in
+        print("\(label) iteration \(iteration) found tentative distances to \(distances.count) items")
+    }
+}
+
 /// Find the shortest path between `start` and `end` using Dijkstra's algorithm.
 ///
 /// If end is not reachable from start, return nil.
 func shortestPath<T>(
-    grid: Grid<T>, start: Grid<T>.Index, end: Grid<T>.Index, visit: Visitor<T>?
+    grid: Grid<T>, start: Grid<T>.Index, end: Grid<T>.Index,
+    visit: Visitor<T>?, visitD: VisitorDijkstra<T>?
 ) -> Int? {
     var pending = [start]
     var visited = Set<Grid<T>.Index>()
     var distance = [start: 0]
+    var parent: [Grid<T>.Index: Grid<T>.Index] = [:]
+    var iteration = 0
 
     // The real algorithm requires a data structure that allows us to quickly
     // find the element with the least associated value, and pop it efficiently.
@@ -125,8 +138,12 @@ func shortestPath<T>(
 
     while let u = popNearest(), u != end {
         if !visited.insert(u).inserted { continue }
-        let du = distance[u]!
+
+        visitD?(iteration, distance, parent)
+        iteration += 1
         visit?(u, grid.at(u))
+
+        let du = distance[u]!
         for v in grid.adjacent(u) {
             if visited.contains(v) { continue }
             let dv = distance[v] ?? Int.max
@@ -146,6 +163,10 @@ let grid = Grid(items: input)
 print(grid)
 dfs(grid: grid, start: .init(x: 0, y: 0), visit: makePrintVisitor("dfs"))
 bfs(grid: grid, start: .init(x: 0, y: 0), visit: makePrintVisitor("bfs"))
-let sp = shortestPath(grid: grid, start: .init(x: 0, y: 0), end: grid.maxIndex,
-                      visit: makePrintVisitor("shortest-path"))
+let sp = shortestPath(
+    grid: grid,
+    start: .init(x: 0, y: 0),
+    end: grid.maxIndex,
+    visit: makePrintVisitor("shortest-path-step"),
+    visitD: makePrintVisitorDijkstra("shortest-path"))
 print("shortest-path-result", sp ?? -1)
