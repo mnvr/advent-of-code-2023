@@ -72,6 +72,12 @@ struct Grid {
         at(v)
     }
 
+    func showDistances0(
+        distances: [Index: Int], parents: [Index: Index],
+        selectedPath: Set<Index>
+    ) -> String {
+        return ""
+    }
     func showDistances(
         distances: [Index: Int], parents: [Index: Index],
         selectedPath: Set<Index>
@@ -147,7 +153,7 @@ func shortestPath(
             }
         }
         if let ui { return [pending.remove(at: ui)] }
-        print("nothing to return from pending \(pending)")
+        // print("nothing to return from pending \(pending)")
         return nil
         // guard let u else { return nil }
         // let result = pending.filter { $0.0 == u }
@@ -177,7 +183,7 @@ func shortestPath(
 
             iterations += 1
             if (iterations % 100 == 0) {
-                show()
+                // show()
             }
 
             if !visited.insert(u).inserted { continue }
