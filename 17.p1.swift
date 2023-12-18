@@ -178,14 +178,15 @@ func shortestPath(
                 ui = vi
             }
         }
-        let _ = ui
-        // if let ui { return [pending.remove(at: ui)] }
-        // // print("nothing to return from pending \(pending)")
-        // return nil
-        guard let u else { return nil }
-        let result = pending.filter { $0.u == u }
-        pending.removeAll { $0.u == u }
-        return result// .map { State(u: $0, heading: $1, steps: $2)}
+        let _ = u
+        // let _ = ui
+        if let ui { return [pending.remove(at: ui)] }
+        // print("nothing to return from pending \(pending)")
+        return nil
+        // guard let u else { return nil }
+        // let result = pending.filter { $0.u == u }
+        // pending.removeAll { $0.u == u }
+        // return result// .map { State(u: $0, heading: $1, steps: $2)}
     }
 
     func show() {
