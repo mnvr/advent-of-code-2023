@@ -45,9 +45,11 @@ struct ComplexInt: Hashable {
 let directions: [ComplexInt] = [.north, .south, .east, .west]
 let maxDirection = directions.count - 1
 /// minimum is 4 steps, this is 3 since we start counting from 0
-let minStep = 0 // 3
+var minStep = 0 // 3
+minStep = 3
 /// maximum is 10 steps, this is 9 since we start counting from 0
-let maxStep = 2 // 9
+var maxStep = 2 // 9
+maxStep = 9 // 9
 
 struct ExpandedItem {
     /// The original item / value
@@ -131,8 +133,8 @@ struct Grid<T> {
 
         return [
             Index(xy: u.xy + h, heading: h, step: u.step + 1),
-            Index(xy: u.xy + hl, heading: hl, step: minStep),
-            Index(xy: u.xy + hr, heading: hr, step: minStep),
+            Index(xy: u.xy + k * hl, heading: hl, step: minStep),
+            Index(xy: u.xy + k * hr, heading: hr, step: minStep),
         ]
     }
 
@@ -143,9 +145,9 @@ struct Grid<T> {
         func weight(xy: ComplexInt) -> Int {
             let i = Index(xy: xy, heading: .east, step: 0)
             guard let e = at(i) as? ExpandedItem else { fatalError() }
-            guard let ex = at(v) as? ExpandedItem else { fatalError() }
+            // guard let ex = at(v) as? ExpandedItem else { fatalError() }
             // print("weight for (\(xy.x), \(xy.y)) is \(e.item), expected \(ex.item) [u = \(u), v = \(v)]")
-            assert(e.item == ex.item)
+            // assert(e.item == ex.item)
             return e.item
         }
 
