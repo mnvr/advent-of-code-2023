@@ -39,7 +39,8 @@ struct ComplexInt: Hashable {
 }
 
 let directions: [ComplexInt] = [.north, .south, .east, .west]
-let maxStep = 3
+let maxDirection = directions.count - 1
+let maxStep = 2
 
 struct ExpandedItem {
     /// The original item / value
@@ -92,15 +93,18 @@ struct Grid<T> {
         self.items = items
         self.maxIndex = Index(
             xy: ComplexInt(x: items[0].count - 1, y: items.count - 1),
-            heading: directions[directions.count - 1], step: maxStep
+            heading: directions[maxDirection], step: maxStep
         )
+    }
+
+    var totalItems: Int {
+        (maxIndex.xy.x + 1) * (maxIndex.xy.y + 1) * (maxDirection + 1) * (maxStep + 1)
     }
 
     private func inBounds(u: Index) -> Bool {
         u.xy.x >= 0 && u.xy.x <= maxIndex.xy.x &&
-        u.xy.y >= 0 && u.xy.y <= maxIndex.xy.y
-        // u.heading >= 0 && u.heading <= maxIndex.heading &&
-        // u.steps >= 0 && u.steps <= maxIndex.steps
+        u.xy.y >= 0 && u.xy.y <= maxIndex.xy.y &&
+        u.step <= maxStep
     }
 
     func at(_ u: Index) -> T {
@@ -118,10 +122,10 @@ struct Grid<T> {
         let hr = h.rotatedRight()
 
         return [
-            u.step < 2 ? Index(xy: u.xy + h, heading: h, step: u.step + 1) : nil,
+            Index(xy: u.xy + h, heading: h, step: u.step + 1),
             Index(xy: u.xy + hl, heading: hl, step: 0),
             Index(xy: u.xy + hr, heading: hr, step: 0),
-        ].compactMap { $0 }
+        ]
     }
 
     /// Precondition: v must be adjacent to u
@@ -152,18 +156,13 @@ struct Grid<T> {
 }
 
 struct DijkstraState<T> {
+    let grid: Grid<T>
     let iteration: Int
     let distance: [Grid<T>.Index: Int]
     let parent: [Grid<T>.Index: Grid<T>.Index]
 }
 
 typealias Visitor<T> = (DijkstraState<T>) -> Void
-
-func makePrintVisitor<T>(_ label: String) -> Visitor<T> {
-    return { state in
-        print("\(label) iteration \(state.iteration) found tentative distances to \(state.distance.count) items")
-    }
-}
 
 /// Find the shortest path from `start` to all nodes using Dijkstra's algorithm.
 func shortestPath<T>(grid: Grid<T>, start: Grid<T>.Index, visit: Visitor<T>? = nil
@@ -175,7 +174,7 @@ func shortestPath<T>(grid: Grid<T>, start: Grid<T>.Index, visit: Visitor<T>? = n
     var iteration = 0
 
     func state() -> DijkstraState<T> {
-        .init(iteration: iteration, distance: distance, parent: parent)
+        .init(grid: grid, iteration: iteration, distance: distance, parent: parent)
     }
 
     // The real algorithm requires a data structure that allows us to quickly
@@ -218,18 +217,27 @@ func shortestPath<T>(grid: Grid<T>, start: Grid<T>.Index, visit: Visitor<T>? = n
     return state()
 }
 
+func trace(state: DijkstraState<ExpandedItem>) {
+    if state.iteration % 100 == 0 {
+        let total = grid.totalItems
+        print("iteration \(state.iteration) found tentative distances to \(state.distance.count) / \(total) items")
+    }
+}
+
 func ourShortestPath(grid: Grid<ExpandedItem>) -> Int? {
     func sp(heading: ComplexInt) -> Int? {
         let topLeft = ComplexInt(x: 0, y: 0)
         let spState = shortestPath(
-            grid: grid, start: .init(xy: topLeft, heading: .east, step: 1))
+            grid: grid, start: .init(xy: topLeft, heading: .east, step: 1),
+            visit: trace)
         // Find the minimum from amongst the distances of the original item
         let endIndices = grid.expandMaxIndex()
         let endDistance = endIndices.compactMap { spState.distance[$0] }.min()
         return endDistance
     }
 
-    return [sp(heading: .east), sp(heading: .south)].compactMap({$0}).min()
+    return [sp(heading: .east)].compactMap({$0}).min()
+    // return [sp(heading: .east), sp(heading: .south)].compactMap({$0}).min()
 }
 
 let input = readInput()
