@@ -20,6 +20,9 @@ Other commands:
     nice and pretty stats about all the days too.
 -   `make clean` - Clean temporary files (written to `out/`).
 
+To run the command on a specific day's program, just `touch` it so that it has
+the latest modification time - subsequent make invocations will pick it.
+
 All of these are wrappers around the basic pattern of
 
     cat somefile | runghc xx.hs
