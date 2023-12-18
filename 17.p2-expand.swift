@@ -144,29 +144,37 @@ struct Grid<T> {
             let i = Index(xy: xy, heading: .east, step: 0)
             guard let e = at(i) as? ExpandedItem else { fatalError() }
             guard let ex = at(v) as? ExpandedItem else { fatalError() }
-            print("weight for (\(xy.x), \(xy.y)) is \(e.item), expected \(ex.item) [u = \(u), v = \(v)]")
+            // print("weight for (\(xy.x), \(xy.y)) is \(e.item), expected \(ex.item) [u = \(u), v = \(v)]")
             assert(e.item == ex.item)
             return e.item
         }
 
         // It is guarantee that at least u and v will share one of the cartesian
-        // coordinates for their positions.
-        let (ux, uy) = (u.xy.x, u.xy.y)
-        let (vx, vy) = (v.xy.x, v.xy.y)
+        // coordinates for their positions. Start at u, but move in the heading
+        // of v. The edge weight is then the sum of the weights of all the nodes
+        // we encounter along the way, including v (but not including u).
+        var t = u.xy
         var w = 0
-        if (ux == vx) {
-            let s = min(uy, vy) + 1
-            let e = max(uy, vy)
-            for y in s...e {
-                w += weight(xy: .init(x: ux, y: y))
-            }
-        } else {
-            let s = min(ux, vx) + 1
-            let e = max(ux, vx)
-            for x in s...e {
-                w += weight(xy: .init(x: x, y: uy))
-            }
-        }
+        repeat {
+            t = t + v.heading
+            w += weight(xy: t)
+        } while t != v.xy
+        // let (ux, uy) = (u.xy.x, u.xy.y)
+        // let (vx, vy) = (v.xy.x, v.xy.y)
+        // var w = 0
+        // if (ux == vx) {
+        //     let s = min(uy, vy) + 1
+        //     let e = max(uy, vy)
+        //     for y in s...e {
+
+        //     }
+        // } else {
+        //     let s = min(ux, vx) + 1
+        //     let e = max(ux, vx)
+        //     for x in s...e {
+        //         w += weight(xy: .init(x: x, y: uy))
+        //     }
+        // }
         return w
     }
 
