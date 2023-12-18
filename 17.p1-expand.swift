@@ -166,7 +166,7 @@ func makePrintVisitor<T>(_ label: String) -> Visitor<T> {
 }
 
 /// Find the shortest path from `start` to all nodes using Dijkstra's algorithm.
-func shortestPath<T>(grid: Grid<T>, start: Grid<T>.Index, visit: Visitor<T>?
+func shortestPath<T>(grid: Grid<T>, start: Grid<T>.Index, visit: Visitor<T>? = nil
 ) -> DijkstraState<T> {
     var pending = [start]
     var visited = Set<Grid<T>.Index>()
@@ -218,16 +218,23 @@ func shortestPath<T>(grid: Grid<T>, start: Grid<T>.Index, visit: Visitor<T>?
     return state()
 }
 
+func ourShortestPath(grid: Grid<ExpandedItem>) -> Int? {
+    func sp(heading: ComplexInt) -> Int? {
+        let topLeft = ComplexInt(x: 0, y: 0)
+        let spState = shortestPath(
+            grid: grid, start: .init(xy: topLeft, heading: .east, step: 1))
+        // Find the minimum from amongst the distances of the original item
+        let endIndices = grid.expandMaxIndex()
+        let endDistance = endIndices.compactMap { spState.distance[$0] }.min()
+        return endDistance
+    }
+
+    return [sp(heading: .east), sp(heading: .south)].compactMap({$0}).min()
+}
+
 let input = readInput()
 let expanded = expand(items: input)
 let grid = Grid(items: expanded)
-// There will be one more case, downwards from start, to consider.
-let spState = shortestPath(
-    grid: grid,
-    start: .init(xy: ComplexInt(x: 0, y: 0), heading: .east, step: 1),
-    visit: makePrintVisitor("shortest-path"))
-// Print the minimum from amongst the distances of the original item
-let endIndices = grid.expandMaxIndex()
-let endDistance = endIndices.compactMap { spState.distance[$0] }.min()
-let sp = endDistance
+
+let sp = ourShortestPath(grid: grid)
 print("shortest-path-result", sp ?? -1)
