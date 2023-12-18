@@ -56,7 +56,7 @@ struct Grid {
             .filter { inBounds(u: $0.0) }
     }
 
-    func adjacentCandidates(
+    func adjacentCandidates0(
         _ u: Index, heading h: Index, steps s: Int
     ) -> [(Index, Index, Int)] {
         let hl = h.rotatedLeft()
@@ -65,6 +65,18 @@ struct Grid {
             return [(u + h, h, s + 1), (u + hl, hl, 0), (u + hr, hr, 0)]
         } else {
             return [(u + hl, hl, 0), (u + hr, hr, 0)]
+        }
+    }
+
+    func adjacentCandidates(
+        _ u: Index, heading h: Index, steps s: Int
+    ) -> [(Index, Index, Int)] {
+        let hl = h.rotatedLeft()
+        let hr = h.rotatedRight()
+        if s < 2 {
+            return [(u + hr, hr, 0), (u + hl, hl, 0), (u + h, h, s + 1)]
+        } else {
+            return [(u + hr, hr, 0), (u + hl, hl, 0)]
         }
     }
 
@@ -130,8 +142,20 @@ func shortestPath(
     grid: Grid, start: Grid.Index, startHeadings: [Grid.Index],
     end: Grid.Index, visit: Visitor?
 ) -> Int? {
-    var pending = startHeadings.map { (start, $0, 1) }
-    var visited = Set<Grid.Index>()
+    struct State: Hashable {
+        let u: Grid.Index
+        let heading: Grid.Index
+        let steps: Int
+
+        var hv: [Grid.Index] {
+            [u, heading]
+        }
+    }
+
+    var pending = startHeadings.map { State(u: start, heading: $0, steps: 1) }
+    // var visited = Set<Grid.Index>()
+    // var visited = Set<State>()
+    var visited = Set<[Grid.Index]>()
     var distance = [start: 0]
     var parent = [start: start]
     var iterations = 0
@@ -141,24 +165,27 @@ func shortestPath(
     // Here we do an (inefficient) simulation using only the standard library
     // data structures. For real programs, consider using a priority queue, like
     // the Heap in the Swift Collections package.
-    func popNearest() -> [(Grid.Index, Grid.Index, Int)]? {
-        // var u: Grid.Index?
+    // func popNearest() -> [(Grid.Index, Grid.Index, Int)]? {
+    func popNearest() -> [State]? {
+        var u: Grid.Index?
         var ud = Int.max
         var ui: Int?
-        for (vi, (v, _, _)) in pending.enumerated() {
+        for (vi, vs) in pending.enumerated() {
+            let v = vs.u
             if let vd = distance[v], vd < ud {
-                // u = v
+                u = v
                 ud = vd
                 ui = vi
             }
         }
-        if let ui { return [pending.remove(at: ui)] }
-        // print("nothing to return from pending \(pending)")
-        return nil
-        // guard let u else { return nil }
-        // let result = pending.filter { $0.0 == u }
-        // pending.removeAll { $0.0 == u }
-        // return result
+        let _ = ui
+        // if let ui { return [pending.remove(at: ui)] }
+        // // print("nothing to return from pending \(pending)")
+        // return nil
+        guard let u else { return nil }
+        let result = pending.filter { $0.u == u }
+        pending.removeAll { $0.u == u }
+        return result// .map { State(u: $0, heading: $1, steps: $2)}
     }
 
     func show() {
@@ -178,7 +205,8 @@ func shortestPath(
     defer { show() }
 
     while let us = popNearest() {
-        for (u, uh, usteps) in us {
+        for ustate in us {
+            let (u, uh, usteps) = (ustate.u, ustate.heading, ustate.steps)
             // if (u == end) { return distance[end] }
 
             iterations += 1
@@ -186,18 +214,20 @@ func shortestPath(
                 // show()
             }
 
-            if !visited.insert(u).inserted { continue }
+            if !visited.insert(ustate.hv).inserted { continue }
             let du = distance[u]!
             // visit?(u, uh, usteps, grid.at(u))
             for (v, vh, vsteps) in grid.adjacent(u, heading: uh, steps: usteps) {
-                if visited.contains(v) { continue }
+                let vstate = State(u: v, heading: vh, steps: vsteps)
+                if visited.contains(vstate.hv) { continue }
                 let dv = distance[v] ?? Int.max
                 let w = grid.edgeWeight(from: u, to: v)
                 if dv > du + w {
                     distance[v] = du + w
                     parent[v] = u
                 }
-                pending.append((v, vh, vsteps))
+                // pending.append((v, vh, vsteps))
+                pending.append(vstate)
             }
         }
     }
