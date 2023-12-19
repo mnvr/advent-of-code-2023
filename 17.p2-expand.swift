@@ -44,12 +44,12 @@ struct ComplexInt: Hashable {
 
 let directions: [ComplexInt] = [.north, .south, .east, .west]
 let maxDirection = directions.count - 1
-/// We must move a minimum of 4 step in a direction before we can turn. This is
-/// 3 because we start counting from 0.
-var minStep = 3 // 0 for part 1
+/// We must move a minimum of 4 steps in a direction before we can turn. Since
+/// we start counting from 0, this is 3.
+var minStep = 0//3 // 0 for part 1
 /// We can move a maximum of 10 steps in a direction before we can turn. We
 /// start counting from minStep, which is zero-based, 10-1 == 9.
-var maxStep = 9 // 3 for part 1
+var maxStep = 2//9 // 2 for part 1
 
 struct ExpandedItem {
     /// The original item / value
@@ -138,11 +138,20 @@ struct Grid {
         let hl = h.rotatedLeft()
         let hr = h.rotatedRight()
 
-        return [
-            Index(xy: u.xy + h, heading: h, step: u.step + 1),
-            Index(xy: u.xy + (1 + minStep) * hl, heading: hl, step: minStep),
-            Index(xy: u.xy + (1 + minStep) * hr, heading: hr, step: minStep),
-        ]
+        // let inSameDirection = (max(u.step + 1, minStep)...maxStep).map {
+            // Index(xy: u.xy + h, heading: h, step: $0)
+        // }
+        let inSameDirection = [Index(xy: u.xy + h, heading: h, step: u.step + 1)]
+
+        let afterTurning = minStep == 0 ? ([
+            Index(xy: u.xy + hl, heading: hl, step: minStep),
+            Index(xy: u.xy + hr, heading: hr, step: minStep),
+        ]) : ([
+            Index(xy: u.xy + minStep * hl, heading: hl, step: minStep),
+            Index(xy: u.xy + minStep * hr, heading: hr, step: minStep),
+        ])
+
+        return (inSameDirection + afterTurning)
     }
 
     /// Precondition: v must be adjacent to u
@@ -315,7 +324,7 @@ func ourShortestPath(grid: Grid) -> Int? {
         let startXY = ComplexInt(x: 0, y: 0)
         let endXY = grid.maxIndex.xy;
 
-        let start = Grid.Index(xy: startXY, heading: .east, step: 1)
+        let start = Grid.Index(xy: startXY, heading: .east, step: 0)
 
         let state = shortestPath(grid: grid, start: start, visit: trace)
 
