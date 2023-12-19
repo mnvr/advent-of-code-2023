@@ -44,12 +44,12 @@ struct ComplexInt: Hashable {
 
 let directions: [ComplexInt] = [.north, .south, .east, .west]
 let maxDirection = directions.count - 1
-/// We must move a minimum of 4 steps in a direction before we can turn. Since
-/// we start counting from 0, this is 3.
-var minStep = 0//3 // 0 for part 1
+/// We must move a minimum of 4 steps in a direction before we can turn. i.e. we
+/// can turn at the 5th step onwards. Since we start counting from 0, this is 4.
+var minStep = 4 // 0 for part 1
 /// We can move a maximum of 10 steps in a direction before we can turn. We
 /// start counting from minStep, which is zero-based, 10-1 == 9.
-var maxStep = 2//9 // 2 for part 1
+var maxStep = 9 // 2 for part 1
 
 struct ExpandedItem {
     /// The original item / value
