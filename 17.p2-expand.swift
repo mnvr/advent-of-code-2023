@@ -44,20 +44,22 @@ struct ComplexInt: Hashable {
 
 let directions: [ComplexInt] = [.north, .south, .east, .west]
 let maxDirection = directions.count - 1
-/// minimum is 4 steps, this is 3 since we start counting from 0
-var minStep = 0 // 3
-minStep = 3
-/// maximum is 10 steps, this is 9 since we start counting from 0
-var maxStep = 9 // 9
-// maxStep = 9 // 9
+/// We must move a minimum of 4 step in a direction before we can turn. This is
+/// 3 because we start counting from 0.
+var minStep = 3 // 0 for part 1
+/// We can move a maximum of 10 steps in a direction before we can turn. We
+/// start counting from minStep, which is zero-based, 10-1 == 9.
+var maxStep = 9 // 3 for part 1
 
 struct ExpandedItem {
     /// The original item / value
     let item: Int
     /// What direction are we facing
     let heading: ComplexInt
-    /// How many steps have we taken in this direction. When this is 3, we
-    /// cannot move anymore in this direction.
+    /// How many steps have we taken in this direction.
+    ///
+    /// When this is less than minStep, we cannot move to this direction. When
+    /// this is maxStep, we cannot move anymore in this direction.
     let steps: Int
 }
 
@@ -108,7 +110,8 @@ struct Grid {
     }
 
     var totalItems: Int {
-        (maxIndex.xy.x + 1) * (maxIndex.xy.y + 1) * (maxDirection + 1) * (maxStep + 1)
+        (maxIndex.xy.x + 1) * (maxIndex.xy.y + 1) *
+        (maxDirection + 1) * ((maxStep - minStep) + 1)
     }
 
     private func inBounds(u: Index) -> Bool {
@@ -134,12 +137,11 @@ struct Grid {
         let h = u.heading
         let hl = h.rotatedLeft()
         let hr = h.rotatedRight()
-        let k = minStep + 1
 
         return [
             Index(xy: u.xy + h, heading: h, step: u.step + 1),
-            Index(xy: u.xy + k * hl, heading: hl, step: minStep),
-            Index(xy: u.xy + k * hr, heading: hr, step: minStep),
+            Index(xy: u.xy + (1 + minStep) * hl, heading: hl, step: minStep),
+            Index(xy: u.xy + (1 + minStep) * hr, heading: hr, step: minStep),
         ]
     }
 
@@ -155,22 +157,6 @@ struct Grid {
             t = t + v.heading
             w += at(xy: t)
         } while t != v.xy
-        // let (ux, uy) = (u.xy.x, u.xy.y)
-        // let (vx, vy) = (v.xy.x, v.xy.y)
-        // var w = 0
-        // if (ux == vx) {
-        //     let s = min(uy, vy) + 1
-        //     let e = max(uy, vy)
-        //     for y in s...e {
-
-        //     }
-        // } else {
-        //     let s = min(ux, vx) + 1
-        //     let e = max(ux, vx)
-        //     for x in s...e {
-        //         w += weight(xy: .init(x: x, y: uy))
-        //     }
-        // }
         return w
     }
 
@@ -329,7 +315,7 @@ func ourShortestPath(grid: Grid) -> Int? {
         let startXY = ComplexInt(x: 0, y: 0)
         let endXY = grid.maxIndex.xy;
 
-        let start = Grid.Index(xy: startXY, heading: .east, step: minStep)
+        let start = Grid.Index(xy: startXY, heading: .east, step: 1)
 
         let state = shortestPath(grid: grid, start: start, visit: trace)
 
