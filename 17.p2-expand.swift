@@ -142,7 +142,7 @@ struct Grid {
         let end = maxStep
         let inSameDirection: [Grid.Index] =
             if start <= end {
-                 (max(u.step + 1, minStep)...maxStep).map {
+                 (start...end).map {
                     Index(xy: u.xy + h, heading: h, step: $0)
                 }
             } else { [] }
@@ -278,11 +278,11 @@ extension Grid {
             u = v
         }
 
-        func pathInfo(xy: ComplexInt) -> (distance: Int, parentDirection: String)? {
+        func pathInfo(xy: ComplexInt) -> (distance: Int, parentDirection: String, steps: Int)? {
             for u in grid.expandedIndex(xy: xy) {
                 if selectedPath.contains(u) {
                     if let parent = parentDirection(u), let d = distance[u] {
-                        return (distance: d, parentDirection: parent)
+                        return (distance: d, parentDirection: parent, steps: u.step)
                     }
                 }
             }
@@ -307,13 +307,12 @@ extension Grid {
             for x in 0...maxXY.x {
                 let xy = ComplexInt(x: x, y: y)
                 let item = grid.at(xy: xy)
-                if let pi = pathInfo(xy: xy) {
-                    let (distance, parentDirection) = pi
+                if let (distance, parentDirection, step) = pathInfo(xy: xy) {
                     result.append(tHighlight);
-                    result.append("\(parentDirection) \(item) \(distance)\t")
+                    result.append("\(parentDirection) \(item) \(distance) \(step) ")
                 } else {
                     result.append(tDim)
-                    result.append("  \(item)\t")
+                    result.append("  \(item) \t")
                 }
                 result.append(tReset)
             }
