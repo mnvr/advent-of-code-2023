@@ -200,7 +200,7 @@ typealias Visitor = (DijkstraState) -> Void
 /// Find the shortest path from `start` to all nodes using Dijkstra's algorithm.
 func shortestPath(grid: Grid, start: Grid.Index, visit: Visitor? = nil
 ) -> DijkstraState {
-    var pending = [start]
+    var pending = Set([start])
     var visited = Set<Grid.Index>()
     var distance = [start: 0]
     var parent: [Grid.Index: Grid.Index] = [:]
@@ -216,16 +216,16 @@ func shortestPath(grid: Grid, start: Grid.Index, visit: Visitor? = nil
     // data structures. For real programs, consider using a priority queue, like
     // the Heap in the Swift Collections package.
     func popNearest() -> Grid.Index? {
-        var ui: Int?
+        var u: Grid.Index?
         var ud = Int.max
-        for (vi, v) in pending.enumerated() {
+        for v in pending {
             if let vd = distance[v], vd < ud {
-                ui = vi
+                u = v
                 ud = vd
             }
         }
-        if let ui { return pending.remove(at: ui) }
-        return nil
+        if let u { pending.remove(u) }
+        return u
     }
 
     while let u = popNearest() {
@@ -243,7 +243,7 @@ func shortestPath(grid: Grid, start: Grid.Index, visit: Visitor? = nil
                 distance[v] = du + w
                 parent[v] = u
             }
-            pending.append(v)
+            pending.insert(v)
         }
     }
 
