@@ -138,10 +138,14 @@ struct Grid {
         let hl = h.rotatedLeft()
         let hr = h.rotatedRight()
 
-        // let inSameDirection = (max(u.step + 1, minStep)...maxStep).map {
-            // Index(xy: u.xy + h, heading: h, step: $0)
-        // }
-        let inSameDirection = [Index(xy: u.xy + h, heading: h, step: u.step + 1)]
+        let start = max(u.step + 1, minStep)
+        let end = maxStep
+        let inSameDirection: [Grid.Index] =
+            if start <= end {
+                 (max(u.step + 1, minStep)...maxStep).map {
+                    Index(xy: u.xy + h, heading: h, step: $0)
+                }
+            } else { [] }
 
         let afterTurning = minStep == 0 ? ([
             Index(xy: u.xy + hl, heading: hl, step: minStep),
