@@ -341,11 +341,12 @@ func ourShortestPath(grid: Grid) -> Int? {
                 endDistance = d
             }
         }
-        if let end {
-            print(
-                grid.renderToString(state: state, start: start, end: end),
-                terminator: "")
-        }
+        _ = end
+        // if let end {
+        //     print(
+        //         grid.renderToString(state: state, start: start, end: end),
+        //         terminator: "")
+        // }
         return endDistance
     }
 
