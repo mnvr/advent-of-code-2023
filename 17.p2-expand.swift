@@ -46,7 +46,7 @@ let directions: [ComplexInt] = [.north, .south, .east, .west]
 let maxDirection = directions.count - 1
 /// minimum is 4 steps, this is 3 since we start counting from 0
 var minStep = 0 // 3
-// minStep = 3
+minStep = 3
 /// maximum is 10 steps, this is 9 since we start counting from 0
 var maxStep = 9 // 9
 // maxStep = 9 // 9
@@ -268,42 +268,58 @@ extension Grid {
         let tDim = "\u{001B}[2;80m"
         let tReset = "\u{001B}[0m"
 
+        let grid = state.grid
         let distance = state.distance
 
-        var selectedPath = Set([start.xy, end.xy])
+        // Trace the path back from the end to the start.
+        var selectedPath = Set([end])
         var u = end
         while let v = state.parent[u] {
-            selectedPath.insert(v.xy)
+            selectedPath.insert(v)
             u = v
         }
 
-        func parent(_ u: Index) -> String? {
+        func pathInfo(xy: ComplexInt) -> (distance: Int, parentDirection: String)? {
+            for u in grid.expandedIndex(xy: xy) {
+                if selectedPath.contains(u) {
+                    if let parent = parentDirection(u), let d = distance[u] {
+                        return (distance: d, parentDirection: parent)
+                    }
+                }
+            }
             return nil
-            // guard let p = state.parent[u] else { return nil }
-            // switch(p.xy.x - u.xy.x, p.xy.y - u.xy.y) {
-            //     case (let x, 0) where x < 0: return "→"
-            //     case (let x, 0) where x > 0: return "←"
-            //     case (0, let y) where y < 0: return "↓"
-            //     case (0, let y) where y > 0: return "↑"
-            //     default: return "!"
-            // }
+        }
+
+        func parentDirection(_ u: Index) -> String? {
+            if u == end { return "·"}
+            guard let p = state.parent[u] else { return "·" }
+            switch(p.xy.x - u.xy.x, p.xy.y - u.xy.y) {
+                case (let x, 0) where x < 0: return "→"
+                case (let x, 0) where x > 0: return "←"
+                case (0, let y) where y < 0: return "↓"
+                case (0, let y) where y > 0: return "↑"
+                default: fatalError()
+            }
         }
 
         var result = [String]()
-        // let maxXY = grid.maxIndex.xy;
-        // for y in 0...maxXY.y {
-        //     for x in 0... {
-        //         let u = Index(x: x, y: y)
-        //         result.append(selectedPath.contains(u) ? tHighlight : tDim);
-        //         if let d = distance[u], let p = parent(u) {
-        //             result.append("\(p) \(item) \(d)\t")
-        //         } else {
-        //             result.append("  \(item)\t")
-        //         }
-        //         result.append(tReset);
-        //     }
-        //     result.append("\n")
-        // }
+        let maxXY = grid.maxIndex.xy
+        for y in 0...maxXY.y {
+            for x in 0...maxXY.x {
+                let xy = ComplexInt(x: x, y: y)
+                let item = grid.at(xy: xy)
+                if let pi = pathInfo(xy: xy) {
+                    let (distance, parentDirection) = pi
+                    result.append(tHighlight);
+                    result.append("\(parentDirection) \(item) \(distance)\t")
+                } else {
+                    result.append(tDim)
+                    result.append("  \(item)\t")
+                }
+                result.append(tReset)
+            }
+            result.append("\n")
+        }
         return result.joined()
     }
 }
