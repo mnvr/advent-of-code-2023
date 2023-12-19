@@ -324,7 +324,7 @@ func ourShortestPath(grid: Grid) -> Int? {
         let startXY = ComplexInt(x: 0, y: 0)
         let endXY = grid.maxIndex.xy;
 
-        let start = Grid.Index(xy: startXY, heading: .east, step: 0)
+        let start = Grid.Index(xy: startXY, heading: heading, step: 0)
 
         let state = shortestPath(grid: grid, start: start, visit: trace)
 
@@ -346,9 +346,17 @@ func ourShortestPath(grid: Grid) -> Int? {
         return endDistance
     }
 
-    // TODO
-    return [sp(heading: .east)].compactMap({$0}).min()
-    //return [sp(heading: .east), sp(heading: .south)].compactMap({$0}).min()
+    // We need to head both ways. Whilst the same indexes (1, 0) and (0, 1) will
+    // be the neighbours irrespective of which direction that we start in, the
+    // step count will be different. The step count will be 1 for the direction
+    // we're heading in, and 0 for the perpendicular one. So to cover both
+    // combinations, we'll need to head both ways.
+
+    return [
+        sp(heading: .east),
+        // When debugging, comment this.
+        sp(heading: .south),
+    ].compactMap({$0}).min()
 }
 
 let input = readInput()
