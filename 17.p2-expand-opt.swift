@@ -266,10 +266,10 @@ func shortestPath(grid: Grid, start: Grid.Index, visit: Visitor? = nil
 }
 
 func trace(state: DijkstraState) {
-    if state.iteration % 500 == 0 {
-        let total = grid.totalItems
-        print("iteration \(state.iteration) found tentative distances to \(state.distance.count) / \(total) items")
-    }
+    // if state.iteration % 500 == 0 {
+    //     let total = state.grid.totalItems
+    //     print("iteration \(state.iteration) found tentative distances to \(state.distance.count) / \(total) items")
+    // }
 }
 
 extension Grid {
@@ -409,13 +409,11 @@ let validMovesP1 = 0...3
 /// a maximum of 10 blocks before we must turn.
 let validMovesP2 = 4...10
 
-let input = readInput()
-let grid = Grid(items: input, validMoves: validMovesP2)
-let sp = ourShortestPath(grid: grid)
-print("shortest-path-result", sp ?? -1)
+/// A driver function
+func sp(_ input: [[Int]], _ validMoves: ClosedRange<Int>) -> Int {
+    let grid = Grid(items: input, validMoves: validMoves)
+    return ourShortestPath(grid: grid) ?? -1
+}
 
-// for i in 0..<1 {
-//     let u = Grid.Index(xy: .init(x: 0, y: 0), heading: .east, moves: i)
-//     print("")
-//     printNeighbours(u, grid: grid)
-// }
+let input = readInput()
+print(sp(input, validMovesP1), sp(input, validMovesP2))
