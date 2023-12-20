@@ -44,12 +44,6 @@ struct ComplexInt: Hashable {
 
 let directions: [ComplexInt] = [.north, .south, .east, .west]
 let maxDirection = directions.count - 1
-/// We must move a minimum of 4 steps in a direction before we can turn. i.e. we
-/// can turn at the 5th step onwards. Since we start counting from 0, this is 4.
-var minStep = 4 // 0 for part 1
-/// We can move a maximum of 10 steps in a direction before we can turn. We
-/// start counting from minStep, which is zero-based, 10-1 == 9.
-var maxStep = 9 // 2 for part 1
 
 struct ExpandedItem {
     /// The original item / value
@@ -67,7 +61,7 @@ struct ExpandedItem {
 ///
 /// Each such 3-tuple encodes the original value, the direction we entered this
 /// grid item from, and the step count when we entered.
-func expand(items: [[Int]]) -> [[[[ExpandedItem]]]] {
+func expand(items: [[Int]], stepRange: ClosedRange<Int>) -> [[[[ExpandedItem]]]] {
     var expanded4 = [[[[ExpandedItem]]]]()
     for row in items {
         var expanded3 = [[[ExpandedItem]]]()
@@ -75,7 +69,7 @@ func expand(items: [[Int]]) -> [[[[ExpandedItem]]]] {
             var expanded2 = [[ExpandedItem]]()
             for direction in directions {
                 var expanded1 = [ExpandedItem]()
-                for step in minStep...maxStep {
+                for step in stepRange {
                     let expanded = ExpandedItem(
                         item: item, heading: direction, steps: step
                     )
@@ -100,10 +94,20 @@ struct Grid {
     let items: [[Int]]
     let expandedItems: [[[[ExpandedItem]]]]
     let maxIndex: Index
+    let minStep: Int
+    let maxStep: Int
 
-    init(items: [[Int]], expandedItems: [[[[ExpandedItem]]]]) {
+    init(items: [[Int]], stepRange: ClosedRange<Int>) {
+        let minStep = stepRange.lowerBound
+        let maxStep = stepRange.upperBound
+
+        let expandedItems = expand(items: items, stepRange: stepRange)
+
         self.items = items
         self.expandedItems = expandedItems
+        self.minStep = minStep
+        self.maxStep = maxStep
+
         self.maxIndex = Index(
             xy: ComplexInt(x: items[0].count - 1, y: items.count - 1),
             heading: directions[maxDirection], step: maxStep)
@@ -116,12 +120,13 @@ struct Grid {
 
     private func inBounds(u: Index) -> Bool {
         u.xy.x >= 0 && u.xy.x <= maxIndex.xy.x &&
-        u.xy.y >= 0 && u.xy.y <= maxIndex.xy.y
+        u.xy.y >= 0 && u.xy.y <= maxIndex.xy.y &&
+        u.step >= minStep && u.step <= maxStep
     }
 
     func at(_ u: Index) -> ExpandedItem {
         let hi = directions.firstIndex(of: u.heading)!
-        return expanded[u.xy.y][u.xy.x][hi][u.step - minStep]
+        return expandedItems[u.xy.y][u.xy.x][hi][u.step - minStep]
     }
 
     func at(xy: ComplexInt) -> Int {
@@ -142,17 +147,14 @@ struct Grid {
         let inSameDirection: [Grid.Index] =
             if start <= end {
                  (start...end).map {
-                    Index(xy: u.xy + h, heading: h, step: $0)
+                    Index(xy: u.xy + (1 + $0) * h, heading: h, step: $0)
                 }
             } else { [] }
 
-        let afterTurning = minStep == 0 ? ([
-            Index(xy: u.xy + hl, heading: hl, step: minStep),
-            Index(xy: u.xy + hr, heading: hr, step: minStep),
-        ]) : ([
-            Index(xy: u.xy + minStep * hl, heading: hl, step: minStep),
-            Index(xy: u.xy + minStep * hr, heading: hr, step: minStep),
-        ])
+        let afterTurning = [
+            Index(xy: u.xy + (1 + minStep) * hl, heading: hl, step: minStep),
+            Index(xy: u.xy + (1 + minStep) * hr, heading: hr, step: minStep),
+        ]
 
         return (inSameDirection + afterTurning)
     }
@@ -260,7 +262,7 @@ extension Grid {
     /// Create string representation of the grid suitable for printing on a
     /// terminal.
     func renderToString(
-        state: DijkstraState, start: Grid.Index, end: Grid.Index
+        state: DijkstraState, start: Grid.Index, ends: Set<Grid.Index>
     ) -> String {
         let tHighlight = "\u{001B}[0;0m"
         let tDim = "\u{001B}[2;80m"
@@ -270,11 +272,13 @@ extension Grid {
         let distance = state.distance
 
         // Trace the path back from the end to the start.
-        var selectedPath = Set([end])
-        var u = end
-        while let v = state.parent[u] {
-            selectedPath.insert(v)
-            u = v
+        var selectedPath = ends
+        for end in ends {
+            var u = end
+            while let v = state.parent[u] {
+                selectedPath.insert(v)
+                u = v
+            }
         }
 
         func pathInfo(xy: ComplexInt) -> (distance: Int, parentDirection: String, steps: Int)? {
@@ -289,8 +293,9 @@ extension Grid {
         }
 
         func parentDirection(_ u: Index) -> String? {
-            if u == end { return "·"}
-            guard let p = state.parent[u] else { return "·" }
+            if u == start { return "○"}
+            if ends.contains(u) { return "□"}
+            guard let p = state.parent[u] else { fatalError() }
             switch(p.xy.x - u.xy.x, p.xy.y - u.xy.y) {
                 case (let x, 0) where x < 0: return "→"
                 case (let x, 0) where x > 0: return "←"
@@ -313,10 +318,10 @@ extension Grid {
                 if let (distance, parentDirection, step) = pathInfo(xy: xy) {
                     let d = pad3("\(distance)")
                     result.append(tHighlight);
-                    result.append("\(parentDirection) \(item) \(d) \(step) ")
+                    result.append("\(parentDirection) \(item) \(d) \(step)  ")
                 } else {
                     result.append(tDim)
-                    result.append("  \(item)       ")
+                    result.append("  \(item)        ")
                 }
                 result.append(tReset)
             }
@@ -347,7 +352,7 @@ func ourShortestPath(grid: Grid) -> Int? {
         }
         if let end {
             print(
-                grid.renderToString(state: state, start: start, end: end),
+                grid.renderToString(state: state, start: start, ends: Set([end])),
                 terminator: "")
         }
         return endDistance
@@ -366,8 +371,46 @@ func ourShortestPath(grid: Grid) -> Int? {
     ].compactMap({$0}).min()
 }
 
+/// Reuse the function that shows the state of the grid after shortest path has
+/// completed to show the neighbours of a particular item.
+///
+/// Useful for debugging.
+func printNeighbours(_ u: Grid.Index, grid: Grid) {
+    let neighbours = Set(grid.adjacent(u))
+
+    var distance = [u: 0]
+    var parent = [Grid.Index: Grid.Index]()
+
+    for n in neighbours {
+        distance[n] = 1
+        parent[n] = u
+    }
+
+    let state = DijkstraState(
+        grid: grid,
+        iteration: 1,
+        distance: distance,
+        parent: parent
+    )
+
+    print("neighbours of \(u)")
+    print(grid.renderToString(state: state, start: u, ends: neighbours),
+          terminator: "")
+}
+
+/// We must move a minimum of 4 steps in a direction before we can turn. i.e. we
+/// can turn at the 5th step onwards. Since we start counting from 0, the lower
+/// bound is 4.
+///
+/// We can move a maximum of 10 steps in a direction before we can turn. We
+/// start counting from minStep, which is zero-based, 10-1 == 9.
+let stepRangeP1 = 0...2
+let stepRangeP2 = 4...9
+
 let input = readInput()
-let expanded = expand(items: input)
-let grid = Grid(items: input, expandedItems: expanded)
-let sp = ourShortestPath(grid: grid)
-print("shortest-path-result", sp ?? -1)
+let grid = Grid(items: input, stepRange: stepRangeP1)
+// let sp = ourShortestPath(grid: grid)
+// print("shortest-path-result", sp ?? -1)
+
+let u = Grid.Index(xy: .init(x: 0, y:0), heading: .east, step: 0)
+printNeighbours(u, grid: grid)
