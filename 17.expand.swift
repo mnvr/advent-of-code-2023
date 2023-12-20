@@ -110,7 +110,6 @@ struct Grid {
     }
 
     private func inBounds(u: Index) -> Bool {
-        // assert(validMoves.contains(u.moves))
         u.xy.x >= 0 && u.xy.x <= maxIndex.xy.x &&
         u.xy.y >= 0 && u.xy.y <= maxIndex.xy.y &&
         validMoves.contains(u.moves)
@@ -134,28 +133,13 @@ struct Grid {
         let hl = h.rotatedLeft()
         let hr = h.rotatedRight()
 
-        let start = 1
-        let end = validMoves.upperBound
-        let inSameDirection: [Grid.Index] =
-            if start <= end {
-                 (start...end).map {
-                    Index(xy: u.xy + $0 * h, heading: h, moves: u.moves + $0)
-                }
-            } else { [] }
-
-        let turnStart = 1
-        let turnEnd = validMoves.upperBound
-        let afterTurning: [Grid.Index] =
-            if turnStart <= turnEnd {
-                 (turnStart...turnEnd).flatMap {
-                    [
-                        Index(xy: u.xy + $0 * hl, heading: hl, moves: $0),
-                        Index(xy: u.xy + $0 * hr, heading: hr, moves: $0),
-                    ]
-                }
-            } else { [] }
-
-        return (inSameDirection + afterTurning)
+        return (1...max(2, validMoves.upperBound)).flatMap {
+            [
+                Index(xy: u.xy + $0 * h, heading: h, moves: u.moves + $0),
+                Index(xy: u.xy + $0 * hl, heading: hl, moves: $0),
+                Index(xy: u.xy + $0 * hr, heading: hr, moves: $0),
+            ]
+        }
     }
 
     /// Precondition: v must be adjacent to u
@@ -217,9 +201,6 @@ func shortestPath(grid: Grid, start: Grid.Index, visit: Visitor? = nil
     // data structures. For real programs, consider using a priority queue, like
     // the Heap in the Swift Collections package.
     func popNearest() -> Grid.Index? {
-        // nextNearestD = Int.max
-        // if let nn = nextNearest, !visited.contains(nn) { return nn }
-
         while let md = inverseDistance.keys.min(), let vs = inverseDistance[md] {
             for v in vs {
                 if pending.contains(v) {
@@ -230,16 +211,6 @@ func shortestPath(grid: Grid, start: Grid.Index, visit: Visitor? = nil
             inverseDistance[md] = nil
         }
         return nil
-        // var u: Grid.Index?
-        // var ud = Int.max
-        // for v in pending {
-        //     if let vd = distance[v], vd < ud {
-        //         u = v
-        //         ud = vd
-        //     }
-        // }
-        // if let u { pending.remove(u) }
-        // return u
     }
 
     while let u = popNearest() {
@@ -346,33 +317,29 @@ extension Grid {
 }
 
 func findShortestPath(grid: Grid, verbose: Bool) -> Int? {
-    func sp(heading: ComplexInt) -> Int? {
-        let startXY = ComplexInt(x: 0, y: 0)
-        let endXY = grid.maxIndex.xy;
+    let startXY = ComplexInt(x: 0, y: 0)
+    let endXY = grid.maxIndex.xy;
 
-        let start = Grid.Index(xy: startXY, heading: heading, moves: 0)
+    let start = Grid.Index(xy: startXY, heading: .east, moves: 0)
 
-        let state = shortestPath(grid: grid, start: start, visit: verbose ? trace : nil)
+    let state = shortestPath(grid: grid, start: start, visit: verbose ? trace : nil)
 
-        // Find the minimum from amongst the distances of the original item.
-        let endIndices = grid.expandedIndex(xy: endXY)
-        var end: Grid.Index?
-        var endDistance: Int?
-        for u in endIndices {
-            if let d = state.distance[u], d < (endDistance ?? Int.max) {
-                end = u
-                endDistance = d
-            }
+    // Find the minimum from amongst the distances of the original item.
+    let endIndices = grid.expandedIndex(xy: endXY)
+    var end: Grid.Index?
+    var endDistance: Int?
+    for u in endIndices {
+        if let d = state.distance[u], d < (endDistance ?? Int.max) {
+            end = u
+            endDistance = d
         }
-        if verbose, let end = end {
-            print(
-                grid.renderToString(state: state, start: start, ends: Set([end])),
-                terminator: "")
-        }
-        return endDistance
     }
-
-    return sp(heading: .east)
+    if verbose, let end = end {
+        print(
+            grid.renderToString(state: state, start: start, ends: Set([end])),
+            terminator: "")
+    }
+    return endDistance
 }
 
 /// Reuse the function that shows the state of the grid after shortest path has
