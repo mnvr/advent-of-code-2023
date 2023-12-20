@@ -301,6 +301,10 @@ extension Grid {
             }
         }
 
+        func pad3(_ s: String) -> String {
+             String(("   " + s).suffix(3))
+        }
+
         var result = [String]()
         let maxXY = grid.maxIndex.xy
         for y in 0...maxXY.y {
@@ -308,11 +312,12 @@ extension Grid {
                 let xy = ComplexInt(x: x, y: y)
                 let item = grid.at(xy: xy)
                 if let (distance, parentDirection, step) = pathInfo(xy: xy) {
+                    let d = pad3("\(distance)")
                     result.append(tHighlight);
-                    result.append("\(parentDirection) \(item) \(distance) \(step) ")
+                    result.append("\(parentDirection) \(item) \(d) \(step) ")
                 } else {
                     result.append(tDim)
-                    result.append("  \(item) \t")
+                    result.append("  \(item)       ")
                 }
                 result.append(tReset)
             }
@@ -341,12 +346,11 @@ func ourShortestPath(grid: Grid) -> Int? {
                 endDistance = d
             }
         }
-        _ = end
-        // if let end {
-        //     print(
-        //         grid.renderToString(state: state, start: start, end: end),
-        //         terminator: "")
-        // }
+        if let end {
+            print(
+                grid.renderToString(state: state, start: start, end: end),
+                terminator: "")
+        }
         return endDistance
     }
 
