@@ -134,12 +134,12 @@ struct Grid {
         let hl = h.rotatedLeft()
         let hr = h.rotatedRight()
 
-        let start = u.moves + 1
+        let start = 1
         let end = validMoves.upperBound
         let inSameDirection: [Grid.Index] =
             if start <= end {
                  (start...end).map {
-                    Index(xy: u.xy + $0 * h, heading: h, moves: $0)
+                    Index(xy: u.xy + $0 * h, heading: h, moves: u.moves + $0)
                 }
             } else { [] }
 
@@ -404,11 +404,11 @@ let validMovesP1 = 0...3
 
 let input = readInput()
 let grid = Grid(items: input, validMoves: validMovesP1)
-let sp = ourShortestPath(grid: grid)
-print("shortest-path-result", sp ?? -1)
+// let sp = ourShortestPath(grid: grid)
+// print("shortest-path-result", sp ?? -1)
 
-for i in 0..<1 {
-    let u = Grid.Index(xy: .init(x: i, y: 0), heading: .east, moves: 0)
+for i in 0..<3 {
+    let u = Grid.Index(xy: .init(x: 0, y: 0), heading: .east, moves: i)
     print("")
     printNeighbours(u, grid: grid)
 }
