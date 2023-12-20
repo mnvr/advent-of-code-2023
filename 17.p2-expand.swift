@@ -50,10 +50,10 @@ struct ExpandedItem {
     let item: Int
     /// What direction are we facing
     let heading: ComplexInt
-    /// How many steps have we taken in this direction.
+    /// How many steps have we taken in this direction to reach this item.
     ///
-    /// When this is less than minStep, we cannot move to this direction. When
-    /// this is maxStep, we cannot move anymore in this direction.
+    /// This is 0 when we start. When we turn, this will be minStep. When this
+    /// is maxStep, we cannot move anymore in this direction.
     let steps: Int
 }
 
@@ -142,7 +142,7 @@ struct Grid {
         let hl = h.rotatedLeft()
         let hr = h.rotatedRight()
 
-        let start = max(u.step + 1, minStep + 1)
+        let start = u.step + 1
         let end = maxStep
         let inSameDirection: [Grid.Index] =
             if start <= end {
@@ -159,7 +159,6 @@ struct Grid {
                     [
                         Index(xy: u.xy + $0 * hl, heading: hl, step: $0),
                         Index(xy: u.xy + $0 * hr, heading: hr, step: $0),
-                        // Index(xy: u.xy + $0 * h, heading: h, step: $0)
                     ]
                 }
             } else { [] }
@@ -417,12 +416,12 @@ let stepRangeP1 = 0...2
 let stepRangeP2 = 3...9
 
 let input = readInput()
-let grid = Grid(items: input, stepRange: stepRangeP2)
+let grid = Grid(items: input, stepRange: stepRangeP1)
 let sp = ourShortestPath(grid: grid)
 print("shortest-path-result", sp ?? -1)
 
-for i in 0..<9 {
-    let u = Grid.Index(xy: .init(x: i, y: 0), heading: .east, step: 0)
-    print("")
-    printNeighbours(u, grid: grid)
-}
+// for i in 0..<1 {
+//     let u = Grid.Index(xy: .init(x: i, y: 0), heading: .east, step: 0)
+//     print("")
+//     printNeighbours(u, grid: grid)
+// }
