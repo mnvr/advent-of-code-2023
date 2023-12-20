@@ -3,7 +3,7 @@ typealias Workflows = [String: Workflow]
 typealias Workflow = [Rule]
 
 struct Rule {
-    let condition: ((Part) -> Bool)?
+    let condition: (Part) -> Bool
     let action: Action
 }
 
@@ -46,7 +46,7 @@ func parseRule<S: StringProtocol>(_ s: S) -> Rule {
         return Rule(condition: parseCondition(splits[0]),
                     action: parseAction(splits[1]))
     } else {
-        return Rule(condition: nil, action: parseAction(splits[0]))
+        return Rule(condition: { _ in true }, action: parseAction(splits[0]))
     }
 }
 
@@ -91,5 +91,28 @@ func readParts() -> [Part] {
     return parts
 }
 
-let input = readInput()
-print(input)
+func process(workflows: Workflows, parts: [Part]) -> Int {
+    parts.filter({ doesAccept(part: $0, workflows: workflows)}).map { p in
+        p.x + p.m + p.a + p.s
+    }.reduce(0, +)
+}
+
+func doesAccept(part: Part, workflows: Workflows) -> Bool {
+    var workflowName = "in"
+    while true {
+        let workflow = workflows[workflowName]!
+        for rule in workflow {
+            if rule.condition(part) {
+                switch rule.action {
+                    case .accept: return true
+                    case .reject: return false
+                    case .send(let wfn): workflowName = wfn
+                }
+            }
+        }
+    }
+}
+
+let (workflows, parts) = readInput()
+let p1 = process(workflows: workflows, parts: parts)
+print(p1)
