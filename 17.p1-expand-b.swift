@@ -50,16 +50,18 @@ struct ExpandedItem {
     let item: Int
     /// What direction are we facing
     let heading: ComplexInt
-    /// How many blocks have we already moved in this direction when getting to
-    /// the current item.
-    let moves: Int
+    /// How many steps have we taken in this direction to reach this item.
+    ///
+    /// This is 0 when we start. When we turn, this will be minStep. When this
+    /// is maxStep, we cannot move anymore in this direction.
+    let steps: Int
 }
 
 /// Expand each item into a 2D-array of 3-tuples (an `ExpandedItem`).
 ///
 /// Each such 3-tuple encodes the original value, the direction we entered this
-/// grid item from, and the number of blocks we have moved in that direction.
-func expand(items: [[Int]], validMoves: ClosedRange<Int>) -> [[[[ExpandedItem]]]] {
+/// grid item from, and the step count when we entered.
+func expand(items: [[Int]], stepRange: ClosedRange<Int>) -> [[[[ExpandedItem]]]] {
     var expanded4 = [[[[ExpandedItem]]]]()
     for row in items {
         var expanded3 = [[[ExpandedItem]]]()
@@ -67,9 +69,9 @@ func expand(items: [[Int]], validMoves: ClosedRange<Int>) -> [[[[ExpandedItem]]]
             var expanded2 = [[ExpandedItem]]()
             for direction in directions {
                 var expanded1 = [ExpandedItem]()
-                for moves in 0...validMoves.upperBound {
+                for step in 0...stepRange.upperBound {
                     let expanded = ExpandedItem(
-                        item: item, heading: direction, moves: moves
+                        item: item, heading: direction, steps: step
                     )
                     expanded1.append(expanded)
                 }
@@ -86,39 +88,45 @@ struct Grid {
     struct Index: Hashable {
         let xy: ComplexInt
         let heading: ComplexInt
-        let moves: Int
+        let step: Int
     }
 
     let items: [[Int]]
     let expandedItems: [[[[ExpandedItem]]]]
     let maxIndex: Index
-    let validMoves: ClosedRange<Int>
+    let minStep: Int
+    let maxStep: Int
 
-    init(items: [[Int]], validMoves: ClosedRange<Int>) {
+    init(items: [[Int]], stepRange: ClosedRange<Int>) {
+        let minStep = stepRange.lowerBound
+        let maxStep = stepRange.upperBound
+
+        let expandedItems = expand(items: items, stepRange: stepRange)
+
         self.items = items
-        self.expandedItems = expand(items: items, validMoves: validMoves)
-        self.validMoves = validMoves
+        self.expandedItems = expandedItems
+        self.minStep = minStep
+        self.maxStep = maxStep
 
         self.maxIndex = Index(
             xy: ComplexInt(x: items[0].count - 1, y: items.count - 1),
-            heading: directions[maxDirection], moves: validMoves.upperBound)
+            heading: directions[maxDirection], step: maxStep)
     }
 
     var totalItems: Int {
         (maxIndex.xy.x + 1) * (maxIndex.xy.y + 1) *
-        (maxDirection + 1) * (validMoves.upperBound + 1)
+        (maxDirection + 1) * (maxStep + 1)
     }
 
     private func inBounds(u: Index) -> Bool {
-        // assert(validMoves.contains(u.moves))
         u.xy.x >= 0 && u.xy.x <= maxIndex.xy.x &&
         u.xy.y >= 0 && u.xy.y <= maxIndex.xy.y &&
-        validMoves.contains(u.moves)
+        u.step >= minStep && u.step <= maxStep
     }
 
     func at(_ u: Index) -> ExpandedItem {
         let hi = directions.firstIndex(of: u.heading)!
-        return expandedItems[u.xy.y][u.xy.x][hi][u.moves]
+        return expandedItems[u.xy.y][u.xy.x][hi][u.step]
     }
 
     func at(xy: ComplexInt) -> Int {
@@ -134,23 +142,23 @@ struct Grid {
         let hl = h.rotatedLeft()
         let hr = h.rotatedRight()
 
-        let start = u.moves + 1
-        let end = validMoves.upperBound
+        let start = u.step + 1
+        let end = maxStep
         let inSameDirection: [Grid.Index] =
             if start <= end {
                  (start...end).map {
-                    Index(xy: u.xy + $0 * h, heading: h, moves: $0)
+                    Index(xy: u.xy + $0 * h, heading: h, step: $0)
                 }
             } else { [] }
 
-        let turnStart = 1
-        let turnEnd = validMoves.upperBound
+        let turnStart = minStep + 1
+        let turnEnd = maxStep
         let afterTurning: [Grid.Index] =
             if turnStart <= turnEnd {
                  (turnStart...turnEnd).flatMap {
                     [
-                        Index(xy: u.xy + $0 * hl, heading: hl, moves: $0),
-                        Index(xy: u.xy + $0 * hr, heading: hr, moves: $0),
+                        Index(xy: u.xy + $0 * hl, heading: hl, step: $0),
+                        Index(xy: u.xy + $0 * hr, heading: hr, step: $0),
                     ]
                 }
             } else { [] }
@@ -178,9 +186,9 @@ struct Grid {
     func expandedIndex(xy: ComplexInt) -> [Index] {
         var result = [Index]()
         for direction in directions {
-            for moves in 0...validMoves.upperBound {
+            for step in 0...maxStep {
                 result.append(
-                    Index(xy: xy, heading: direction, moves: moves)
+                    Index(xy: xy, heading: direction, step: step)
                 )
             }
         }
@@ -280,11 +288,11 @@ extension Grid {
             }
         }
 
-        func pathInfo(xy: ComplexInt) -> (distance: Int, parentDirection: String, moves: Int)? {
+        func pathInfo(xy: ComplexInt) -> (distance: Int, parentDirection: String, steps: Int)? {
             for u in grid.expandedIndex(xy: xy) {
                 if selectedPath.contains(u) {
                     if let parent = parentDirection(u), let d = distance[u] {
-                        return (distance: d, parentDirection: parent, moves: u.moves)
+                        return (distance: d, parentDirection: parent, steps: u.step)
                     }
                 }
             }
@@ -314,10 +322,10 @@ extension Grid {
             for x in 0...maxXY.x {
                 let xy = ComplexInt(x: x, y: y)
                 let item = grid.at(xy: xy)
-                if let (distance, parentDirection, moves) = pathInfo(xy: xy) {
+                if let (distance, parentDirection, step) = pathInfo(xy: xy) {
                     let d = pad3("\(distance)")
                     result.append(tHighlight);
-                    result.append("\(parentDirection) \(item) \(d) \(moves)  ")
+                    result.append("\(parentDirection) \(item) \(d) \(step)  ")
                 } else {
                     result.append(tDim)
                     result.append("  \(item)        ")
@@ -335,7 +343,7 @@ func ourShortestPath(grid: Grid) -> Int? {
         let startXY = ComplexInt(x: 0, y: 0)
         let endXY = grid.maxIndex.xy;
 
-        let start = Grid.Index(xy: startXY, heading: heading, moves: 0)
+        let start = Grid.Index(xy: startXY, heading: heading, step: 0)
 
         let state = shortestPath(grid: grid, start: start, visit: trace)
 
@@ -397,18 +405,23 @@ func printNeighbours(_ u: Grid.Index, grid: Grid) {
           terminator: "")
 }
 
-/// We can move at most 3 blocks in a direction before we must turn.
-let validMovesP1 = 0...3
-
-// let stepRangeP2 = 3...9
+/// We can move a maximum of 3 steps in a direction before we can turn. Since
+/// we start counting from 0, the upper bound is 2.
+let stepRangeP1 = 0...2
+/// We must move a minimum of 4 steps in a direction before we can turn. Since
+/// we start counting from 0, the lower bound is 3.
+///
+/// We can move a maximum of 10 steps in a direction before we can turn. Since
+/// we start counting from 0, the upper bound is 9.
+let stepRangeP2 = 3...9
 
 let input = readInput()
-let grid = Grid(items: input, validMoves: validMovesP1)
+let grid = Grid(items: input, stepRange: stepRangeP2)
 let sp = ourShortestPath(grid: grid)
 print("shortest-path-result", sp ?? -1)
 
 for i in 0..<1 {
-    let u = Grid.Index(xy: .init(x: i, y: 0), heading: .east, moves: 0)
+    let u = Grid.Index(xy: .init(x: i, y: 0), heading: .east, step: 0)
     print("")
     printNeighbours(u, grid: grid)
 }
