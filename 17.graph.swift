@@ -150,6 +150,7 @@ func shortestPath<T>(
             let w = grid.edgeWeight(from: u, to: v)
             if dv > du + w {
                 distance[v] = du + w
+                parent[v] = u
             }
             pending.insert(v)
         }

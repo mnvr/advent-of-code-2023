@@ -266,10 +266,10 @@ func shortestPath(grid: Grid, start: Grid.Index, visit: Visitor? = nil
 }
 
 func trace(state: DijkstraState) {
-    // if state.iteration % 500 == 0 {
-    //     let total = state.grid.totalItems
-    //     print("iteration \(state.iteration) found tentative distances to \(state.distance.count) / \(total) items")
-    // }
+    if state.iteration % 500 == 0 {
+        let total = state.grid.totalItems
+        print("iteration \(state.iteration) found tentative distances to \(state.distance.count) / \(total) items")
+    }
 }
 
 extension Grid {
@@ -345,14 +345,14 @@ extension Grid {
     }
 }
 
-func ourShortestPath(grid: Grid) -> Int? {
+func findShortestPath(grid: Grid, verbose: Bool) -> Int? {
     func sp(heading: ComplexInt) -> Int? {
         let startXY = ComplexInt(x: 0, y: 0)
         let endXY = grid.maxIndex.xy;
 
         let start = Grid.Index(xy: startXY, heading: heading, moves: 0)
 
-        let state = shortestPath(grid: grid, start: start, visit: trace)
+        let state = shortestPath(grid: grid, start: start, visit: verbose ? trace : nil)
 
         // Find the minimum from amongst the distances of the original item.
         let endIndices = grid.expandedIndex(xy: endXY)
@@ -364,11 +364,10 @@ func ourShortestPath(grid: Grid) -> Int? {
                 endDistance = d
             }
         }
-        if let end {
-            _ = end
-            // print(
-            //     grid.renderToString(state: state, start: start, ends: Set([end])),
-            //     terminator: "")
+        if verbose, let end = end {
+            print(
+                grid.renderToString(state: state, start: start, ends: Set([end])),
+                terminator: "")
         }
         return endDistance
     }
@@ -409,11 +408,20 @@ let validMovesP1 = 0...3
 /// a maximum of 10 blocks before we must turn.
 let validMovesP2 = 4...10
 
+let showNeighbours = CommandLine.arguments.last == "-n"
+let verbose = CommandLine.arguments.last == "-v" || showNeighbours
+let input = readInput()
+
 /// A driver function
-func sp(_ input: [[Int]], _ validMoves: ClosedRange<Int>) -> Int {
+func sp(_ validMoves: ClosedRange<Int>) -> Int {
     let grid = Grid(items: input, validMoves: validMoves)
-    return ourShortestPath(grid: grid) ?? -1
+    return findShortestPath(grid: grid, verbose: verbose) ?? -1
 }
 
-let input = readInput()
-print(sp(input, validMovesP1), sp(input, validMovesP2))
+if (showNeighbours) {
+    let grid = Grid(items: input, validMoves: validMovesP1)
+    let u = Grid.Index(xy: .init(x: 0, y: 0), heading: .east, moves: 0)
+    printNeighbours(u, grid: grid)
+} else {
+    print(sp(validMovesP1), sp(validMovesP2))
+}
