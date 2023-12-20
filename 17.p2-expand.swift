@@ -147,7 +147,7 @@ struct Grid {
         let inSameDirection: [Grid.Index] =
             if start <= end {
                  (start...end).map {
-                    Index(xy: u.xy + (1 + $0) * h, heading: h, step: $0)
+                    Index(xy: u.xy + $0 * h, heading: h, step: $0)
                 }
             } else { [] }
 
