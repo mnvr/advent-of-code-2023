@@ -373,17 +373,7 @@ func ourShortestPath(grid: Grid) -> Int? {
         return endDistance
     }
 
-    // We need to head both ways. Whilst the same indexes (1, 0) and (0, 1) will
-    // be the neighbours irrespective of which direction that we start in, the
-    // step count will be different. The step count will be 1 for the direction
-    // we're heading in, and 0 for the perpendicular one. So to cover both
-    // combinations, we'll need to head both ways.
-
-    return [
-        sp(heading: .east),
-        // When debugging, comment this.
-        sp(heading: .south),
-    ].compactMap({$0}).min()
+    return sp(heading: .east)
 }
 
 /// Reuse the function that shows the state of the grid after shortest path has
@@ -420,11 +410,11 @@ let validMovesP1 = 0...3
 let validMovesP2 = 4...10
 
 let input = readInput()
-let grid = Grid(items: input, validMoves: validMovesP1)
+let grid = Grid(items: input, validMoves: validMovesP2)
 let sp = ourShortestPath(grid: grid)
 print("shortest-path-result", sp ?? -1)
 
-// for i in 0..<3 {
+// for i in 0..<1 {
 //     let u = Grid.Index(xy: .init(x: 0, y: 0), heading: .east, moves: i)
 //     print("")
 //     printNeighbours(u, grid: grid)
