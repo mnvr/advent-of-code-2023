@@ -19,7 +19,7 @@ func readInput() -> ([Step], [Step]) {
         case "1": "D"
         case "2": "L"
         case "3": "U"
-        default: fatalError("\(color)")
+        default: fatalError()
         }
         count = Int(String(color[2...6]), radix:16)!
         s2.append(Step(direction: direction, count: count))
@@ -39,8 +39,7 @@ func readInput() -> ([Step], [Step]) {
 /// Finally, since the circumference didn't include the starting square, we add
 /// 1 to account for it.
 func area(steps: [Step]) -> Int {
-    var (px, py) = (0, 0)
-    var s = 0
+    var px = 0, py = 0, s = 0
     for step in steps {
         var x, y : Int
         switch step.direction {
@@ -52,8 +51,7 @@ func area(steps: [Step]) -> Int {
         }
         s += (py + y) * (px - x)
         s += step.count
-        px = x
-        py = y
+        (px, py) = (x, y)
     }
 
     return abs(s) / 2 + 1
