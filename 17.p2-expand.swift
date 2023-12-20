@@ -69,7 +69,7 @@ func expand(items: [[Int]], stepRange: ClosedRange<Int>) -> [[[[ExpandedItem]]]]
             var expanded2 = [[ExpandedItem]]()
             for direction in directions {
                 var expanded1 = [ExpandedItem]()
-                for step in stepRange {
+                for step in 0...stepRange.upperBound {
                     let expanded = ExpandedItem(
                         item: item, heading: direction, steps: step
                     )
@@ -115,7 +115,7 @@ struct Grid {
 
     var totalItems: Int {
         (maxIndex.xy.x + 1) * (maxIndex.xy.y + 1) *
-        (maxDirection + 1) * ((maxStep - minStep) + 1)
+        (maxDirection + 1) * (maxStep + 1)
     }
 
     private func inBounds(u: Index) -> Bool {
@@ -126,7 +126,7 @@ struct Grid {
 
     func at(_ u: Index) -> ExpandedItem {
         let hi = directions.firstIndex(of: u.heading)!
-        return expandedItems[u.xy.y][u.xy.x][hi][u.step - minStep]
+        return expandedItems[u.xy.y][u.xy.x][hi][u.step]
     }
 
     func at(xy: ComplexInt) -> Int {
@@ -142,7 +142,7 @@ struct Grid {
         let hl = h.rotatedLeft()
         let hr = h.rotatedRight()
 
-        let start = max(u.step + 1, minStep)
+        let start = max(u.step + 1, minStep + 1)
         let end = maxStep
         let inSameDirection: [Grid.Index] =
             if start <= end {
@@ -151,10 +151,18 @@ struct Grid {
                 }
             } else { [] }
 
-        let afterTurning = [
-            Index(xy: u.xy + (1 + minStep) * hl, heading: hl, step: minStep),
-            Index(xy: u.xy + (1 + minStep) * hr, heading: hr, step: minStep),
-        ]
+        let turnStart = minStep + 1
+        let turnEnd = maxStep
+        let afterTurning: [Grid.Index] =
+            if turnStart <= turnEnd {
+                 (turnStart...turnEnd).flatMap {
+                    [
+                        Index(xy: u.xy + $0 * hl, heading: hl, step: $0),
+                        Index(xy: u.xy + $0 * hr, heading: hr, step: $0),
+                        // Index(xy: u.xy + $0 * h, heading: h, step: $0)
+                    ]
+                }
+            } else { [] }
 
         return (inSameDirection + afterTurning)
     }
@@ -179,7 +187,7 @@ struct Grid {
     func expandedIndex(xy: ComplexInt) -> [Index] {
         var result = [Index]()
         for direction in directions {
-            for step in minStep...maxStep {
+            for step in 0...maxStep {
                 result.append(
                     Index(xy: xy, heading: direction, step: step)
                 )
@@ -398,19 +406,23 @@ func printNeighbours(_ u: Grid.Index, grid: Grid) {
           terminator: "")
 }
 
-/// We must move a minimum of 4 steps in a direction before we can turn. i.e. we
-/// can turn at the 5th step onwards. Since we start counting from 0, the lower
-/// bound is 4.
-///
-/// We can move a maximum of 10 steps in a direction before we can turn. We
-/// start counting from minStep, which is zero-based, 10-1 == 9.
+/// We can move a maximum of 3 steps in a direction before we can turn. Since
+/// we start counting from 0, the upper bound is 2.
 let stepRangeP1 = 0...2
-let stepRangeP2 = 4...9
+/// We must move a minimum of 4 steps in a direction before we can turn. Since
+/// we start counting from 0, the lower bound is 3.
+///
+/// We can move a maximum of 10 steps in a direction before we can turn. Since
+/// we start counting from 0, the upper bound is 9.
+let stepRangeP2 = 3...9
 
 let input = readInput()
-let grid = Grid(items: input, stepRange: stepRangeP1)
-// let sp = ourShortestPath(grid: grid)
-// print("shortest-path-result", sp ?? -1)
+let grid = Grid(items: input, stepRange: stepRangeP2)
+let sp = ourShortestPath(grid: grid)
+print("shortest-path-result", sp ?? -1)
 
-let u = Grid.Index(xy: .init(x: 0, y:0), heading: .east, step: 0)
-printNeighbours(u, grid: grid)
+for i in 0..<9 {
+    let u = Grid.Index(xy: .init(x: i, y: 0), heading: .east, step: 0)
+    print("")
+    printNeighbours(u, grid: grid)
+}
