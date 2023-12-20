@@ -18,13 +18,27 @@ func readInput() -> [Step] {
 
 /// The area of a polygon with integral cartesian coordinates can be computed by
 /// summing up the signed areas of the trapezoids formed by consecutive pairs of
-/// vertices (Shoelace formula).
-// func area(input: String) -> Int {
-//     let (x, y) = (0, 0)
-//     for item in input {
+/// vertices (**Shoelace formula**).
+func area(steps: [Step]) -> Int {
+    var (px, py) = (0, 0)
+    var s = 0
+    for step in steps {
+        var x, y : Int
+        switch step.direction {
+        case "R": (x, y) = (px + step.count, py)
+        case "L": (x, y) = (px - step.count, py)
+        case "U": (x, y) = (px, py - step.count)
+        case "D": (x, y) = (px, py + step.count)
+        default: fatalError()
+        }
+        s += (py + y) * (px - x)
+        px = x
+        py = y
+    }
+    return abs(s) / 2
+}
 
-//     }
-// }
 
-let input = readInput()
-print(input)
+let steps = readInput()
+let ar = area(steps: steps)
+print(ar)
