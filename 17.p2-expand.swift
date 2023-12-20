@@ -116,13 +116,12 @@ struct Grid {
 
     private func inBounds(u: Index) -> Bool {
         u.xy.x >= 0 && u.xy.x <= maxIndex.xy.x &&
-        u.xy.y >= 0 && u.xy.y <= maxIndex.xy.y &&
-        u.step >= minStep && u.step <= maxStep
+        u.xy.y >= 0 && u.xy.y <= maxIndex.xy.y
     }
 
     func at(_ u: Index) -> ExpandedItem {
         let hi = directions.firstIndex(of: u.heading)!
-        return expanded[u.xy.y][u.xy.x][hi][u.step]
+        return expanded[u.xy.y][u.xy.x][hi][u.step - minStep]
     }
 
     func at(xy: ComplexInt) -> Int {
