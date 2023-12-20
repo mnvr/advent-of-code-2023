@@ -101,16 +101,23 @@ func doesAccept(part: Part, workflows: Workflows) -> Bool {
     var workflowName = "in"
     while true {
         let workflow = workflows[workflowName]!
-        for rule in workflow {
+        print("using workflow \(workflowName): \(workflow)")
+        next: for rule in workflow {
+            print(part, workflowName, rule)
             if rule.condition(part) {
+                print("match")
                 switch rule.action {
                     case .accept: return true
                     case .reject: return false
-                    case .send(let wfn): workflowName = wfn
+                    case .send(let wfn):
+                        workflowName = wfn
+                        break next
                 }
             }
         }
     }
+    fatalError(workflowName)
+    return false
 }
 
 let (workflows, parts) = readInput()
