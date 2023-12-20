@@ -399,16 +399,17 @@ func printNeighbours(_ u: Grid.Index, grid: Grid) {
 
 /// We can move at most 3 blocks in a direction before we must turn.
 let validMovesP1 = 0...3
-
-// let stepRangeP2 = 3...9
+/// We must move a minimum of 4 blocks before we can turn (or stop). We can move
+/// a maximum of 10 blocks before we must turn.
+let validMovesP2 = 4...10
 
 let input = readInput()
-let grid = Grid(items: input, validMoves: validMovesP1)
-// let sp = ourShortestPath(grid: grid)
-// print("shortest-path-result", sp ?? -1)
+let grid = Grid(items: input, validMoves: validMovesP2)
+let sp = ourShortestPath(grid: grid)
+print("shortest-path-result", sp ?? -1)
 
-for i in 0..<3 {
-    let u = Grid.Index(xy: .init(x: 0, y: 0), heading: .east, moves: i)
-    print("")
-    printNeighbours(u, grid: grid)
-}
+// for i in 0..<3 {
+//     let u = Grid.Index(xy: .init(x: 0, y: 0), heading: .east, moves: i)
+//     print("")
+//     printNeighbours(u, grid: grid)
+// }
