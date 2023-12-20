@@ -16,13 +16,17 @@ func readInput() -> [Step] {
     return result
 }
 
-/// The area of a polygon with integral cartesian coordinates can be computed by
-/// summing up the signed areas of the trapezoids formed by consecutive pairs of
-/// vertices (**Shoelace formula**).
+/// The interior area of a polygon with integral cartesian coordinates can be
+/// computed by summing up the signed areas of the trapezoids formed by
+/// consecutive pairs of vertices (**Shoelace formula**).
+///
+/// To get the total area (i.e. the interior area plus the edge cells), we can
+/// just add the circumference as we circumnavigate it.
 func area(steps: [Step]) -> Int {
     var (px, py) = (0, 0)
     var s = 0
     for step in steps {
+        print(px, py, s)
         var x, y : Int
         switch step.direction {
         case "R": (x, y) = (px + step.count, py)
@@ -32,9 +36,14 @@ func area(steps: [Step]) -> Int {
         default: fatalError()
         }
         s += (py + y) * (px - x)
+        s += step.count
         px = x
         py = y
     }
+    // tie it back to the origin
+    // s += (py + 0) * (px - 0)
+    // print(px, py, s)
+
     return abs(s) / 2
 }
 
