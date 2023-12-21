@@ -2,8 +2,17 @@ typealias Workflows = [String: Workflow]
 
 typealias Workflow = [Rule]
 
+enum Attribute: String { case x, m, a, s }
+enum Op { case lt, gt }
+struct Condition {
+    let attr: Attribute
+    let op: Op
+    let num: Int
+}
+
 struct Rule {
     let condition: (Part) -> Bool
+    let condition2: Condition?
     let action: Action
 }
 
@@ -44,9 +53,10 @@ func parseRule<S: StringProtocol>(_ s: S) -> Rule {
     let splits = s.split(separator: ":")
     if splits.count == 2 {
         return Rule(condition: parseCondition(splits[0]),
+                    condition2: parseCondition2(splits[0]),
                     action: parseAction(splits[1]))
     } else {
-        return Rule(condition: { _ in true }, action: parseAction(splits[0]))
+        return Rule(condition: { _ in true }, condition2: nil, action: parseAction(splits[0]))
     }
 }
 
@@ -72,6 +82,23 @@ func parseCondition<S: StringProtocol>(_ s: S) -> ((Part) -> Bool) {
         default: fatalError()
         }
     }
+}
+
+func parseCondition2<S: StringProtocol>(_ s: S) -> Condition {
+    var op: Op
+
+    var splits = s.split(separator: "<")
+    if splits.count > 1 {
+        op = .lt
+    } else {
+        splits = s.split(separator: ">")
+        op = .gt
+    }
+
+    let attr = Attribute(rawValue: String(splits[0]))!
+    let num = Int(splits[1])!
+
+    return Condition(attr: attr, op: op, num: num)
 }
 
 func parseAction<S: StringProtocol>(_ s: S) -> Action {
@@ -101,11 +128,11 @@ func doesAccept(part: Part, workflows: Workflows) -> Bool {
     var workflowName = "in"
     while true {
         let workflow = workflows[workflowName]!
-        print("using workflow \(workflowName): \(workflow)")
+        // print("using workflow \(workflowName): \(workflow)")
         next: for rule in workflow {
-            print(part, workflowName, rule)
+            // print(part, workflowName, rule)
             if rule.condition(part) {
-                print("match")
+                // print("match")
                 switch rule.action {
                     case .accept: return true
                     case .reject: return false
@@ -116,10 +143,24 @@ func doesAccept(part: Part, workflows: Workflows) -> Bool {
             }
         }
     }
-    fatalError(workflowName)
-    return false
+    // fatalError(workflowName)
+    // return false
+}
+
+func filterRanges(workflows: Workflows) -> Int {
+    let ranges = Array(repeating: 1...4000, count: 4)
+    var pending = ranges.map { ($0, "in") }
+    while let (range, workflow) = pending.popLast() {
+        print(range, workflow)
+        // for rule in range {
+
+        // }
+    }
+    return 0
 }
 
 let (workflows, parts) = readInput()
-let p1 = process(workflows: workflows, parts: parts)
-print(p1)
+// let p1 = process(workflows: workflows, parts: parts)
+// print(p1)
+let p2 = filterRanges(workflows: workflows)
+print(p2)
