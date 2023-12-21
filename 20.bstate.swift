@@ -90,7 +90,7 @@ func readInput() -> [Module] {
             var state = UInt64.max
             for input in inputs[name]! {
                 let k = keys.firstIndex(of: input)!
-                state &= (~(1 << k))
+                state ^= (1 << k)
             }
             result.append(.conjunction(name, js!, state))
         }
@@ -158,7 +158,7 @@ func simulate(modules: inout [Module]) -> Int {
     }
 
     var n = 0
-    while n < 1 {
+    while n < 1000 {
         n += 1
         show(modules: modules)
 
