@@ -72,7 +72,7 @@ func simulate(modules: Modules, times: Int, verbose: Bool = false) -> (counts: [
 
     var counts = [true: 0, false: 0]
     // Examples don't have "rx", so don't go into an infinite loop.
-    var countTillRx: Int? = haveRx(modules: modules) ? nil : 0
+    var countTillRx: Int? = haveRx(modules: modules) ? 0 : 0
     var states = [String: Module.State]()
 
     initConjunctions(modules: modules, states: &states)
@@ -95,7 +95,7 @@ func simulate(modules: Modules, times: Int, verbose: Bool = false) -> (counts: [
             let (value, from, to) = pulse
             pi += 1
 
-            if verbose {
+            if verbose && false {
                 print("button press \(c) pulse \(pi)\t\t\(from) -\(value ? "high" : "low")-> \(to)")
             }
 
@@ -120,11 +120,11 @@ func simulate(modules: Modules, times: Int, verbose: Bool = false) -> (counts: [
         let sh = states.hashValue
         if verbose {
             print("")
-            print("after button press \(c) pulse states hash is \(sh)")
+            print("after button press \(c) states hash is \(sh)")
             print(states)
             print("")
         } else {
-            print("after button press \(c) pulse states hash is \(sh)")
+            print("after button press \(c) states hash is \(sh)")
         }
     }
 
@@ -162,7 +162,7 @@ func haveRx(modules: Modules) -> Bool {
 let modules = readInput()
 
 if CommandLine.arguments.last == "-v" {
-    let p1 = simulate(modules: modules, times: 4, verbose: true)
+    let p1 = simulate(modules: modules, times: 2, verbose: true)
     print(p1)
 } else {
     let p1 = simulate(modules: modules, times: 1000)
