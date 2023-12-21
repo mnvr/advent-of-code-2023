@@ -173,10 +173,38 @@ func show(modules: Modules, states: [String: State]) {
 }
 
 func analyze(modules: Modules) -> Int {
-    return 0
+    guard modules["rx"] != nil else { return 0 }
+
+    var memo: [String: Int] = [:]
+    func lowAfter(name: String) -> Int {
+        if let m = memo[name] { return m }
+
+        let r: Int
+
+        let module = modules[name]!
+        print("finding low after for \(name) \(module)")
+        switch module.type {
+        case nil:
+            r = module.inputs.map({ lowAfter(name: $0) }).min()!
+        case .broadcast:
+            r = 1
+        case .flip:
+            r = module.inputs.map({ lowAfter(name: $0) }).min()!
+        case .conjunction:
+            r = module.inputs.map({ lowAfter(name: $0) }).min()!
+        }
+
+        memo[name] = r
+        return r
+    }
+
+    let r = lowAfter(name: "rx")
+    print(memo)
+    return r
 }
 
 let modules = readInput()
-let p1 = simulate(modules: modules, times: 1000)
+// let p1 = simulate(modules: modules, times: 1000)
 let p2 = analyze(modules: modules)
-print(p1, p2)
+print(p2)
+// print(p1, p2)
