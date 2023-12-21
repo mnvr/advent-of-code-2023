@@ -67,7 +67,21 @@ func propogate(
 }
 
 func simulate(modules: Modules) -> (counts: [Bool: Int], dummy: Bool) {
-    let counts = [true: 0, false: 0]
+    var counts = [Bool: Int]()
+    var states = [String: Module.State]()
+    let buttonPress = (ping: (pulse: false, from: "button"), to: "broadcaster")
+    var pending = [buttonPress]
+    while let e = pending.popLast() {
+        let destination = modules[e.to]!
+        let state = states[e.to, default: Module.State()]
+        if let change = propogate(ping: e.ping, module: destination, state: state) {
+            states[e.to] = change.state
+            pending.append(contentsOf: change.emits)
+            for b in change.emits.map({ $0.ping.pulse }) {
+                counts[b] = counts[b, default: 0] + 1
+            }
+        }
+    }
     return (counts, true)
 }
 
