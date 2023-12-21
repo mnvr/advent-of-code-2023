@@ -36,6 +36,12 @@ extension Module {
 
 typealias PropogateResult = (state: Module.State, emits: [Module.Emittance])
 
+func updating<K, V>(_ dictionary: [K: V], key: K, value: V) -> [K: V] {
+    var dictionary = dictionary
+    dictionary[key] = value
+    return dictionary
+}
+
 func propogate(
     ping: Module.Ping, module: Module, state: Module.State
 ) -> PropogateResult? {
@@ -53,8 +59,7 @@ func propogate(
             return nil
         } else {
             let pulse = !state["", default: false]
-            var newState = state
-            newState[""] = pulse
+            let newState = updating(state, key: "", value: pulse)
             return emit(pulse, state: newState)
         }
     case .conjunction:
@@ -176,6 +181,8 @@ func simulateP2(modules: Modules) -> Int {
 }
 
 let modules = readInput()
-let p1 = simulateP2(modules: modules)
+let p1 = simulate(modules: modules, times: 1000)
+// let p2 = simulateP2(modules: modules)
 print(p1)
+// print(p2)
 // print(p1.result)
