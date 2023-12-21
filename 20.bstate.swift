@@ -42,6 +42,7 @@ var rxIndex: Int?
 let verbose = switch CommandLine.arguments.last {
     case "-v": 1
     case "-vv": 2
+    case "-vvv": 3
     default: 0
 }
 
@@ -158,7 +159,7 @@ func simulate(modules: inout [Module]) -> (Int, Int) {
 
     var (ct, cf) = (0, 0)
     func count(_ pulse: Pulse) {
-        if (verbose > 1) {
+        if (verbose > 2) {
             print(pulse)
         }
         if pulse.value { ct += 1 }
@@ -190,15 +191,17 @@ func simulate(modules: inout [Module]) -> (Int, Int) {
         }
     }
 
-    if verbose > 0 {
+    if verbose > 1 {
         print("counts", ct, cf)
     }
     return (ct * cf, rxn ?? 0)
 }
 
 func show(modules: [Module]) {
-    if verbose > 0 {
+    if verbose > 1 {
         print(modules.map({ $0.description }).joined(separator: " · "))
+    } else if verbose > 0 {
+        print(modules.compactMap({ $0.stateString }).joined(separator: "·"))
     }
 }
 
