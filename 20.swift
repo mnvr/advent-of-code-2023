@@ -82,18 +82,34 @@ func initConjunctions(modules: Modules, states: inout [String: Module.State]) {
     }
 }
 
-func simulate(modules: Modules, times: Int) -> (counts: [Bool: Int], result: Int) {
+func haveRx(modules: Modules) -> Bool {
+    for (input, module) in modules {
+        if input == "rx" { return true }
+        for output in module.outputs {
+            if output == "rx" { return true }
+        }
+    }
+    return false
+}
+
+func simulate(modules: Modules, times: Int) -> (counts: [Bool: Int], result: Int, countTillRx: Int) {
     let buttonPress = (ping: (pulse: false, from: "button"), to: "broadcaster")
 
     var counts = [Bool: Int]()
+    // Examples don't have "rx", so don't go into an infinite loop.
+    var countTillRx: Int? = haveRx(modules: modules) ? nil : 0
     var states = [String: Module.State]()
 
     initConjunctions(modules: modules, states: &states)
 
-    for _ in 0..<times {
+    var i = 0
+    while i < times || countTillRx == nil {
+        i += 1
+
         var pending = [buttonPress]
         counts[buttonPress.ping.pulse] = counts[buttonPress.ping.pulse, default: 0] + 1
         while let e = pending.popLast() {
+            print(e)
             let destination = modules[e.to, default: Module(name: e.to, type: nil, outputs: [])]
             let state = states[e.to, default: Module.State()]
             if let change = propogate(ping: e.ping, module: destination, state: state) {
@@ -102,15 +118,23 @@ func simulate(modules: Modules, times: Int) -> (counts: [Bool: Int], result: Int
                 for b in change.emits.map({ $0.ping.pulse }) {
                     counts[b] = counts[b, default: 0] + 1
                 }
+                if countTillRx == nil {
+                    for c in change.emits {
+                        if c.to == "rx" && !c.ping.pulse {
+                            countTillRx = i
+                            break
+                        }
+                    }
+                }
             }
         }
     }
 
     let result = counts[false, default: 0] * counts[true, default: 0]
-    return (counts, result)
+    return (counts, result, countTillRx: countTillRx!)
 }
 
 let modules = readInput()
 let p1 = simulate(modules: modules, times: 1000)
-// print(p1)
-print(p1.result)
+print(p1)
+// print(p1.result)
