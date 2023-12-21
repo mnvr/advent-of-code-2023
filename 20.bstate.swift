@@ -75,7 +75,7 @@ func readInput() -> [Module] {
 
     // Ensure broadcast is at index 0
     uniqueNames.remove(broadcast)
-    let keys = [broadcast] + Array(uniqueNames)
+    let keys = [broadcast] + (Array(uniqueNames).sorted())
 
     var result = [Module]()
     for name in keys {
@@ -156,6 +156,7 @@ func propogate(pulse: Pulse, module: Module) -> ([Pulse], Module)? {
 func simulate(modules: inout [Module]) -> (Int, Int) {
     let buttonPress = Pulse(value: false, from: -1, to: 0)
 
+    showPreamble(modules: modules)
 
     var (ct, cf) = (0, 0)
     func count(_ pulse: Pulse) {
@@ -195,6 +196,23 @@ func simulate(modules: inout [Module]) -> (Int, Int) {
         print("counts", ct, cf)
     }
     return (ct * cf, rxn ?? 0)
+}
+
+func showPreamble(modules: [Module]) {
+    func padn(_ s: String, n: Int) -> String {
+        String((s + "---------------------").prefix(n))
+    }
+    if verbose == 1 {
+        var names = [String]()
+        for m in modules {
+            switch m {
+            case .flip(let name, _, _): names.append(padn(name, n: 2))
+            case .conjunction(let name, let n, _, _): names.append(padn(name, n: max(n + 1, 2)))
+            default: continue
+            }
+        }
+        print(names.joined(separator: ""))
+    }
 }
 
 func show(modules: [Module]) {
