@@ -1,6 +1,6 @@
 enum Module {
     case flip(String, [Int], UInt8)
-    case conjunction(String, [Int], UInt64)
+    case conjunction(String, Int, [Int], UInt64)
     case broadcast(String, [Int])
     case other(String)
 }
@@ -18,7 +18,7 @@ extension Module: CustomStringConvertible {
         switch self {
         case .flip(let name, let outputs, _):
             return "\(name):\(stateString!)>\(outs(outputs))"
-        case .conjunction(let name, let outputs, _):
+        case .conjunction(let name, _, let outputs, _):
             return "\(name):\(stateString!)>\(outs(outputs))"
         case .broadcast(let name, let outputs):
             return "\(name):>\(outs(outputs))"
@@ -29,7 +29,8 @@ extension Module: CustomStringConvertible {
 
     var stateString: String? {
         switch self {
-        case .conjunction(_, _, let state): String(state, radix: 2)
+        case .conjunction(_, let inputCount, _, let state):
+            String(String(state, radix: 2).suffix(inputCount))
         case .flip(_, _, let state): state == 1 ? "1" : "0"
         default: nil
         }
@@ -54,7 +55,7 @@ func readInput() -> [Module] {
         let name = String(words.first!)
         let partial: Module? = switch line.first {
             case "%": .flip("", [], 0)
-            case "&": .conjunction("", [], 0)
+            case "&": .conjunction("", 0, [], 0)
             default: name == broadcast ? .broadcast("", []) : .other(name)
         }
         let outputs = Array(words.dropFirst(1).map { String($0) })
@@ -90,11 +91,12 @@ func readInput() -> [Module] {
             result.append(.flip(name, js!, 0))
         case .conjunction:
             var state = UInt64.max
-            for input in inputs[name]! {
+            let ins = inputs[name]!
+            for input in ins {
                 let k = keys.firstIndex(of: input)!
                 state ^= (1 << k)
             }
-            result.append(.conjunction(name, js!, state))
+            result.append(.conjunction(name, ins.count, js!, state))
         }
 
         modulesIndexToName[result.count - 1] = name
@@ -139,14 +141,14 @@ func propogate(pulse: Pulse, module: Module) -> ([Pulse], Module)? {
             state = toggle(state)
             return (emit(state == 1, outputs), .flip(name, outputs, state))
         }
-    case .conjunction(let name, let outputs, var state):
+    case .conjunction(let name, let n, let outputs, var state):
         if pulse.value {
             state |= (1 << pulse.from)
         } else {
             state &= ~(1 << pulse.from)
         }
         let value = state != .max
-        return (emit(value, outputs), .conjunction(name, outputs, state))
+        return (emit(value, outputs), .conjunction(name, n, outputs, state))
     }
 }
 
