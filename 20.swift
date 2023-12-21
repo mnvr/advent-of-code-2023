@@ -16,6 +16,12 @@ struct Module {
 
 typealias Modules = [String: Module]
 
+let verbose = switch CommandLine.arguments.last {
+    case "-v": 1
+    case "-vv": 2
+    default: 0
+}
+
 func readInput() -> Modules {
     var modules = Modules()
     while let line = readLine() {
@@ -67,23 +73,21 @@ func propogate(
     }
 }
 
-func simulate(modules: Modules, times: Int, verbose: Bool = false) -> (counts: [Bool: Int], result: Int, countTillRx: Int) {
+func simulate(modules: Modules, times: Int) -> (p1: Int, p2: Int) {
     let buttonPress = (value: false, from: "button", to: "broadcaster")
 
     var counts = [true: 0, false: 0]
-    // Examples don't have "rx", so don't go into an infinite loop.
-    var countTillRx: Int? = haveRx(modules: modules) ? 0 : 0
+    // Examples don't have "rx", so don't go into an infinite loop. But since
+    // this solution doesn't work for p2 yet, this search for rx is actually
+    // always disabled for now.
+    var rxN: Int? = haveRx(modules: modules) ? 0 : 0
     var states = [String: Module.State]()
 
     initConjunctions(modules: modules, states: &states)
 
-    var c = 0
-    while c < times || countTillRx == nil {
-        c += 1
-
-        if c == 100_000 { // TODO: temporary
-             countTillRx = 0
-        }
+    var n = 0
+    while n < times || rxN == nil {
+        n += 1
 
         var pending = [buttonPress]
         var pi = 0
@@ -95,14 +99,16 @@ func simulate(modules: Modules, times: Int, verbose: Bool = false) -> (counts: [
             let (value, from, to) = pulse
             pi += 1
 
-            if verbose && false {
-                print("button press \(c) pulse \(pi)\t\t\(from) -\(value ? "high" : "low")-> \(to)")
+            if verbose > 0 {
+                print("button press \(n) pulse \(pi)\t\t\(from) -\(value ? "high" : "low")-> \(to)")
             }
 
             if to == "rx" {
                 if !value {
-                    print("at count \(c) sending \(value) to rx")
-                    countTillRx = c
+                    print("button press \(n) sending \(value) to rx")
+                    if rxN == nil || rxN == 0 {
+                        rxN = n
+                    }
                 }
             }
 
@@ -116,20 +122,10 @@ func simulate(modules: Modules, times: Int, verbose: Bool = false) -> (counts: [
                 }
             }
         }
-
-        let sh = states.hashValue
-        if verbose {
-            print("")
-            print("after button press \(c) states hash is \(sh)")
-            print(states)
-            print("")
-        } else {
-            print("after button press \(c) states hash is \(sh)")
-        }
     }
 
-    let result = counts[false]! * counts[true]!
-    return (counts, result, countTillRx: countTillRx!)
+    let p1 = counts[false]! * counts[true]!
+    return (p1: p1, p2: rxN!)
 }
 
 func initConjunctions(modules: Modules, states: inout [String: Module.State]) {
@@ -160,13 +156,5 @@ func haveRx(modules: Modules) -> Bool {
 }
 
 let modules = readInput()
-
-if CommandLine.arguments.last == "-v" {
-    let p1 = simulate(modules: modules, times: 2, verbose: true)
-    print(p1)
-} else {
-    let p1 = simulate(modules: modules, times: 1000)
-    print(p1)
-}
-// print(p2)
-// print(p1.result)
+let r = simulate(modules: modules, times: 1000)
+print(r)
