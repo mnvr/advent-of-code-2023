@@ -141,8 +141,13 @@ func isAccepted(workflows: Workflows, part: Part) -> Bool {
 }
 
 func filterRanges(workflows: Workflows) -> Int {
-    let attributeRanges: AttributeRanges =
-        Dictionary(uniqueKeysWithValues: [.x, .m, .a, .s].map { ($0, 1...4000) })
+    func combinations(_ attributeRanges: [Attribute: ClosedRange<Int>]) -> Int {
+        attributeRanges.values.reduce(1, { $0 * $1.count })
+    }
+
+    let attributes: [Attribute] = [.x, .m, .a, .s]
+    let attributeRanges =
+        Dictionary(uniqueKeysWithValues: attributes.map { ($0, 1...4000) })
     var pending = [("in", attributeRanges)]
     var acceptedCount = 0
 
@@ -154,8 +159,9 @@ func filterRanges(workflows: Workflows) -> Int {
 
                 // Find the range to which this rule applies.
                 let attribute = condition.attribute
+                let validRange = condition.validRange
                 let range = attributeRanges[attribute]!
-                let newRange = range.clamped(to: condition.validRange)
+                let newRange = range.clamped(to: validRange)
 
                 // Create a new set of attribute ranges with this range, and
                 // apply the rule's action to it.
@@ -165,34 +171,34 @@ func filterRanges(workflows: Workflows) -> Int {
                 case .reject:
                     break
                 case .accept:
-                    acceptedCount += combinations(attributeRanges: newAttributeRanges)
+                    acceptedCount += combinations(newAttributeRanges)
                 case .send(let newWorkflow):
                     pending.append((newWorkflow, newAttributeRanges))
                 }
 
                 // There will be a leftover range, possibly empty. Continue
                 // processing it if it is not empty.
-                let remaining = remainingNonEmptyRanges(
-                    range: attributeRanges[condition.attribute]!,
-                    validRange: condition.validRange)
-                // If there are zero of them, then we're done with this pending
-                // entry
-                if remaining.count == 0 { continue nextPending }
-                // If there is one of them, that continues on with the sequence
-                // of rules in this workflow.
-                if remaining.count == 1 {
-                    attributeRanges[condition.attribute] = remaining[0]
+                //
+                // Because of how the problem is structured, either the leftover
+                // range will be of values lower than the valid range, or of
+                // values above the valid range, but it won't span both.
+                if range.lowerBound < validRange.lowerBound {
+                    attributeRanges[attribute] =
+                        range.lowerBound...(validRange.lowerBound - 1)
+                } else if validRange.upperBound < range.upperBound {
+                    attributeRanges[attribute] =
+                        (validRange.upperBound + 1)...range.upperBound
                 } else {
-                    // 2 of them. Haven't handled this case yet
-                    fatalError("found 2 remaining entries \(remaining)")
+                    continue nextPending
                 }
             } else {
-                // Unconditional rule, always a match, so consumes the whole ranges
+                // Unconditional rule, always a match, so consumes the whole.
+                // ranges
                 switch rule.action {
                 case .reject:
                     break
                 case .accept:
-                    acceptedCount += combinations(attributeRanges: attributeRanges)
+                    acceptedCount += combinations(attributeRanges)
                 case .send(let newWorkflow):
                     pending.append((newWorkflow, attributeRanges))
                 }
@@ -202,26 +208,6 @@ func filterRanges(workflows: Workflows) -> Int {
     }
 
     return acceptedCount
-}
-
-typealias AttributeRanges = [Attribute: ClosedRange<Int>]
-
-func combinations(attributeRanges: AttributeRanges) -> Int {
-    attributeRanges.values.reduce(1, { $0 * $1.count })
-}
-
-func remainingNonEmptyRanges(range: ClosedRange<Int>, validRange: ClosedRange<Int>
-) -> [ClosedRange<Int>] {
-    var result = [ClosedRange<Int>]()
-    // Before valid range
-    if range.lowerBound < validRange.lowerBound {
-        result.append(range.lowerBound...(validRange.lowerBound - 1))
-    }
-    // After valid range
-    if validRange.upperBound < range.upperBound {
-        result.append((validRange.upperBound + 1)...range.upperBound)
-    }
-    return result
 }
 
 let (workflows, parts) = readInput()
