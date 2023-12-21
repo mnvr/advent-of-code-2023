@@ -74,6 +74,7 @@ func simulate(modules: Modules, times: Int) -> (counts: [Bool: Int], result: Int
 
     for _ in 0..<times {
         var pending = [buttonPress]
+        counts[buttonPress.ping.pulse] = counts[buttonPress.ping.pulse, default: 0] + 1
         while let e = pending.popLast() {
             let destination = modules[e.to]!
             let state = states[e.to, default: Module.State()]
