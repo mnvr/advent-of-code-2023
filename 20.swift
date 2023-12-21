@@ -60,7 +60,7 @@ func propogate(
     case .conjunction:
         var newState = state
         newState[ping.from] = ping.pulse
-        return emit(!state.values.reduce(true, { $0 && $1 }), state: newState)
+        return emit(!newState.values.reduce(true, { $0 && $1 }), state: newState)
     default:
         return nil
     }
@@ -112,4 +112,5 @@ func simulate(modules: Modules, times: Int) -> (counts: [Bool: Int], result: Int
 
 let modules = readInput()
 let p1 = simulate(modules: modules, times: 1000)
-print(p1)
+// print(p1)
+print(p1.result)
