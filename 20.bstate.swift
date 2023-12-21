@@ -37,11 +37,13 @@ extension Module: CustomStringConvertible {
 }
 
 var modulesIndexToName: [Int: String] = [:]
-var verbose = switch CommandLine.arguments.last {
+var rxIndex: Int?
+let verbose = switch CommandLine.arguments.last {
     case "-v": 1
     case "-vv": 2
     default: 0
 }
+
 
 func readInput() -> [Module] {
     let broadcast = "broadcaster"
@@ -96,6 +98,9 @@ func readInput() -> [Module] {
         }
 
         modulesIndexToName[result.count - 1] = name
+        if name == "rx" {
+            rxIndex = result.count - 1
+        }
     }
 
     return result
@@ -145,8 +150,9 @@ func propogate(pulse: Pulse, module: Module) -> ([Pulse], Module)? {
     }
 }
 
-func simulate(modules: inout [Module]) -> Int {
+func simulate(modules: inout [Module]) -> (Int, Int) {
     let buttonPress = Pulse(value: false, from: -1, to: 0)
+
 
     var (ct, cf) = (0, 0)
     func count(_ pulse: Pulse) {
@@ -158,7 +164,8 @@ func simulate(modules: inout [Module]) -> Int {
     }
 
     var n = 0
-    while n < 1000 {
+    var rxn: Int? = rxIndex == nil ? 0 : nil
+    while n < 1000 || rxn == nil {
         n += 1
         show(modules: modules)
 
@@ -168,6 +175,10 @@ func simulate(modules: inout [Module]) -> Int {
             let pulse = pending[pi]
             count(pulse)
             pi += 1
+
+            if (pulse.to == rxIndex && !pulse.value) {
+                rxn = n
+            }
 
             let module = modules[pulse.to]
             if let (pulses, newModule) = propogate(pulse: pulse, module: module) {
@@ -180,7 +191,7 @@ func simulate(modules: inout [Module]) -> Int {
     if verbose > 0 {
         print("counts", ct, cf)
     }
-    return ct * cf
+    return (ct * cf, rxn ?? 0)
 }
 
 func show(modules: [Module]) {
