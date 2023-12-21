@@ -66,11 +66,29 @@ func propogate(
     }
 }
 
+func initConjunctions(modules: Modules, states: inout [String: Module.State]) {
+    var inputs = [String: Set<String>]()
+
+    for (input, module) in modules {
+        for output in module.outputs {
+            inputs[output, default: Set()].insert(input)
+        }
+    }
+
+    for (name, module) in modules {
+        if module.type == .conjunction, let inputs = inputs[name] {
+            states[name] = Dictionary(uniqueKeysWithValues: inputs.map { ($0, false)} )
+        }
+    }
+}
+
 func simulate(modules: Modules, times: Int) -> (counts: [Bool: Int], result: Int) {
     let buttonPress = (ping: (pulse: false, from: "button"), to: "broadcaster")
 
     var counts = [Bool: Int]()
     var states = [String: Module.State]()
+
+    initConjunctions(modules: modules, states: &states)
 
     for _ in 0..<times {
         var pending = [buttonPress]
