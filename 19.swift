@@ -3,24 +3,40 @@ typealias Workflows = [String: Workflow]
 typealias Workflow = [Rule]
 
 enum Attribute: String { case x, m, a, s }
+
 enum Op { case lt, gt }
+
 struct Condition {
-    let attr: Attribute
     let attribute: Attribute
     let op: Op
     let num: Int
 
+    func isValid(part: Part) -> Bool {
+        switch attribute {
+            case .x: isValid(part.x)
+            case .m: isValid(part.m)
+            case .a: isValid(part.a)
+            case .s: isValid(part.s)
+        }
+    }
+
+    private func isValid(_ x: Int) -> Bool {
+        switch op {
+            case .lt: x < num
+            case .gt: x > num
+        }
+    }
+
     var validRange: ClosedRange<Int> {
         switch op {
-            case .lt: return 1...(num - 1)
-            case .gt: return (num + 1)...4000
+            case .lt: 1...(num - 1)
+            case .gt: (num + 1)...4000
         }
     }
 }
 
 struct Rule {
-    let condition: (Part) -> Bool
-    let condition2: Condition?
+    let condition: Condition?
     let action: Action
 }
 
@@ -58,44 +74,17 @@ func parseWorkflow(_ line: String) -> (name: String, workflow: Workflow) {
 }
 
 func parseRule<S: StringProtocol>(_ s: S) -> Rule {
-    let splits = s.split(separator: ":")
-    if splits.count == 2 {
-        return Rule(condition: parseCondition(splits[0]),
-                    condition2: parseCondition2(splits[0]),
-                    action: parseAction(splits[1]))
+    let sp = s.split(separator: ":")
+    if sp.count == 2 {
+        return Rule(condition: parseCondition(sp[0]), action: parseAction(sp[1]))
     } else {
-        return Rule(condition: { _ in true }, condition2: nil, action: parseAction(splits[0]))
+        return Rule(condition: nil, action: parseAction(sp[0]))
     }
 }
 
-func parseCondition<S: StringProtocol>(_ s: S) -> ((Part) -> Bool) {
+func parseCondition<S: StringProtocol>(_ s: S) -> Condition {
     var splits = s.split(separator: "<")
-    if splits.count > 1 {
-        let num = Int(splits[1])!
-        switch splits[0] {
-        case "x": return { p in p.x < num }
-        case "m": return { p in p.m < num }
-        case "a": return { p in p.a < num }
-        case "s": return { p in p.s < num }
-        default: fatalError()
-        }
-    } else {
-        splits = s.split(separator: ">")
-        let num = Int(splits[1])!
-        switch splits[0] {
-        case "x": return { p in p.x > num }
-        case "m": return { p in p.m > num }
-        case "a": return { p in p.a > num }
-        case "s": return { p in p.s > num }
-        default: fatalError()
-        }
-    }
-}
-
-func parseCondition2<S: StringProtocol>(_ s: S) -> Condition {
     var op: Op
-
-    var splits = s.split(separator: "<")
     if splits.count > 1 {
         op = .lt
     } else {
@@ -103,10 +92,10 @@ func parseCondition2<S: StringProtocol>(_ s: S) -> Condition {
         op = .gt
     }
 
-    let attr = Attribute(rawValue: String(splits[0]))!
+    let attribute = Attribute(rawValue: String(splits[0]))!
     let num = Int(splits[1])!
 
-    return Condition(attr: attr, attribute: attr, op: op, num: num)
+    return Condition(attribute: attribute, op: op, num: num)
 }
 
 func parseAction<S: StringProtocol>(_ s: S) -> Action {
@@ -134,25 +123,21 @@ func process(workflows: Workflows, parts: [Part]) -> Int {
 
 func doesAccept(part: Part, workflows: Workflows) -> Bool {
     var workflowName = "in"
-    while true {
+    next: while true {
         let workflow = workflows[workflowName]!
-        // print("using workflow \(workflowName): \(workflow)")
-        next: for rule in workflow {
-            // print(part, workflowName, rule)
-            if rule.condition(part) {
-                // print("match")
+        for rule in workflow {
+            if let condition = rule.condition, !condition.isValid(part: part) {
+            } else {
                 switch rule.action {
                     case .accept: return true
                     case .reject: return false
                     case .send(let wfn):
                         workflowName = wfn
-                        break next
+                        continue next
                 }
             }
         }
     }
-    // fatalError(workflowName)
-    // return false
 }
 
 func filterRanges(workflows: Workflows) -> Int {
@@ -164,7 +149,7 @@ func filterRanges(workflows: Workflows) -> Int {
     nextPending: while let (workflow, _attributeRanges) = pending.popLast() {
         var attributeRanges = _attributeRanges
         for rule in workflows[workflow]! {
-            if let condition = rule.condition2 {
+            if let condition = rule.condition {
                 // Conditional rule, will cause attributeRanges to split.
 
                 // Find the part to which this rule applies.
