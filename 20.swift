@@ -8,6 +8,10 @@ struct Module {
     let name: String
     let type: MType?
     let outputs: [String]
+
+    static func named(_ name: String) -> Module {
+        Module(name: name, type: nil, outputs: [])
+    }
 }
 
 typealias Modules = [String: Module]
@@ -57,12 +61,53 @@ func propogate(
             return emit(pulse, state: newState)
         }
     case .conjunction:
-        var newState = state
-        newState[ping.from] = ping.pulse
-        return emit(!newState.values.reduce(true, { $0 && $1 }), state: newState)
+        let newState = state.merging([ping.from: ping.pulse]) { _, new in new }
+        let pulse = !newState.values.reduce(true) { $0 && $1 }
+        return emit(pulse, state: newState)
     default:
         return nil
     }
+}
+
+func simulate(modules: Modules, times: Int) -> (counts: [Bool: Int], result: Int, countTillRx: Int) {
+    let buttonPress = (ping: (pulse: false, from: "button"), to: "broadcaster")
+
+    var counts = [true: 0, false: 0]
+    // Examples don't have "rx", so don't go into an infinite loop.
+    var countTillRx: Int? = haveRx(modules: modules) ? nil : 0
+    var states = [String: Module.State]()
+
+    initConjunctions(modules: modules, states: &states)
+
+    var c = 0
+    while c < times || countTillRx == nil {
+        c += 1
+
+        var pending = [buttonPress]
+        counts[buttonPress.ping.pulse]? += 1
+
+        while let (ping, to) = pending.popLast() {
+            if to == "rx" {
+                print("at count \(c) sending \(e.ping.pulse) to rx")
+                if !ping.pulse {
+                    countTillRx = c
+                }
+            }
+
+            let module = modules[to, default: .named(to)]
+            let state = states[to, default: Module.State()]
+            if let change = propogate(ping: ping, module: module, state: state) {
+                states[to] = change.state
+                pending.append(contentsOf: change.emits)
+                for b in change.emits.map({ $0.ping.pulse }) {
+                    counts[b]? += 1
+                }
+            }
+        }
+    }
+
+    let result = counts[false]! * counts[true]!
+    return (counts, result, countTillRx: countTillRx!)
 }
 
 func initConjunctions(modules: Modules, states: inout [String: Module.State]) {
@@ -76,7 +121,8 @@ func initConjunctions(modules: Modules, states: inout [String: Module.State]) {
 
     for (name, module) in modules {
         if module.type == .conjunction, let inputs = inputs[name] {
-            states[name] = Dictionary(uniqueKeysWithValues: inputs.map { ($0, false)} )
+            let initialState = inputs.map { ($0, false) }
+            states[name] = Dictionary(uniqueKeysWithValues: initialState)
         }
     }
 }
@@ -91,92 +137,8 @@ func haveRx(modules: Modules) -> Bool {
     return false
 }
 
-func simulate(modules: Modules, times: Int) -> (counts: [Bool: Int], result: Int, countTillRx: Int) {
-    let buttonPress = (ping: (pulse: false, from: "button"), to: "broadcaster")
-
-    var counts = [Bool: Int]()
-    // Examples don't have "rx", so don't go into an infinite loop.
-    var countTillRx: Int? = haveRx(modules: modules) ? nil : 0
-    var states = [String: Module.State]()
-
-    initConjunctions(modules: modules, states: &states)
-
-    var i = 0
-    while i < times || countTillRx == nil {
-        i += 1
-
-        var pending = [buttonPress]
-        counts[buttonPress.ping.pulse] = counts[buttonPress.ping.pulse, default: 0] + 1
-        while let e = pending.popLast() {
-            print(e)
-            let destination = modules[e.to, default: Module(name: e.to, type: nil, outputs: [])]
-            let state = states[e.to, default: Module.State()]
-            if let change = propogate(ping: e.ping, module: destination, state: state) {
-                states[e.to] = change.state
-                pending.append(contentsOf: change.emits)
-                for b in change.emits.map({ $0.ping.pulse }) {
-                    counts[b] = counts[b, default: 0] + 1
-                }
-                if countTillRx == nil {
-                    for c in change.emits {
-                        if c.to == "rx" && !c.ping.pulse {
-                            countTillRx = i
-                            break
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    let result = counts[false, default: 0] * counts[true, default: 0]
-    return (counts, result, countTillRx: countTillRx!)
-}
-
-
-func simulateP2(modules: Modules) -> Int {
-    // Examples don't have "rx", so don't go into an infinite loop.
-    if (!haveRx(modules: modules)) {
-        return 0
-    }
-
-    let buttonPress = (ping: (pulse: false, from: "button"), to: "broadcaster")
-
-    var counts = [Bool: Int]()
-    var states = [String: Module.State]()
-
-    initConjunctions(modules: modules, states: &states)
-
-    var c = 0
-    while true {
-        c += 1
-
-        var pending = [buttonPress]
-        counts[buttonPress.ping.pulse] = counts[buttonPress.ping.pulse, default: 0] + 1
-        while let e = pending.popLast() {
-            if e.to == "rx" {
-                print("at count \(c) sending \(e.ping.pulse) to rx")
-                if !e.ping.pulse {
-                    return c
-                }
-            }
-
-            let destination = modules[e.to, default: Module(name: e.to, type: nil, outputs: [])]
-            let state = states[e.to, default: Module.State()]
-            if let change = propogate(ping: e.ping, module: destination, state: state) {
-                states[e.to] = change.state
-                pending.append(contentsOf: change.emits)
-                for b in change.emits.map({ $0.ping.pulse }) {
-                    counts[b] = counts[b, default: 0] + 1
-                }
-            }
-        }
-    }
-}
-
 let modules = readInput()
 let p1 = simulate(modules: modules, times: 1000)
-// let p2 = simulateP2(modules: modules)
 print(p1)
 // print(p2)
 // print(p1.result)
