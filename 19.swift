@@ -157,7 +157,9 @@ func doesAccept(part: Part, workflows: Workflows) -> Bool {
 func filterRanges(workflows: Workflows) -> Int {
     let attributes: [Attribute] = [.x, .m, .a, .s]
     var pending = attributes.map { (1...4000, $0, "in") }
-    var acceptedCount = 0
+    // var acceptedCount = 0
+    var acceptedCount = [Attribute: Int]()
+    // attributes.forEach { acceptedCount[$0] = 0 }
     next: while let (range, attribute, workflow) = pending.popLast() {
         print("processing range \(range) of \(attribute) under workflow \(workflow)")
         for rule in workflows[workflow]! {
@@ -168,7 +170,7 @@ func filterRanges(workflows: Workflows) -> Int {
                         case .reject:
                             break
                         case .accept:
-                            acceptedCount += newRange.count
+                            acceptedCount[attribute] = acceptedCount[attribute, default: 0] + newRange.count
                         case .send(let workflow):
                             pending.append((newRange, cond.attr, workflow))
                     }
@@ -178,7 +180,8 @@ func filterRanges(workflows: Workflows) -> Int {
                 // unconditional rule, always a match
                 switch rule.action {
                 case .accept:
-                    acceptedCount += range.count
+                    acceptedCount[attribute] = acceptedCount[attribute, default: 0] + range.count
+                    // acceptedCount += range.count
                     continue next
                 case .reject:
                     continue next
@@ -189,7 +192,8 @@ func filterRanges(workflows: Workflows) -> Int {
             }
         }
     }
-    return acceptedCount
+    print(acceptedCount)
+    return acceptedCount.values.reduce(1, *)
 }
 
 let (workflows, parts) = readInput()
