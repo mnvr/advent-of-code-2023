@@ -8,6 +8,13 @@ struct Condition {
     let attr: Attribute
     let op: Op
     let num: Int
+
+    var validRange: ClosedRange<Int> {
+        switch op {
+            case .lt: return 1...(num - 1)
+            case .gt: return (num + 1)...4000
+        }
+    }
 }
 
 struct Rule {
@@ -148,15 +155,35 @@ func doesAccept(part: Part, workflows: Workflows) -> Bool {
 }
 
 func filterRanges(workflows: Workflows) -> Int {
-    let ranges = Array(repeating: 1...4000, count: 4)
-    var pending = ranges.map { ($0, "in") }
-    while let (range, workflow) = pending.popLast() {
+    let attributes: [Attribute] = [.x, .m, .a, .s]
+    var pending = attributes.map { ($0, 1...4000, "in") }
+    var acceptedCount = 0
+    while let (attribute, range, workflow) = pending.popLast() {
         print(range, workflow)
-        // for rule in range {
-
-        // }
+        for rule in workflows[workflow]! {
+            if let cond = rule.condition2 {
+                if cond.attr == attribute {
+                    let newRange = range.clamped(to: cond.validRange)
+                    switch rule.action {
+                        case .reject:
+                            break
+                        case .accept:
+                            acceptedCount += newRange.count
+                        case .send(let workflow):
+                            pending.append((cond.attr, newRange, workflow))
+                    }
+                    break
+                }
+            } else {
+                switch rule.action {
+                case .accept: acceptedCount += range.count
+                default: break
+                }
+                break
+            }
+        }
     }
-    return 0
+    return acceptedCount
 }
 
 let (workflows, parts) = readInput()
