@@ -74,7 +74,7 @@ func simulate(modules: Modules, times: Int) -> (counts: [Bool: Int], result: Int
 
     var counts = [true: 0, false: 0]
     // Examples don't have "rx", so don't go into an infinite loop.
-    var countTillRx: Int? = haveRx(modules: modules) ? nil : 0
+    var countTillRx: Int? = haveRx(modules: modules) ? 0 : 0
     var states = [String: Module.State]()
 
     initConjunctions(modules: modules, states: &states)
@@ -84,11 +84,16 @@ func simulate(modules: Modules, times: Int) -> (counts: [Bool: Int], result: Int
         c += 1
 
         var pending = [buttonPress]
+        var pi = 0
+
         counts[buttonPress.ping.pulse]? += 1
 
-        while let (ping, to) = pending.popLast() {
+        while pi < pending.count {
+            let (ping, to) = pending[pi]
+            pi += 1
+
             if to == "rx" {
-                print("at count \(c) sending \(e.ping.pulse) to rx")
+                print("at count \(c) sending \(ping.pulse) to rx")
                 if !ping.pulse {
                     countTillRx = c
                 }
