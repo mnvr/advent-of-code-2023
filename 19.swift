@@ -163,7 +163,6 @@ func filterRanges(workflows: Workflows) -> Int {
 
     nextPending: while let (workflow, _attributeRanges) = pending.popLast() {
         var attributeRanges = _attributeRanges
-        print("processing attribute ranges \(attributeRanges) under workflow \(workflow) - pending \(pending.count)")
         for rule in workflows[workflow]! {
             if let condition = rule.condition2 {
                 // Conditional rule, will cause attributeRanges to split.
@@ -248,7 +247,6 @@ func remainingNonEmptyRanges(range: ClosedRange<Int>, validRange: ClosedRange<In
 }
 
 let (workflows, parts) = readInput()
-// let p1 = process(workflows: workflows, parts: parts)
-// print(p1)
+let p1 = process(workflows: workflows, parts: parts)
 let p2 = filterRanges(workflows: workflows)
-print(p2)
+print(p1, p2)
