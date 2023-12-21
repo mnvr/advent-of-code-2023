@@ -156,10 +156,10 @@ func doesAccept(part: Part, workflows: Workflows) -> Bool {
 
 func filterRanges(workflows: Workflows) -> Int {
     let attributes: [Attribute] = [.x, .m, .a, .s]
-    var pending = attributes.map { ($0, 1...4000, "in") }
+    var pending = attributes.map { (1...4000, $0, "in") }
     var acceptedCount = 0
-    while let (attribute, range, workflow) = pending.popLast() {
-        print(range, workflow)
+    next: while let (range, attribute, workflow) = pending.popLast() {
+        print("processing range \(range) of \(attribute) under workflow \(workflow)")
         for rule in workflows[workflow]! {
             if let cond = rule.condition2 {
                 if cond.attr == attribute {
@@ -170,16 +170,22 @@ func filterRanges(workflows: Workflows) -> Int {
                         case .accept:
                             acceptedCount += newRange.count
                         case .send(let workflow):
-                            pending.append((cond.attr, newRange, workflow))
+                            pending.append((newRange, cond.attr, workflow))
                     }
-                    break
+                    continue next
                 }
             } else {
+                // unconditional rule, always a match
                 switch rule.action {
-                case .accept: acceptedCount += range.count
-                default: break
+                case .accept:
+                    acceptedCount += range.count
+                    continue next
+                case .reject:
+                    continue next
+                case .send(let newWorkflow):
+                    pending.append((range, attribute, newWorkflow))
+                    continue next
                 }
-                break
             }
         }
     }
