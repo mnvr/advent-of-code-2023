@@ -156,44 +156,49 @@ func doesAccept(part: Part, workflows: Workflows) -> Bool {
 }
 
 func filterRanges(workflows: Workflows) -> Int {
-    func rangeCombinations(_ ranges: [Attribute: ClosedRange<Int>]) -> Int {
-        ranges.values.reduce(1, { $0 * $1.count })
-    }
     let attributes: [Attribute] = [.x, .m, .a, .s]
-    let attributeRanges: [Attribute: ClosedRange<Int>] = [// Dictionary(uniqueKeysWithValues: attributes.map { ($0, 1...4000 })
-        .x: 1...4000,
-        .m: 1...4000,
-        .a: 1...4000,
-        .s: 1...4000
-    ]
+    let attributeRanges = Dictionary(uniqueKeysWithValues: attributes.map { ($0, 1...4000) })
     var pending = [("in", attributeRanges)]
     var acceptedCount = 0
 
-    nextPending: while let (workflow, attributeRanges) = pending.popLast() {
-        print("processing attribute ranges \(attributeRanges) under workflow \(workflow)")
+    nextPending: while let (workflow, _attributeRanges) = pending.popLast() {
+        var attributeRanges = _attributeRanges
+        print("processing attribute ranges \(attributeRanges) under workflow \(workflow) - pending \(pending.count)")
         for rule in workflows[workflow]! {
             if let condition = rule.condition2 {
                 // Conditional rule, will cause attributeRanges to split.
-                let range = attributeRanges[condition.attribute]!
-                let newRange = range.clamped(to: condition.validRange)
-                var newAttributeRanges = attributeRanges
-                newAttributeRanges[condition.attribute] = newRange
 
-                // Remember the parts that we didn't process here
-                let remaining = remainingNonEmptyRanges(range: range, validRange: condition.validRange)
-                for range in remaining {
-                    newAttributeRanges[condition.attribute] = range
-                    pending.append((workflow, attributeRanges))
+                // Find the part to which this rule applies.
+                let newAttributeRanges = transformed(
+                    attributeRanges: attributeRanges,
+                    attribute: condition.attribute) {
+                    $0.clamped(to: condition.validRange)
                 }
 
-                // Process the part to which the condition applies
+                // Process the part to which the condition applied.
                 switch rule.action {
                 case .reject:
                     break
                 case .accept:
-                    acceptedCount += newAttributeRanges.reduce(1, { $0 * $1.value.count })
+                    acceptedCount += combinations(attributeRanges: newAttributeRanges)
                 case .send(let newWorkflow):
                     pending.append((newWorkflow, newAttributeRanges))
+                }
+
+                // For the parts that we didn't process here
+                let remaining = remainingNonEmptyRanges(
+                    range: attributeRanges[condition.attribute]!,
+                    validRange: condition.validRange)
+                // If there are zero of them, then we're done with this pending
+                // entry
+                if remaining.count == 0 { continue nextPending }
+                // If there is one of them, that continues on with the sequence
+                // of rules in this workflow.
+                if remaining.count == 1 {
+                    attributeRanges[condition.attribute] = remaining[0]
+                } else {
+                    // 2 of them. Haven't handled this case yet
+                    fatalError("found 2 remaining entries \(remaining)")
                 }
             } else {
                 // Unconditional rule, always a match, so applies to the whole ranges
@@ -201,7 +206,7 @@ func filterRanges(workflows: Workflows) -> Int {
                 case .reject:
                     break
                 case .accept:
-                    acceptedCount += attributeRanges.reduce(1, { $0 * $1.value.count })
+                    acceptedCount += combinations(attributeRanges: attributeRanges)
                 case .send(let newWorkflow):
                     pending.append((newWorkflow, attributeRanges))
                 }
@@ -211,6 +216,21 @@ func filterRanges(workflows: Workflows) -> Int {
         }
     }
     return acceptedCount
+}
+
+typealias AttributeRanges = [Attribute: ClosedRange<Int>]
+
+func combinations(attributeRanges: AttributeRanges) -> Int {
+    attributeRanges.values.reduce(1, { $0 * $1.count })
+}
+
+func transformed(
+    attributeRanges:AttributeRanges, attribute: Attribute,
+    transform: (ClosedRange<Int>) -> ClosedRange<Int>
+) -> AttributeRanges {
+    var copy = attributeRanges
+    copy[attribute] = transform(attributeRanges[attribute]!)
+    return copy
 }
 
 func remainingNonEmptyRanges(range: ClosedRange<Int>, validRange: ClosedRange<Int>
