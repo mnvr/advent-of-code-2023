@@ -70,108 +70,113 @@ func readInput() -> Modules {
     return result
 }
 
-// extension Module {
-//     typealias State = [String: Bool]
-//     typealias Pulse = (value: Bool, from: String, to: String)
-// }
+typealias State = [String: Bool]
 
-// typealias PropogateResult = (state: Module.State, pulses: [Module.Pulse])
+func initStates(modules: Modules) -> [String: State] {
+    modules.compactMapValues { module in
+        switch(module.type) {
+            case .flip: ["": false]
+            case .conjunction:
+                Dictionary(uniqueKeysWithValues: module.inputs.map { ($0, false) })
+            default: nil
+        }
+    }
+}
 
-// func propogate(
-//     pulse: Module.Pulse, module: Module, state: Module.State
-// ) -> PropogateResult? {
-//     func emit(state: Module.State, value v: Bool) -> PropogateResult {
-//         (state: state,
-//          pulses: module.outputs.map { (value: v, from: module.name, to: $0) })
-//     }
+struct Pulse {
+    let value: Bool
+    let from, to: String
+}
 
-//     switch module.type {
-//     case .broadcast:
-//         return emit(state: state, value: pulse.value)
-//     case .flip:
-//         if pulse.value {
-//             return nil
-//         } else {
-//             let newValue = !state["", default: false]
-//             let newState = state.merging(["": newValue]) { _, new in new }
-//             return emit(state: newState, value: newValue)
-//         }
-//     case .conjunction:
-//         let newState = state.merging([pulse.from: pulse.value]) { _, new in new }
-//         let newValue = !newState.values.reduce(true) { $0 && $1 }
-//         return emit(state: newState, value: newValue)
-//     default:
-//         return nil
-//     }
-// }
+extension Pulse: CustomStringConvertible {
+    var description: String {
+        return "\(from) -\(value ? "high" : "low")-> \(to)"
+    }
+}
 
-// func simulate(modules: Modules, times: Int) -> (p1: Int, p2: Int) {
-//     let buttonPress = (value: false, from: "button", to: "broadcaster")
+func propogate(
+    pulse: Pulse, module: Module, state: State?
+) -> (state: State?, pulses: [Pulse])? {
+     func emit(_ v: Bool) -> [Pulse] {
+         module.outputs.map { Pulse(value: v, from: pulse.to, to: $0) }
+     }
 
-//     var counts = [true: 0, false: 0]
-//     // Examples don't have "rx", so don't go into an infinite loop. But since
-//     // this solution doesn't work for p2 yet, this search for rx is actually
-//     // always disabled for now.
-//     var rxN: Int? = haveRx(modules: modules) ? 0 : 0
-//     var states = [String: Module.State]()
+    switch module.type {
+    case .broadcast:
+        return (state, emit(pulse.value))
+    case .flip:
+        if pulse.value {
+            return nil
+        } else {
+            let newValue = !state!["", default: false]
+            let newState = state?.merging(["": newValue]) { _, new in new }
+            return (newState, emit(newValue))
+        }
+    case .conjunction:
+        let newState = state!.merging([pulse.from: pulse.value]) { _, new in new }
+        let newValue = !newState.values.reduce(true) { $0 && $1 }
+        return (newState, emit(newValue))
+    case nil:
+        return nil
+    }
+}
 
-//     initConjunctions(modules: modules, states: &states)
+func simulate(modules: Modules, times: Int) -> Int {
+    let buttonPress = Pulse(value: false, from: "button", to: "broadcaster")
 
-//     var n = 0
-//     while n < times || rxN == nil {
-//         n += 1
+    var counts = [true: 0, false: 0]
+    func count(_ pulse: Pulse) {
+        counts[pulse.value]? += 1
+        if verbose > 0 {
+            print(pulse)
+        }
+    }
 
-//         var pending = [buttonPress]
-//         var pi = 0
+    var states = initStates(modules: modules)
+    show(modules: modules, states: states)
 
-//         counts[buttonPress.value]? += 1
+    var n = 0
+    while n < times {
+        n += 1
 
-//         while pi < pending.count {
-//             let pulse = pending[pi]
-//             let (value, from, to) = pulse
-//             pi += 1
+        var pending = [buttonPress]
+        var pi = 0
 
-//             if verbose > 0 {
-//                 print("button press \(n) pulse \(pi)\t\t\(from) -\(value ? "high" : "low")-> \(to)")
-//             }
+        while pi < pending.count {
+            let pulse = pending[pi]
+            let to = pulse.to
+            pi += 1
+            count(pulse)
 
-//             if to == "rx" {
-//                 if !value {
-//                     print("button press \(n) sending \(value) to rx")
-//                     if rxN == nil || rxN == 0 {
-//                         rxN = n
-//                     }
-//                 }
-//             }
+            let module = modules[to]!
+            let state = states[to]
+            if let new = propogate(pulse: pulse, module: module, state: state) {
+                states[to] = new.state
+                pending.append(contentsOf: new.pulses)
+            }
+        }
+    }
 
-//             let module = modules[to, default: .named(to)]
-//             let state = states[to, default: Module.State()]
-//             if let new = propogate(pulse: pulse, module: module, state: state) {
-//                 states[to] = new.state
-//                 pending.append(contentsOf: new.pulses)
-//                 for b in new.pulses.map({ $0.value }) {
-//                     counts[b]? += 1
-//                 }
-//             }
-//         }
-//     }
+    show(modules: modules, states: states)
+    if verbose > 0 {
+        print(counts)
+    }
 
-//     let p1 = counts[false]! * counts[true]!
-//     return (p1: p1, p2: rxN!)
-// }
+    return counts[false]! * counts[true]!
+}
 
+func show(modules: Modules, states: [String: State]) {
+    if verbose > 0 {
+        print(modules)
+        print(states)
+    }
+}
 
-// func haveRx(modules: Modules) -> Bool {
-//     for (input, module) in modules {
-//         if input == "rx" { return true }
-//         for output in module.outputs {
-//             if output == "rx" { return true }
-//         }
-//     }
-//     return false
-// }
+func analyze(modules: Modules) -> Int {
+    return 0
+}
 
 let modules = readInput()
-print(modules)
-// let r = simulate(modules: modules, times: 1000)
-// print(r)
+let p1 = simulate(modules: modules, times: 1000)
+let p2 = analyze(modules: modules)
+print(p1, p2)
