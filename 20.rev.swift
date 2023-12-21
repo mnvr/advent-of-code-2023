@@ -21,10 +21,8 @@ extension Module: CustomStringConvertible {
         let id = inputs.joined(separator: "|")
         let od = outputs.joined(separator: "|")
         return [
-            td,
-            inputs.isEmpty ? nil : "inputs \(id)",
-            outputs.isEmpty ? nil : "outputs \(od)"
-        ].compactMap({ $0 }).joined(separator: " ")
+            inputs.isEmpty ? nil : "\(id)>", td, outputs.isEmpty ? nil : ">\(od)"
+        ].compactMap({ $0 }).joined(separator: "")
     }
 }
 
