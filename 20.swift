@@ -66,25 +66,31 @@ func propogate(
     }
 }
 
-func simulate(modules: Modules) -> (counts: [Bool: Int], dummy: Bool) {
+func simulate(modules: Modules, times: Int) -> (counts: [Bool: Int], result: Int) {
+    let buttonPress = (ping: (pulse: false, from: "button"), to: "broadcaster")
+
     var counts = [Bool: Int]()
     var states = [String: Module.State]()
-    let buttonPress = (ping: (pulse: false, from: "button"), to: "broadcaster")
-    var pending = [buttonPress]
-    while let e = pending.popLast() {
-        let destination = modules[e.to]!
-        let state = states[e.to, default: Module.State()]
-        if let change = propogate(ping: e.ping, module: destination, state: state) {
-            states[e.to] = change.state
-            pending.append(contentsOf: change.emits)
-            for b in change.emits.map({ $0.ping.pulse }) {
-                counts[b] = counts[b, default: 0] + 1
+
+    for _ in 0..<times {
+        var pending = [buttonPress]
+        while let e = pending.popLast() {
+            let destination = modules[e.to]!
+            let state = states[e.to, default: Module.State()]
+            if let change = propogate(ping: e.ping, module: destination, state: state) {
+                states[e.to] = change.state
+                pending.append(contentsOf: change.emits)
+                for b in change.emits.map({ $0.ping.pulse }) {
+                    counts[b] = counts[b, default: 0] + 1
+                }
             }
         }
     }
-    return (counts, true)
+
+    let result = counts[false, default: 0] * counts[true, default: 0]
+    return (counts, result)
 }
 
 let modules = readInput()
-let (counts, _) = simulate(modules: modules)
-print(counts)
+let p1 = simulate(modules: modules, times: 1000)
+print(p1)
