@@ -67,7 +67,7 @@ func propogate(
     }
 }
 
-func simulate(modules: Modules, times: Int) -> (counts: [Bool: Int], result: Int, countTillRx: Int) {
+func simulate(modules: Modules, times: Int, verbose: Bool = false) -> (counts: [Bool: Int], result: Int, countTillRx: Int) {
     let buttonPress = (value: false, from: "button", to: "broadcaster")
 
     var counts = [true: 0, false: 0]
@@ -92,12 +92,16 @@ func simulate(modules: Modules, times: Int) -> (counts: [Bool: Int], result: Int
 
         while pi < pending.count {
             let pulse = pending[pi]
-            let (value, _, to) = pulse
+            let (value, from, to) = pulse
             pi += 1
 
+            if verbose {
+                print("button press \(c) pulse \(pi)\t\t\(from) -\(value ? "high" : "low")-> \(to)")
+            }
+
             if to == "rx" {
-                print("at count \(c) sending \(value) to rx")
                 if !value {
+                    print("at count \(c) sending \(value) to rx")
                     countTillRx = c
                 }
             }
@@ -111,6 +115,16 @@ func simulate(modules: Modules, times: Int) -> (counts: [Bool: Int], result: Int
                     counts[b]? += 1
                 }
             }
+        }
+
+        let sh = states.hashValue
+        if verbose {
+            print("")
+            print("after button press \(c) pulse states hash is \(sh)")
+            print(states)
+            print("")
+        } else {
+            print("after button press \(c) pulse states hash is \(sh)")
         }
     }
 
@@ -146,7 +160,13 @@ func haveRx(modules: Modules) -> Bool {
 }
 
 let modules = readInput()
-let p1 = simulate(modules: modules, times: 1000)
-print(p1)
+
+if CommandLine.arguments.last == "-v" {
+    let p1 = simulate(modules: modules, times: 4, verbose: true)
+    print(p1)
+} else {
+    let p1 = simulate(modules: modules, times: 1000)
+    print(p1)
+}
 // print(p2)
 // print(p1.result)
