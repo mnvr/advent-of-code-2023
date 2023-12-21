@@ -34,47 +34,45 @@ func readInput() -> Modules {
 
 extension Module {
     typealias State = [String: Bool]
-    typealias Ping = (pulse: Bool, from: String)
-    typealias Emittance = (ping: Ping, to: String)
+    typealias Pulse = (value: Bool, from: String, to: String)
 }
 
-typealias PropogateResult = (state: Module.State, emits: [Module.Emittance])
+typealias PropogateResult = (state: Module.State, pulses: [Module.Pulse])
 
 func propogate(
-    ping: Module.Ping, module: Module, state: Module.State
+    pulse: Module.Pulse, module: Module, state: Module.State
 ) -> PropogateResult? {
-    let name = module.name
-    func emit(_ pulse: Bool, state _s: Module.State? = nil) -> PropogateResult {
-        (state: _s ?? state,
-         emits: module.outputs.map { ((pulse: pulse, from: name), to: $0) })
+    func emit(state: Module.State, value v: Bool) -> PropogateResult {
+        (state: state,
+         pulses: module.outputs.map { (value: v, from: module.name, to: $0) })
     }
 
     switch module.type {
     case .broadcast:
-        return emit(ping.pulse)
+        return emit(state: state, value: pulse.value)
     case .flip:
-        if ping.pulse {
+        if pulse.value {
             return nil
         } else {
-            let pulse = !state["", default: false]
-            let newState = state.merging(["": pulse]) { _, new in new }
-            return emit(pulse, state: newState)
+            let newValue = !state["", default: false]
+            let newState = state.merging(["": newValue]) { _, new in new }
+            return emit(state: newState, value: newValue)
         }
     case .conjunction:
-        let newState = state.merging([ping.from: ping.pulse]) { _, new in new }
-        let pulse = !newState.values.reduce(true) { $0 && $1 }
-        return emit(pulse, state: newState)
+        let newState = state.merging([pulse.from: pulse.value]) { _, new in new }
+        let newValue = !newState.values.reduce(true) { $0 && $1 }
+        return emit(state: newState, value: newValue)
     default:
         return nil
     }
 }
 
 func simulate(modules: Modules, times: Int) -> (counts: [Bool: Int], result: Int, countTillRx: Int) {
-    let buttonPress = (ping: (pulse: false, from: "button"), to: "broadcaster")
+    let buttonPress = (value: false, from: "button", to: "broadcaster")
 
     var counts = [true: 0, false: 0]
     // Examples don't have "rx", so don't go into an infinite loop.
-    var countTillRx: Int? = haveRx(modules: modules) ? 0 : 0
+    var countTillRx: Int? = haveRx(modules: modules) ? nil : 0
     var states = [String: Module.State]()
 
     initConjunctions(modules: modules, states: &states)
@@ -83,28 +81,33 @@ func simulate(modules: Modules, times: Int) -> (counts: [Bool: Int], result: Int
     while c < times || countTillRx == nil {
         c += 1
 
+        if c == 100_000 { // TODO: temporary
+             countTillRx = 0
+        }
+
         var pending = [buttonPress]
         var pi = 0
 
-        counts[buttonPress.ping.pulse]? += 1
+        counts[buttonPress.value]? += 1
 
         while pi < pending.count {
-            let (ping, to) = pending[pi]
+            let pulse = pending[pi]
+            let (value, _, to) = pulse
             pi += 1
 
             if to == "rx" {
-                print("at count \(c) sending \(ping.pulse) to rx")
-                if !ping.pulse {
+                print("at count \(c) sending \(value) to rx")
+                if !value {
                     countTillRx = c
                 }
             }
 
             let module = modules[to, default: .named(to)]
             let state = states[to, default: Module.State()]
-            if let change = propogate(ping: ping, module: module, state: state) {
-                states[to] = change.state
-                pending.append(contentsOf: change.emits)
-                for b in change.emits.map({ $0.ping.pulse }) {
+            if let new = propogate(pulse: pulse, module: module, state: state) {
+                states[to] = new.state
+                pending.append(contentsOf: new.pulses)
+                for b in new.pulses.map({ $0.value }) {
                     counts[b]? += 1
                 }
             }
