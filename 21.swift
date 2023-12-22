@@ -16,7 +16,7 @@ struct Grid {
     init(map: Map) {
         self.map = map
         self.start = Grid.findStart(map)
-        self.max = Coordinate(x: map[0].count, y: map.count)
+        self.max = Coordinate(x: map[0].count - 1, y: map.count - 1)
     }
 
     static func findStart(_ map: Map) -> Coordinate {
@@ -61,10 +61,35 @@ func readInput() -> Grid {
     return Grid(map: map)
 }
 
-func bfs(_ map: Map) -> Int {
+func bfs(grid: Grid, maxStep: Int) -> Int {
     var visited: Set<Coordinate> = Set()
-    return 0
+
+    var pending = [(grid.start, 0)]
+    var pi = 0
+
+    while pi < pending.count {
+        let (c, step) = pending[pi]
+        pi += 1
+
+        if !visited.insert(c).inserted {
+            continue
+        }
+
+        if step == maxStep {
+            continue
+        }
+
+        for n in grid.neighbours(of: c) {
+            if !visited.contains(n) {
+                pending.append((n, step + 1))
+            }
+        }
+    }
+
+    return visited.count
 }
 
 let grid = readInput()
+let c = bfs(grid: grid, maxStep: 64)
 print(grid)
+print(c)
