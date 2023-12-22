@@ -27,17 +27,15 @@ func readInput() -> ([Step], [Step]) {
     return (s1, s2)
 }
 
-/// Explanation: Shoelace formula + Circumference + 1
+/// Explanation: Shoelace formula + Circumference / 2 + 1
 ///
-/// The interior area of a polygon with integral cartesian coordinates can be
-/// computed by summing up the signed areas of the trapezoids formed by
-/// consecutive pairs of vertices (**Shoelace formula**).
+/// The area of a polygon with integral cartesian coordinates can be computed by
+/// summing up the signed areas of the trapezoids formed by consecutive pairs of
+/// vertices (**Shoelace formula**). However, this gives us an area where the
+/// boundary cells are not fully accounted for, so to correct that, we need to
+/// use **Pick's theorem** and add the (Circumference / 2 + 1) correction term.
 ///
-/// To get the total area (i.e. the interior area plus the edge cells), we can
-/// just add the circumference as we circumnavigate it.
-///
-/// Finally, since the circumference didn't include the starting square, we add
-/// 1 to account for it.
+/// See `18.hs`` for a much more detailed explanation.
 func area(steps: [Step]) -> Int {
     var px = 0, py = 0, s = 0
     for step in steps {
