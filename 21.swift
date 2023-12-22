@@ -1,6 +1,4 @@
 // The Garden of Forking Paths
-//
-// Part 1: Do a BFS to find all reachable nodes within 64 steps.
 
 typealias Map = [[Character]]
 
@@ -9,7 +7,7 @@ struct Coordinate: Hashable {
 }
 
 struct Grid {
-    let map: Map
+    var map: Map
     let start: Coordinate
     let max: Coordinate
 
@@ -44,6 +42,41 @@ struct Grid {
     func potentialNeighbours(_ c: Coordinate) -> [Coordinate] {
         [(c.x - 1, c.y), (c.x + 1, c.y), (c.x, c.y - 1), (c.x, c.y + 1)]
             .map { Coordinate(x: $0, y: $1) }
+    }
+
+    func coordinates() -> [Coordinate] {
+        var result: [Coordinate] = []
+        for y in 0...max.y {
+            for x in 0...max.x {
+                result.append(Coordinate(x: x, y: y))
+            }
+        }
+        return result
+    }
+
+    mutating func move() {
+        func isOccupied(_ c: Character) -> Bool {
+            c == "O" || c == "S"
+        }
+
+        let prevMap = map
+        let cs = coordinates()
+        for c in cs {
+            if isOccupied(map[c.y][c.x]) {
+                map[c.y][c.x] = "."
+            }
+        }
+        for c in cs {
+            if isOccupied(prevMap[c.y][c.x]) {
+                for n in neighbours(of: c) {
+                    map[n.y][n.x] = "O"
+                }
+            }
+        }
+    }
+
+    var reachable: Int {
+        map.reduce(0, { $1.reduce($0, { $0 + ($1 == "O" ? 1 : 0) })})
     }
 }
 
@@ -84,7 +117,28 @@ func bfs(grid: Grid, maxStep: Int) -> Int {
     return lastCells.count
 }
 
-let grid = readInput()
-let c = bfs(grid: grid, maxStep: 6)
-// print(grid)
-print(c)
+func move(grid: inout Grid, steps: Int) {
+    for s in 1...steps {
+        grid.move()
+        if verbose > 0 {
+            print("after step \(s) we reached \(grid.reachable) cells")
+            print(grid)
+            print("")
+        }
+    }
+}
+
+let verbose = switch CommandLine.arguments.last {
+    case "-v": 1
+    case "-vv": 2
+    default: 0
+}
+
+var grid = readInput()
+move(grid: &grid, steps: 6)
+let p1 = grid.reachable
+print(p1)
+
+// let c = bfs(grid: grid, maxStep: 16)
+
+// print(c)
