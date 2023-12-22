@@ -62,34 +62,29 @@ func readInput() -> Grid {
 }
 
 func bfs(grid: Grid, maxStep: Int) -> Int {
-    var visited: Set<Coordinate> = Set()
-
     var pending = [(grid.start, 0)]
     var pi = 0
+
+    var lastCells: Set<Coordinate> = Set()
 
     while pi < pending.count {
         let (c, step) = pending[pi]
         pi += 1
 
-        if !visited.insert(c).inserted {
-            continue
-        }
-
         if step == maxStep {
+            lastCells.insert(c)
             continue
         }
 
         for n in grid.neighbours(of: c) {
-            if !visited.contains(n) {
-                pending.append((n, step + 1))
-            }
+            pending.append((n, step + 1))
         }
     }
 
-    return visited.count
+    return lastCells.count
 }
 
 let grid = readInput()
-let c = bfs(grid: grid, maxStep: 64)
-print(grid)
+let c = bfs(grid: grid, maxStep: 6)
+// print(grid)
 print(c)
