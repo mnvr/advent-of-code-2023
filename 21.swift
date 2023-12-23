@@ -185,8 +185,11 @@ struct QuantumGrid {
 
 extension QuantumGrid: CustomStringConvertible {
     var description: String {
+        func pad5(_ s: String) -> String {
+            if s.count > 5 { ">9999" } else { String(("    " + s).suffix(5)) }
+        }
         func mapCell(_ i: Int) -> String {
-            String(i < 0 ? "#" : (i == 0 ? "." : "O"))
+            pad5(String(i < 0 ? "#" : (i == 0 ? "." : "\(i)")))
         }
         func mapRow(_ xs: [Int]) -> String {
             xs.map({ mapCell($0) }).joined(separator: "")
@@ -293,6 +296,7 @@ var (grid, quantumGrid) = readInput()
 
 quantumMove(grid: &quantumGrid, steps: 10)
 let p2 = quantumGrid.reachable
+print(quantumGrid)
 print(p2)
 
 // let c = bfs(grid: grid, maxStep: 16)
