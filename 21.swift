@@ -294,7 +294,7 @@ var (grid, quantumGrid) = readInput()
 // let p1 = grid.reachable
 // print(p1)
 
-quantumMove(grid: &quantumGrid, steps: 10)
+quantumMove(grid: &quantumGrid, steps: 6)
 let p2 = quantumGrid.reachable
 print(quantumGrid)
 print(p2)
