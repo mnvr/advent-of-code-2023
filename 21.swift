@@ -171,6 +171,7 @@ struct QuantumGrid {
             let p = prevMap[c.y][c.x]
             if p > 0 {
                 for n in neighbours(of: c) {
+                    print("map[\(n.y)][\(n.x)] += \(p)")
                     map[n.y][n.x] += p
                 }
             }
@@ -196,9 +197,39 @@ extension QuantumGrid: CustomStringConvertible {
 
 // MARK: Normal programming resumes
 
-func readInput() -> (Grid, QuantumGrid) {
+// For running under LLDB, where reading from stdin is a pain.
+//
+// However, we the input fixed, we can do this:
+//
+//     swiftc -O -o out/21.sw 21.swift
+//     lldb out/21.sw
+//     > run
+
+let example = """
+...........
+.....###.#.
+.###.##..#.
+..#.#...#..
+....#.#....
+.##..S####.
+.##..#...#.
+.......##..
+.##.#.####.
+.##..##.##.
+...........
+"""
+
+func _readInput() -> (Grid, QuantumGrid) {
     var map: Map = []
     while let line = readLine() {
+        map.append(Array(line))
+    }
+    return (Grid(map: map), QuantumGrid(map: map))
+}
+
+func readInput() -> (Grid, QuantumGrid) {
+    var map: Map = []
+    for line in example.split(separator: "\n") {
         map.append(Array(line))
     }
     return (Grid(map: map), QuantumGrid(map: map))
@@ -256,11 +287,11 @@ let verbose = switch CommandLine.arguments.last {
 }
 
 var (grid, quantumGrid) = readInput()
-move(grid: &grid, steps: 6)
-let p1 = grid.reachable
-print(p1)
+// move(grid: &grid, steps: 6)
+// let p1 = grid.reachable
+// print(p1)
 
-quantumMove(grid: &quantumGrid, steps: 6)
+quantumMove(grid: &quantumGrid, steps: 10)
 let p2 = quantumGrid.reachable
 print(p2)
 
