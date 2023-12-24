@@ -4,16 +4,21 @@
 import Data.Map qualified as M
 
 main :: IO ()
-main = interact $ (++ "\n") . show . dfs . parse
+main = interact $ (++ "\n") . show . demo . parse
+  where demo grid = dfs grid (0, 0) visitor
 
 type Node = (Int, Int)
-data Grid = Grid { items :: M.Map Node Int, maxNode :: Node } deriving Show
+data Grid a = Grid { items :: M.Map Node a, maxNode :: Node } deriving Show
 
-parse :: String -> Grid
+parse :: String -> Grid Int
 parse s = Grid { items = M.fromList xs, maxNode = fst (last xs) }
   where xs = [((x, y), read [c]) | (y, l) <- enum (lines s), (x, c) <- enum l]
 
 enum :: [a] -> [(Int, a)]
 enum = zip [0..]
 
-dfs = id
+visitor :: (Show a) => (Int, Int) -> a -> String
+visitor node item = "visiting item " ++ show item ++ " at " ++ show node
+
+dfs :: Grid a -> Node -> (Node -> a -> b) -> [b]
+dfs Grid { items, maxNode = (mx, my) } start f = []
