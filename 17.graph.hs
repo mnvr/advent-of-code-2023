@@ -9,9 +9,12 @@ import Data.Sequence (Seq(..), fromList, (><))
 main :: IO ()
 main = interact $ unlines . demo . parse
   where
-    demo grid = concat [ddfs grid, dbfs grid]
+    demo grid = concatMap ($ grid) [ddfs, dbfs, dsp]
     ddfs grid = dfs grid (0, 0) (visitor "dfs")
     dbfs grid = bfs grid (0, 0) (visitor "bfs")
+    dsp grid = let end = maxNode grid
+                   (r, zs) = dijkstra grid (0, 0) end (visitor "shortest-path")
+               in zs ++ ["shortest-path result " ++ show r]
 
 type Node = (Int, Int)
 data Grid a = Grid { items :: M.Map Node a, maxNode :: Node } deriving Show
@@ -48,3 +51,7 @@ bfs grid@Grid { items } start visitor = go (Empty :|> start) S.empty
     go (xs :|> x) seen | S.member x seen = go xs seen
     go (xs :|> x) seen = visit x : go ys (S.insert x seen)
       where ys = (fromList $ neighbours grid x) >< xs
+
+-- Find the shortest path from start, to end, using Dijkstra's algorithm.
+dijkstra :: Grid a -> Node -> Node -> (Node -> a -> b) -> (Int, [b])
+dijkstra grid@Grid { items } start end visitor = (0, [])
