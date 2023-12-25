@@ -3,7 +3,6 @@ import Data.Set qualified as S
 import Data.Maybe (fromJust, fromMaybe, mapMaybe, listToMaybe)
 import Data.Sequence (Seq(..), fromList, (><))
 import Data.List (find, minimumBy)
-import Debug.Trace (trace)
 
 main :: IO ()
 main = interact $ unlines . p1 . parse
@@ -63,7 +62,7 @@ dijkstra grid@Grid { items } start isEnd visitor =
       [] -> Nothing
       ks -> let mv = minimum $ map (\k -> fromJust (M.lookup k ds)) ks
                 mk = filter (\k -> (M.lookup k ds) == (Just mv)) ks
-            in trace ("distance map has " ++ show (length ks) ++ " unseen keys, minimum distance is " ++ show mv ++ ", there are " ++ show (length mk) ++ " keys with that distance, returning the first one of those") $ if null mk then Nothing else Just (mk !! 0, mv)
+            in if null mk then Nothing else Just (mk !! 0, mv)
     go ds parent seen = case next ds seen of
         Nothing -> case nearestEnd ds of
                      Nothing -> (Nothing, [])
@@ -71,17 +70,17 @@ dijkstra grid@Grid { items } start isEnd visitor =
         Just (u, du)
           -- | isEnd u -> (Just du, [visit u] )
           | u `S.member` seen -> error "Should've been filtered out already"
-          | otherwise -> trace (visit u du (M.lookup u parent)) $
+          | otherwise ->
              let adj = (neighbours grid u)
                  adj' = filter (\Neighbour {cell} -> cell `S.notMember` seen) adj
                  (ds', parent') = foldl (relax u du) (ds, parent) adj
                  (d', vs) = go ds' parent' (S.insert u seen)
-             in (d', "" : vs)
+            --  in (d', (visit u du (M.lookup u parent)) : vs)
+             in (d', vs)
 
     relax :: Cell -> Int -> (M.Map Cell Int, M.Map Cell Cell)
              -> Neighbour -> (M.Map Cell Int, M.Map Cell Cell)
     relax u du (ds, parent) Neighbour { cell = v, distance = d } =
-      trace ("relax u " ++ show u ++ " du " ++ show du  ++ " v " ++ show v ++ " d " ++ show d ++ " dv " ++ show (M.lookup v ds)) $
       case M.lookup v ds of
         Just dv | dv < du + d -> (ds, parent)
         _ -> (M.insert v (du + d) ds, M.insert v u parent)
