@@ -81,8 +81,12 @@ showDistanceMap Grid { lastNode = (mx, my) } ds parent end = map line [0..my]
       where dist x = showCell $ find isOnPath [
               Cell {node = (x, y), direction = d, moves }
               | d <- [L, R, U, D], moves <- [0..3]]
-            showCell Nothing               = "  .   "
-            showCell (Just Cell { moves }) = "  " ++ show moves ++ "   "
+            showCell Nothing = "   .   "
+            showCell (Just cell@Cell { node, moves }) =
+              " " ++ d ++ " " ++ show moves ++ " "
+                where d = pad3 $ show $ fromJust $ M.lookup cell ds
+                      pad3 s = reverse $ take 3 (reverse ("   " ++ s))
+
 
 p1 :: Grid Int -> [String]
 p1 grid = let (r, zs) = dijkstra grid (0, 0) isEnd visitor
