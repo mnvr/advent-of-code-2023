@@ -55,24 +55,18 @@ dijkstra grid@Grid { items } start isEnd visitor =
     startCell = Cell { node = start, direction = L, moves = 0 }
     visit x d p = let item = fromJust $ M.lookup (node x) items
                   in visitor x item d p
-    next ds seen = M.foldrWithKey f Nothing $ M.withoutKeys ds seen
-      where f u du (Just (v, dv)) | dv < du = Just (v, dv)
-            f u du _ = Just (u, du)
     go :: M.Map Cell Int -> M.Map Cell Cell -> S.Set Cell ->  Heap (Int, Cell) -> (Maybe Int, [String])
-    -- go ds parent seen q = case extractMin q of
-    go ds parent seen q = case next ds seen of
+    go ds parent seen q = case extractMin q of
         Nothing -> case nearestEnd ds of
                      Nothing -> (Nothing, [])
                      Just (u, du) -> (Just du, showDistanceMap grid ds parent u)
-        -- Just ((du, u), q')
-        Just (u, du)
-          | u `S.member` seen -> go ds parent seen q
+        Just ((du, u), q')
+          | u `S.member` seen -> go ds parent seen q'
           | otherwise ->
              let adj = (neighbours grid u)
                  adj' = filter (\Neighbour {cell} -> cell `S.notMember` seen) adj
-                 (ds', parent', q') = foldl (relax u du) (ds, parent, q) adj
-                 (d', vs) = go ds' parent' (S.insert u seen) q'
-            --  in (d', (visit u du (M.lookup u parent)) : vs)
+                 (ds', parent', q'') = foldl (relax u du) (ds, parent, q') adj
+                 (d', vs) = go ds' parent' (S.insert u seen) q''
              in (d', vs)
 
     relax :: Cell -> Int -> (M.Map Cell Int, M.Map Cell Cell, Heap (Int, Cell))
@@ -80,7 +74,7 @@ dijkstra grid@Grid { items } start isEnd visitor =
     relax u du (ds, parent, q) Neighbour { cell = v, distance = d } =
       case M.lookup v ds of
         Just dv | dv < du + d -> (ds, parent, q)
-        _ -> (M.insert v (du + d) ds, M.insert v u parent, q) -- h_insert (du + d, v) q)
+        _ -> (M.insert v (du + d) ds, M.insert v u parent, h_insert (du + d, v) q)
 
     nearestEnd ds = case map (\k -> (k, fromJust (M.lookup k ds))) $ filter (\k -> isEnd k) (M.keys ds) of
       [] -> Nothing
