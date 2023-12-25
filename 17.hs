@@ -3,6 +3,8 @@ import Data.Set qualified as S
 import Data.Maybe (fromJust, fromMaybe)
 import Data.List (find)
 
+-- A variation of 17.hs that shows the discovered path
+
 main :: IO ()
 main = interact $ unlines . (\grid -> concat [p1 grid, p2 grid]) . parse
 
@@ -26,51 +28,27 @@ enum :: [a] -> [(Int, a)]
 enum = zip [0..]
 
 neighbours :: Grid Int -> [Int] -> Cell -> [Neighbour]
-neighbours Grid { items } range = adjacent
+neighbours Grid { items } range = filter inRange . adjacent
   where
-    toNeighbour :: Cell -> Int -> [Neighbour] -> (Int, [Neighbour])
+    adjacent Cell { node = (x, y), direction, moves } = case direction of
+      L -> concat [cells (\m -> Cell (x + m, y) L (moves + m)),
+                   cells (\m -> Cell (x, y - m) U m),
+                   cells (\m -> Cell (x, y + m) D m)]
+      R -> concat [cells (\m -> Cell (x - m, y) R (moves + m)),
+                   cells (\m -> Cell (x, y - m) U m),
+                   cells (\m -> Cell (x, y + m) D m)]
+      U -> concat [cells (\m -> Cell (x, y - m) U (moves + m)),
+                   cells (\m -> Cell (x - m, y) R m),
+                   cells (\m -> Cell (x + m, y) L m)]
+      D -> concat [cells (\m -> Cell (x, y + m) D (moves + m)),
+                   cells (\m -> Cell (x - m, y) R m),
+                   cells (\m -> Cell (x + m, y) L m)]
+    cells c = snd (foldl (\(d, xs) m -> toNeighbour (c m) d xs) (0, []) extent)
+    extent = [1..maximum range]
     toNeighbour cell d xs = case M.lookup (node cell) items of
-      Just d2 | moves cell `elem` range -> (d + d2, Neighbour cell (d + d2) : xs)
-      Just d2 -> (d + d2, xs)
+      Just d2 -> (d + d2, Neighbour cell (d + d2) : xs)
       _ -> (d, xs)
-    adjacent :: Cell -> [Neighbour]
-    adjacent Cell { node = (x, y), direction, moves } =
-      let rng = [1..maximum range] in case direction of
-        L -> concat [
-          snd (foldl (\(d, xs) m -> let cell = Cell (x + m, y) L (moves + m)
-                                    in toNeighbour cell d xs) (0, []) rng),
-          snd (foldl (\(d, xs) m -> let cell = Cell (x, y - m) U m
-                                    in toNeighbour cell d xs) (0, []) rng),
-          snd (foldl (\(d, xs) m -> let cell = Cell (x, y + m) D m
-                                    in toNeighbour cell d xs) (0, []) rng)
-          ]
-
-        R -> concat [
-          snd (foldl (\(d, xs) m -> let cell = Cell (x - m, y) R (moves + m)
-                                    in toNeighbour cell d xs) (0, []) rng),
-          snd (foldl (\(d, xs) m -> let cell = Cell (x, y - m) U m
-                                    in toNeighbour cell d xs) (0, []) rng),
-          snd (foldl (\(d, xs) m -> let cell = Cell (x, y + m) D m
-                                    in toNeighbour cell d xs) (0, []) rng)
-          ]
-
-        U -> concat [
-          snd (foldl (\(d, xs) m -> let cell = Cell (x, y - m) U (moves + m)
-                                    in toNeighbour cell d xs) (0, []) rng),
-          snd (foldl (\(d, xs) m -> let cell = Cell (x - m, y) R m
-                                    in toNeighbour cell d xs) (0, []) rng),
-          snd (foldl (\(d, xs) m -> let cell = Cell (x + m, y) L m
-                                    in toNeighbour cell d xs) (0, []) rng)
-          ]
-
-        D -> concat [
-          snd (foldl (\(d, xs) m -> let cell = Cell (x, y + m) D (moves + m)
-                                    in toNeighbour cell d xs) (0, []) rng),
-          snd (foldl (\(d, xs) m -> let cell = Cell (x - m, y) R m
-                                    in toNeighbour cell d xs) (0, []) rng),
-          snd (foldl (\(d, xs) m -> let cell = Cell (x + m, y) L m
-                                    in toNeighbour cell d xs) (0, []) rng)
-          ]
+    inRange Neighbour { cell } = moves cell `elem` range
 
 -- Find the shortest path from start to an end using Dijkstra's algorithm.
 dijkstra :: Grid Int -> Node -> (Cell -> Bool) -> [Int] -> (Maybe Int, [String])
@@ -84,7 +62,7 @@ dijkstra grid@Grid { items } start isEnd range =
     go ds parent seen q = case extractMin q of
         Nothing -> (Nothing, [])
         Just ((du, u), q')
-          | isEnd u -> (Just du, [])-- showDistanceMap grid ds parent u range)
+          | isEnd u -> (Just du, showDistanceMap grid ds parent u range)
           | u `S.member` seen -> go ds parent seen q'
           | otherwise ->
              let adj = neighbours grid range u
