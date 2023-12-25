@@ -3,6 +3,8 @@ import Data.Set qualified as S
 import Data.Maybe (fromJust, fromMaybe)
 import Data.List (find)
 
+-- A variant of 17.hs that also prints the route after finding it.
+
 main :: IO ()
 main = interact $ unlines . (\grid -> concat [p1 grid, p2 grid]) . parse
 

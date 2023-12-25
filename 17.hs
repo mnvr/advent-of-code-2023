@@ -49,14 +49,14 @@ neighbours Grid { items } range = filter inRange . adjacent
 
 shortestPath :: [Int] -> Grid Int -> Int
 shortestPath moveRange grid@Grid { items, lastNode } =
-  go (M.singleton startCell 0) S.empty (singleton (0, startCell))
+  go (M.singleton startCell 0) S.empty (S.singleton (0, startCell))
   where
     -- By setting moves to 0, the starting cell's considers both the left and
     -- down neighbours as equivalent (which is what we want).
     startCell = Cell { node = (0, 0), direction = L, moves = 0 }
     isEnd Cell { node } = node == lastNode
 
-    go ds seen q = case extractMin q of
+    go ds seen q = case S.minView q of
       Nothing -> 0
       Just ((du, u), q')
         | isEnd u -> du
@@ -68,26 +68,7 @@ shortestPath moveRange grid@Grid { items, lastNode } =
     relax u du (ds, q) Neighbour { cell = v, distance = d } =
       let d' = du + d in case M.lookup v ds of
         Just dv | dv < d' -> (ds, q)
-        _ -> (M.insert v d' ds, insert (d', v) q)
-
-data Heap a = Empty | Heap a (Heap a) (Heap a)
-
-union :: Ord a => Heap a -> Heap a -> Heap a
-union Empty h = h
-union h Empty = h
-union hl@(Heap l ll lr) hr@(Heap r _ _)
-  | l <= r = Heap l (union hr lr) ll
-  | otherwise = union hr hl
-
-extractMin :: Ord a => Heap a -> Maybe (a, Heap a)
-extractMin Empty = Nothing
-extractMin (Heap x l r) = Just (x, union l r)
-
-singleton :: a -> Heap a
-singleton x = Heap x Empty Empty
-
-insert :: Ord a => a -> Heap a -> Heap a
-insert x h = singleton x `union` h
+        _ -> (M.insert v d' ds, S.insert (d', v) q)
 
 p1, p2 :: Grid Int -> Int
 p1 = shortestPath [1..3]

@@ -2,6 +2,9 @@ import Data.Map qualified as M
 import Data.Set qualified as S
 import Control.Arrow ((&&&))
 
+-- A variant of 17.skew-heap.hs that uses a different heap implementation. Both
+-- take around the same time - this is probably a touch faster, but not by much.
+
 main :: IO ()
 main = interact $ (++ "\n") . show . (p1 &&& p2) . parse
 
