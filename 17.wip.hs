@@ -29,12 +29,12 @@ visitor :: (Show a) => Cell -> a -> Int -> Maybe Cell -> String
 visitor cell item d p =
   "visiting item " ++ show item ++ " at " ++ show cell ++ " tentative distance " ++ show d ++ " parent " ++ show p
 
-neighbours :: Grid Int -> Cell -> [Neighbour]
-neighbours Grid { items } = mapMaybe toNeighbour . adjacent
+neighbours :: Grid Int -> [Int] -> Cell -> [Neighbour]
+neighbours Grid { items } range = mapMaybe toNeighbour . adjacent
   where
     toNeighbour :: Cell -> Maybe Neighbour
     toNeighbour cell = case M.lookup (node cell) items of
-      Just d | moves cell < 4 -> Just (Neighbour cell d)
+      Just d | moves cell `elem` range -> Just (Neighbour cell d)
       _ -> Nothing
     adjacent :: Cell -> [Cell]
     adjacent Cell { node = (x, y), direction, moves } = case direction of
@@ -45,9 +45,10 @@ neighbours Grid { items } = mapMaybe toNeighbour . adjacent
 
 -- Find the shortest path from start to an end using Dijkstra's algorithm.
 dijkstra :: Grid Int -> Node -> (Cell -> Bool)
+            -> [Int]
             -> (Cell -> Int -> Int -> Maybe Cell -> String)
             -> (Maybe Int, [String])
-dijkstra grid@Grid { items } start isEnd visitor =
+dijkstra grid@Grid { items } start isEnd range visitor =
   go (M.singleton startCell 0) M.empty S.empty (h_singleton (0, startCell))
   where
     -- Since moves is 0, the direction doesn't distinguish between moving ahead
@@ -63,7 +64,7 @@ dijkstra grid@Grid { items } start isEnd visitor =
         Just ((du, u), q')
           | u `S.member` seen -> go ds parent seen q'
           | otherwise ->
-             let adj = (neighbours grid u)
+             let adj = (neighbours grid range u)
                  adj' = filter (\Neighbour {cell} -> cell `S.notMember` seen) adj
                  (ds', parent', q'') = foldl (relax u du) (ds, parent, q') adj
                  (d', vs) = go ds' parent' (S.insert u seen) q''
@@ -119,7 +120,10 @@ showDistanceMap Grid { lastNode = (mx, my) } ds parent end = map line [0..my]
                       pad3 s = reverse $ take 3 (reverse ("   " ++ s))
 
 p1 :: Grid Int -> [String]
-p1 grid = let (r, zs) = dijkstra grid (0, 0) isEnd visitor
+p1 grid = runP grid [0..3]
+
+runP :: Grid Int -> [Int] -> [String]
+runP grid range = let (r, zs) = dijkstra grid (0, 0) isEnd range visitor
           in zs ++ ["shortest-path result " ++ (show $ fromMaybe (-1) r)]
   where
     isEnd Cell { node } = node == (lastNode grid)
