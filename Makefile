@@ -66,6 +66,12 @@ exampleSwift = $(latestSwift) && \
 	echo "$(tdim)""cat $$eg | swift $$f""$(treset)" && \
 	cat $$eg | swift $$f
 
+hs:
+	@$(exampleHaskell)
+
+swift:
+	@$(exampleSwift)
+
 test:
 	@ft=`ls -t *.swift *.hs | head -1 | tr '.' '\n' | tail -1`; \
 	if test "$$ft" == "swift"; then $(testSwift); else $(testHaskell); fi

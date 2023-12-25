@@ -17,38 +17,61 @@ done variations using other means and languages, mostly Swift.</small>
 Install [Haskell using GHCup](https://www.haskell.org/ghcup/), or
 [Swift](https://swift.org), depending on which solutions you want to run.
 
-Then, to run the latest solution on the latest of its example inputs, use
+As mentioned, each .hs or .swift file is a complete, zero dependency file that
+reads its input from STDIN, and can be run by the stock compilers, e.g.
+
+    cat examples/18 | runghc 18.hs
+    cat examples/18 | swift 18.swift
+
+However, my own workflow is slightly different. I've created a bunch of rules in
+the `Makefile` that take the latest (the most recently modified) source code
+file, and then automatically run it, passing the day's example as input. So I
+just edit a file, and run
 
     make
 
-Other commands:
+That's it. If I edit a different file, its modification time will change, so I
+can just run `make` again and that will get run instead.
+
+There are several other make rules (again, you don't need to use these to run
+the solutions, these are just tailored for my own workflow):
 
 -   `make test` – run on the actual input, and compare against the expected
-    answers. The actual inputs should be in `input/xx`, and the expected answers
-    in `answers/xx-a` and `answers/xx-b`.
+    answers. The actual inputs should be in `inputs/xx`, and the expected
+    answers in `answers/xx-a` and `answers/xx-b` (the `inputs` and `answers`
+    directories are gitignored).
 -   `make o` - same as `make test`, but first compile the file using `ghc` or
     `swiftc` with optimizations enabled. There's also a `make o2` variant of
     this for Haskell that uses the `-O2` level.
 -   `make verify` - Run `make test`, but for all days so far, in reverse. Print
     nice and pretty stats about all the days too.
+-   `make hs` and `make swift` are variations of the default `make`, except they
+    specifically run the latest Haskell or Swift solution.
 -   `make clean` - Clean temporary files (written to `out/`).
 
-To run the command on a specific day's program, just `touch` it so that it has
-the latest modification time - subsequent make invocations will pick it. So for
-example, if I wanted to run day 18, I can
+To run the command on a specific day's program without needing to edit it, just
+`touch` it so that it has the latest modification time - subsequent make
+invocations will pick it. So for example, if I wanted to run day 18's Haskell
+solution, I can
 
-    touch 18.swift # or touch 18.hs, depending on which I wish to run
+    touch 18.hs
     make
 
-All of make invocations are wrappers around the basic pattern of
+This works with the example inputs too. Some days have multiple examples, so to
+use one of them specifically, just `touch` it beforehand.
+
+All these make invocations are wrappers around the basic pattern of:
 
     cat somefile | runghc xx.hs
-
-and
-
     cat somefile | swift xx.swift
+
+But feel free to peek into the `Makefile` itself. I had as much fun writing this
+Makefile as I had writing some of the solutions.
 
 Some of the solutions are done in shell scripts. To run these, the filename
 needs to be passed to the script instead of passing the input via stdin:
 
     ./xx.sh somefile
+
+(this is done differently this way because reading STDIN in a shell script is
+not straightforward, and would've otherwise shadowed the solution itself).
