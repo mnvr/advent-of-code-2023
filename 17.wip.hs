@@ -2,6 +2,7 @@ import Data.Map qualified as M
 import Data.Set qualified as S
 import Data.Maybe (fromJust, fromMaybe, mapMaybe)
 import Data.Sequence (Seq(..), fromList, (><))
+import Data.List (find)
 
 main :: IO ()
 main = interact $ unlines . p1 . parse
@@ -43,29 +44,45 @@ neighbours Grid { items } = mapMaybe toNeighbour . adjacent
       D -> [Cell (x, y + 1) D (moves + 1), Cell (x - 1, y) R 1, Cell (x + 1, y) L 1]
 
 -- Find the shortest path from start to an end using Dijkstra's algorithm.
-dijkstra :: Grid Int -> Node -> (Cell -> Bool) -> (Cell -> Int -> b) -> (Maybe Int, [b])
+dijkstra :: Grid Int -> Node -> (Cell -> Bool) -> (Cell -> Int -> String) -> (Maybe Int, [String])
 dijkstra grid@Grid { items } start isEnd visitor =
-  go (M.singleton startCell 0) S.empty
+  go (M.singleton startCell 0) M.empty S.empty
   where
     -- Since moves is 0, the direction doesn't distinguish between moving ahead
     -- or turning.
-    startCell = Cell { node = start, direction = L, moves = 0 }
+    startCell = Cell { node = start, direction = D, moves = 0 }
     visit x = let item = fromJust $ M.lookup (node x) items in visitor x item
     next ds seen = (M.lookupMin $ M.withoutKeys ds seen)
-    go ds seen = case next ds seen of
+    go ds parent seen = case next ds seen of
         Nothing -> (Nothing, [])
         Just (u, du)
-          | isEnd u -> (Just du, [visit u])
+          | isEnd u -> (Just du, [visit u] ++ showDistanceMap grid ds parent u)
           | otherwise ->
-             let ds' = foldl (relax u du) ds (neighbours grid u)
-                 (d', vs) = go ds' (S.insert u seen)
+             let (ds', parent') = foldl (relax u du) (ds, parent) (neighbours grid u)
+                 (d', vs) = go ds' parent' (S.insert u seen)
              in (d', visit u : vs)
 
-    relax :: Cell -> Int -> M.Map Cell Int -> Neighbour -> M.Map Cell Int
-    relax u du ds Neighbour { cell = v, distance = d } = case M.lookup v ds of
-                         Just dv | dv < du + d -> ds
-                         _ -> M.insert v (du + d) ds
+    relax :: Cell -> Int -> (M.Map Cell Int, M.Map Cell Cell)
+             -> Neighbour -> (M.Map Cell Int, M.Map Cell Cell)
+    relax u du (ds, parent) Neighbour { cell = v, distance = d } =
+      case M.lookup v ds of
+        Just dv | dv < du + d -> (ds, parent)
+        _ -> (M.insert v (du + d) ds, M.insert v u parent)
 
+showDistanceMap :: Grid a -> M.Map Cell Int -> M.Map Cell Cell -> Cell -> [String]
+showDistanceMap Grid { lastNode = (mx, my) } ds parent end = map line [0..my]
+  where
+    path = retrace S.empty end
+      where retrace s n = let s' = S.insert n s in case M.lookup n parent of
+              Nothing -> s'
+              Just p -> retrace s' p
+    isOnPath cell = S.member cell path
+    line y = unwords $ map dist [0..mx]
+      where dist x = showCell $ find isOnPath [
+              Cell {node = (x, y), direction = d, moves }
+              | d <- [L, R, U, D], moves <- [0..3]]
+            showCell Nothing               = "  .   "
+            showCell (Just Cell { moves }) = "  " ++ show moves ++ "   "
 
 p1 :: Grid Int -> [String]
 p1 grid = let (r, zs) = dijkstra grid (0, 0) isEnd visitor
