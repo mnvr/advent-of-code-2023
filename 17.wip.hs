@@ -54,9 +54,11 @@ dijkstra grid@Grid { items } start isEnd visitor =
     visit x = let item = fromJust $ M.lookup (node x) items in visitor x item
     next ds seen = (M.lookupMin $ M.withoutKeys ds seen)
     go ds parent seen = case next ds seen of
-        Nothing -> (Nothing, [])
+        Nothing -> case nearestEnd ds of
+                     Nothing -> (Nothing, [])
+                     Just (u, du) -> (Just du, showDistanceMap grid ds parent u)
         Just (u, du)
-          | isEnd u -> (Just du, [visit u] ++ showDistanceMap grid ds parent u)
+          -- | isEnd u -> (Just du, [visit u] )
           | otherwise ->
              let (ds', parent') = foldl (relax u du) (ds, parent) (neighbours grid u)
                  (d', vs) = go ds' parent' (S.insert u seen)
@@ -68,6 +70,7 @@ dijkstra grid@Grid { items } start isEnd visitor =
       case M.lookup v ds of
         Just dv | dv < du + d -> (ds, parent)
         _ -> (M.insert v (du + d) ds, M.insert v u parent)
+    nearestEnd ds = M.lookupMin $ M.filterWithKey (\k _ -> isEnd k) ds
 
 showDistanceMap :: Grid a -> M.Map Cell Int -> M.Map Cell Cell -> Cell -> [String]
 showDistanceMap Grid { lastNode = (mx, my) } ds parent end = map line [0..my]
