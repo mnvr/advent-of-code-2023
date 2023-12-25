@@ -2,7 +2,7 @@ import Data.Map qualified as M
 import Data.Set qualified as S
 import Data.Maybe (fromJust, fromMaybe, mapMaybe, listToMaybe)
 import Data.Sequence (Seq(..), fromList, (><))
-import Data.List (find)
+import Data.List (find, minimumBy)
 import Debug.Trace (trace)
 
 main :: IO ()
@@ -85,7 +85,10 @@ dijkstra grid@Grid { items } start isEnd visitor =
       case M.lookup v ds of
         Just dv | dv < du + d -> (ds, parent)
         _ -> (M.insert v (du + d) ds, M.insert v u parent)
-    nearestEnd ds = M.lookupMin $ M.filterWithKey (\k _ -> isEnd k) ds
+    nearestEnd' ds = M.lookupMin $ M.filterWithKey (\k _ -> isEnd k) ds
+    nearestEnd ds = case map (\k -> (k, fromJust (M.lookup k ds))) $ filter (\k -> isEnd k) (M.keys ds) of
+      [] -> Nothing
+      kvs -> Just $ minimumBy (\(k, v) (k2, v2) -> v `compare` v2) kvs
 
 showDistanceMap :: Grid a -> M.Map Cell Int -> M.Map Cell Cell -> Cell -> [String]
 showDistanceMap Grid { lastNode = (mx, my) } ds parent end = map line [0..my]
