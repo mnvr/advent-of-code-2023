@@ -58,19 +58,19 @@ dijkstra grid@Grid { items } start isEnd visitor =
                   in visitor x item d p
     -- next' ds seen = (M.lookupMin $ M.withoutKeys ds seen)
     -- next'' :: M.Map Cell Int -> S.Set Cell -> Maybe (Cell, Int)
-    -- next'' ds invds seen = case filter (\k -> S.notMember k seen) (M.keys ds) of
-    --   [] -> Nothing
-    --   ks -> let mv = minimum $ map (\k -> fromJust (M.lookup k ds)) ks
-    --             mk = filter (\k -> (M.lookup k ds) == (Just mv)) ks
-    --         in if null mk then Nothing else Just (mk !! 0, mv)
-    next :: M.Map Cell Int -> M.Map Int (S.Set Cell) -> S.Set Cell -> Maybe (Cell, Int, M.Map Int (S.Set Cell))
-    next ds ids seen = case M.minView ids of
-      Nothing -> Nothing
-      Just (s, ids') -> let s' = S.filter (`S.notMember` seen) s in case (S.size s') of
-        0 -> next ds ids' seen
-        _ -> let (u, s'') = fromJust $ S.minView s'
-                 du = fromJust $ M.lookup u ds
-             in Just (u, du, M.insert du s'' ids')
+    next ds ids seen = case filter (\k -> S.notMember k seen) (M.keys ds) of
+      [] -> Nothing
+      ks -> let mv = minimum $ map (\k -> fromJust (M.lookup k ds)) ks
+                mk = filter (\k -> (M.lookup k ds) == (Just mv)) ks
+            in if null mk then Nothing else Just (mk !! 0, mv, ids)
+    -- next :: M.Map Cell Int -> M.Map Int (S.Set Cell) -> S.Set Cell -> Maybe (Cell, Int, M.Map Int (S.Set Cell))
+    -- next ds ids seen = case M.minView ids of
+    --   Nothing -> Nothing
+    --   Just (s, ids') -> let s' = S.filter (`S.notMember` seen) s in case (S.size s') of
+    --     0 -> next ds ids' seen
+    --     _ -> let (u, s'') = fromJust $ S.minView s'
+    --              du = fromJust $ M.lookup u ds
+    --          in Just (u, du, M.insert du s'' ids')
     go :: M.Map Cell Int -> M.Map Int (S.Set Cell) -> M.Map Cell Cell -> S.Set Cell -> (Maybe Int, [String])
     go ds ids parent seen = case next ds ids seen of
         Nothing -> case nearestEnd ds of
@@ -92,9 +92,11 @@ dijkstra grid@Grid { items } start isEnd visitor =
     relax u du (ds, ids, parent) Neighbour { cell = v, distance = d } =
       case M.lookup v ds of
         Just dv | dv < du + d -> (ds, ids, parent)
-        _ -> (M.insert v (du + d) ds, M.alter af (du + d) ids, M.insert v u parent)
-            where af Nothing = Just (S.singleton v)
-                  af (Just s) = Just (S.insert v s)
+        _ -> (M.insert v (du + d) ds, ids, M.insert v u parent)
+
+        -- _ -> (M.insert v (du + d) ds, M.alter af (du + d) ids, M.insert v u parent)
+        --     where af Nothing = Just (S.singleton v)
+        --           af (Just s) = Just (S.insert v s)
     -- nearestEnd' ds = M.lookupMin $ M.filterWithKey (\k _ -> isEnd k) ds
     nearestEnd ds = case map (\k -> (k, fromJust (M.lookup k ds))) $ filter (\k -> isEnd k) (M.keys ds) of
       [] -> Nothing
