@@ -82,25 +82,23 @@ dijkstra grid@Grid { items } start isEnd range =
     -- Since moves is 0, the direction doesn't distinguish between moving ahead
     -- or turning.
     startCell = Cell { node = start, direction = L, moves = 0 }
-    go :: M.Map Cell Int -> M.Map Cell Cell -> S.Set Cell ->  Heap (Int, Cell) -> (Maybe Int, [String])
+
     go ds parent seen q = case extractMin q of
         Nothing -> (Nothing, [])
         Just ((du, u), q')
           | isEnd u -> (Just du, showDistanceMap grid ds parent u range)
           | u `S.member` seen -> go ds parent seen q'
           | otherwise ->
-             let adj = (neighbours grid range u)
+             let adj = neighbours grid range u
                  adj' = filter (\Neighbour {cell} -> cell `S.notMember` seen) adj
-                 (ds', parent', q'') = foldl (relax u du) (ds, parent, q') adj
+                 (ds', parent', q'') = foldl (relax u du) (ds, parent, q') adj'
                  (d', vs) = go ds' parent' (S.insert u seen) q''
              in (d', vs)
 
-    relax :: Cell -> Int -> (M.Map Cell Int, M.Map Cell Cell, Heap (Int, Cell))
-             -> Neighbour -> (M.Map Cell Int, M.Map Cell Cell, Heap (Int, Cell))
     relax u du (ds, parent, q) Neighbour { cell = v, distance = d } =
-      case M.lookup v ds of
+      let d' = du + d in case M.lookup v ds of
         Just dv | dv < du + d -> (ds, parent, q)
-        _ -> (M.insert v (du + d) ds, M.insert v u parent, insert (du + d, v) q)
+        _ -> (M.insert v d' ds, M.insert v u parent, insert (d', v) q)
 
 data Heap a = Empty | Heap a (Heap a) (Heap a)
 
