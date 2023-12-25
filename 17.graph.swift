@@ -49,7 +49,7 @@ struct Grid<T> {
 
     /// Precondition: v must be adjacent to u
     func edgeWeight( from u: Index, to v: Index) -> Int {
-        if let d = at(u) as? Int {
+        if let d = at(v) as? Int {
             return d
         }
         return 0
