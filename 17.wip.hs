@@ -86,12 +86,11 @@ dijkstra grid@Grid { items } start isEnd range =
     go ds parent seen q = case extractMin q of
         Nothing -> (Nothing, [])
         Just ((du, u), q')
-          | isEnd u -> (Just du, showDistanceMap grid ds parent u range)
+          | isEnd u -> (Just du, [])-- showDistanceMap grid ds parent u range)
           | u `S.member` seen -> go ds parent seen q'
           | otherwise ->
              let adj = neighbours grid range u
-                 adj' = filter (\Neighbour {cell} -> cell `S.notMember` seen) adj
-                 (ds', parent', q'') = foldl (relax u du) (ds, parent, q') adj'
+                 (ds', parent', q'') = foldl (relax u du) (ds, parent, q') adj
                  (d', vs) = go ds' parent' (S.insert u seen) q''
              in (d', vs)
 
