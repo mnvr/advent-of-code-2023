@@ -35,6 +35,7 @@ neighbours Grid { items } range = adjacent
     toNeighbour :: Cell -> Int -> [Neighbour] -> (Int, [Neighbour])
     toNeighbour cell d xs = case M.lookup (node cell) items of
       Just d2 | moves cell `elem` range -> (d + d2, Neighbour cell (d + d2) : xs)
+      Just d2 -> (d + d2, xs)
       _ -> (d, xs)
     adjacent :: Cell -> [Neighbour]
     adjacent Cell { node = (x, y), direction, moves } =
@@ -156,9 +157,9 @@ showDistanceMap Grid { lastNode = (mx, my) } ds parent end range = map line [0..
                       pad3 s = reverse $ take 3 (reverse ("   " ++ s))
 
 p1 :: Grid Int -> [String]
--- p1 grid = runP grid [4..9]
-p1 grid = runP grid [1..3]
--- p1 grid = map show (neighbours grid [1..3] (Cell (0, 0) L 0))
+p1 grid = runP grid [4..10]
+-- p1 grid = runP grid [1..3]
+-- p1 grid = map show (neighbours grid [4..10] (Cell (0, 0) L 0))
 
 runP :: Grid Int -> [Int] -> [String]
 runP grid range = let (r, zs) = dijkstra grid (0, 0) isEnd range visitor
