@@ -84,10 +84,9 @@ dijkstra grid@Grid { items } start isEnd range =
     startCell = Cell { node = start, direction = L, moves = 0 }
     go :: M.Map Cell Int -> M.Map Cell Cell -> S.Set Cell ->  Heap (Int, Cell) -> (Maybe Int, [String])
     go ds parent seen q = case extractMin q of
-        Nothing -> case nearestEnd ds of
-                     Nothing -> (Nothing, [])
-                     Just (u, du) -> (Just du, showDistanceMap grid ds parent u range)
+        Nothing -> (Nothing, [])
         Just ((du, u), q')
+          | isEnd u -> (Just du, showDistanceMap grid ds parent u range)
           | u `S.member` seen -> go ds parent seen q'
           | otherwise ->
              let adj = (neighbours grid range u)
@@ -102,10 +101,6 @@ dijkstra grid@Grid { items } start isEnd range =
       case M.lookup v ds of
         Just dv | dv < du + d -> (ds, parent, q)
         _ -> (M.insert v (du + d) ds, M.insert v u parent, h_insert (du + d, v) q)
-
-    nearestEnd ds = case map (\k -> (k, fromJust (M.lookup k ds))) $ filter (\k -> isEnd k) (M.keys ds) of
-      [] -> Nothing
-      kvs -> Just $ minimumBy (\(k, v) (k2, v2) -> v `compare` v2) kvs
 
 
 data Heap a = Empty | Heap a (Heap a) (Heap a)
