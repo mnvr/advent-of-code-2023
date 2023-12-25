@@ -1,6 +1,6 @@
 import Data.Map qualified as M
 import Data.Set qualified as S
-import Data.Maybe (fromJust, fromMaybe, mapMaybe, listToMaybe)
+import Data.Maybe (fromJust, fromMaybe, mapMaybe, listToMaybe, isJust)
 import Data.List (find, minimumBy)
 
 main :: IO ()
@@ -30,18 +30,54 @@ visitor cell item d p =
   "visiting item " ++ show item ++ " at " ++ show cell ++ " tentative distance " ++ show d ++ " parent " ++ show p
 
 neighbours :: Grid Int -> [Int] -> Cell -> [Neighbour]
-neighbours Grid { items } range = mapMaybe toNeighbour . adjacent
+neighbours Grid { items } range = adjacent
   where
-    toNeighbour :: Cell -> Maybe Neighbour
-    toNeighbour cell = case M.lookup (node cell) items of
-      Just d | moves cell `elem` range -> Just (Neighbour cell d)
-      _ -> Nothing
-    adjacent :: Cell -> [Cell]
-    adjacent Cell { node = (x, y), direction, moves } = case direction of
-      L -> [Cell (x + 1, y) L (moves + 1), Cell (x, y - 1) U 1, Cell (x, y + 1) D 1]
-      R -> [Cell (x - 1, y) R (moves + 1), Cell (x, y - 1) U 1, Cell (x, y + 1) D 1]
-      U -> [Cell (x, y - 1) U (moves + 1), Cell (x - 1, y) R 1, Cell (x + 1, y) L 1]
-      D -> [Cell (x, y + 1) D (moves + 1), Cell (x - 1, y) R 1, Cell (x + 1, y) L 1]
+    toNeighbour :: Cell -> Int -> [Neighbour] -> (Int, [Neighbour])
+    toNeighbour cell d xs = case M.lookup (node cell) items of
+      Just d2 | moves cell `elem` range -> (d + d2, Neighbour cell (d + d2) : xs)
+      _ -> (d, xs)
+    adjacent :: Cell -> [Neighbour]
+    adjacent Cell { node = (x, y), direction, moves } =
+      let rng = [1..maximum range] in case direction of
+        L -> concat [
+          snd (foldr (\m (d, xs) -> let cell = Cell (x + m, y) L (moves + m)
+                                    in toNeighbour cell d xs) (0, []) rng),
+          snd (foldr (\m (d, xs) -> let cell = Cell (x, y - m) U m
+                                    in toNeighbour cell d xs) (0, []) rng),
+          snd (foldr (\m (d, xs) -> let cell = Cell (x, y + m) D m
+                                    in toNeighbour cell d xs) (0, []) rng)
+          ]
+
+        R -> concat [
+          snd (foldr (\m (d, xs) -> let cell = Cell (x - m, y) R (moves + m)
+                                    in toNeighbour cell d xs) (0, []) rng),
+          snd (foldr (\m (d, xs) -> let cell = Cell (x, y - m) U m
+                                    in toNeighbour cell d xs) (0, []) rng),
+          snd (foldr (\m (d, xs) -> let cell = Cell (x, y + m) D m
+                                    in toNeighbour cell d xs) (0, []) rng)
+          ]
+
+        U -> concat [
+          snd (foldr (\m (d, xs) -> let cell = Cell (x, y - m) U (moves + m)
+                                    in toNeighbour cell d xs) (0, []) rng),
+          snd (foldr (\m (d, xs) -> let cell = Cell (x - m, y) R m
+                                    in toNeighbour cell d xs) (0, []) rng),
+          snd (foldr (\m (d, xs) -> let cell = Cell (x + m, y) L m
+                                    in toNeighbour cell d xs) (0, []) rng)
+          ]
+
+        D -> concat [
+          snd (foldr (\m (d, xs) -> let cell = Cell (x, y + m) D (moves + m)
+                                    in toNeighbour cell d xs) (0, []) rng),
+          snd (foldr (\m (d, xs) -> let cell = Cell (x - m, y) R m
+                                    in toNeighbour cell d xs) (0, []) rng),
+          snd (foldr (\m (d, xs) -> let cell = Cell (x + m, y) L m
+                                    in toNeighbour cell d xs) (0, []) rng)
+          ]
+      -- L -> [Cell (x + 1, y) L (moves + 1), Cell (x, y - 1) U 1, Cell (x, y + 1) D 1]
+      -- R -> [Cell (x - 1, y) R (moves + 1), Cell (x, y - 1) U 1, Cell (x, y + 1) D 1]
+      -- U -> [Cell (x, y - 1) U (moves + 1), Cell (x - 1, y) R 1, Cell (x + 1, y) L 1]
+      -- D -> [Cell (x, y + 1) D (moves + 1), Cell (x - 1, y) R 1, Cell (x + 1, y) L 1]
 
 -- Find the shortest path from start to an end using Dijkstra's algorithm.
 dijkstra :: Grid Int -> Node -> (Cell -> Bool)
@@ -120,6 +156,7 @@ showDistanceMap Grid { lastNode = (mx, my) } ds parent end = map line [0..my]
                       pad3 s = reverse $ take 3 (reverse ("   " ++ s))
 
 p1 :: Grid Int -> [String]
+-- p1 grid = runP grid [4..9]
 p1 grid = runP grid [0..3]
 
 runP :: Grid Int -> [Int] -> [String]
