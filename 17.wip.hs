@@ -16,7 +16,7 @@ data Cell = Cell {
   moves :: Int }
   deriving  (Show, Eq, Ord)
 
-data Neighbour = Neighbour { cell :: Cell, distance :: Int }
+data Neighbour = Neighbour { cell :: Cell, distance :: Int } deriving Show
 
 parse :: String -> Grid Int
 parse s = Grid { items = M.fromList xs, lastNode = fst (last xs) }
@@ -96,7 +96,7 @@ dijkstra grid@Grid { items } start isEnd range visitor =
     go ds parent seen q = case extractMin q of
         Nothing -> case nearestEnd ds of
                      Nothing -> (Nothing, [])
-                     Just (u, du) -> (Just du, showDistanceMap grid ds parent u)
+                     Just (u, du) -> (Just du, showDistanceMap grid ds parent u range)
         Just ((du, u), q')
           | u `S.member` seen -> go ds parent seen q'
           | otherwise ->
@@ -137,8 +137,8 @@ h_singleton x = Heap x Empty Empty
 h_insert :: Ord a => a -> Heap a -> Heap a
 h_insert x h = h_singleton x `union` h
 
-showDistanceMap :: Grid a -> M.Map Cell Int -> M.Map Cell Cell -> Cell -> [String]
-showDistanceMap Grid { lastNode = (mx, my) } ds parent end = map line [0..my]
+showDistanceMap :: Grid a -> M.Map Cell Int -> M.Map Cell Cell -> Cell -> [Int] -> [String]
+showDistanceMap Grid { lastNode = (mx, my) } ds parent end range = map line [0..my]
   where
     path = retrace S.empty end
       where retrace s n = let s' = S.insert n s in case M.lookup n parent of
@@ -148,7 +148,7 @@ showDistanceMap Grid { lastNode = (mx, my) } ds parent end = map line [0..my]
     line y = unwords $ map dist [0..mx]
       where dist x = showCell $ find isOnPath [
               Cell {node = (x, y), direction = d, moves }
-              | d <- [L, R, U, D], moves <- [0..3]]
+              | d <- [L, R, U, D], moves <- range]
             showCell Nothing = "   .   "
             showCell (Just cell@Cell { node, moves }) =
               " " ++ d ++ " " ++ show moves ++ " "
@@ -157,7 +157,8 @@ showDistanceMap Grid { lastNode = (mx, my) } ds parent end = map line [0..my]
 
 p1 :: Grid Int -> [String]
 -- p1 grid = runP grid [4..9]
-p1 grid = runP grid [0..3]
+-- p1 grid = runP grid [1..3]
+p1 grid = map show (neighbours grid [1..3] (Cell (0, 0) L 0))
 
 runP :: Grid Int -> [Int] -> [String]
 runP grid range = let (r, zs) = dijkstra grid (0, 0) isEnd range visitor
