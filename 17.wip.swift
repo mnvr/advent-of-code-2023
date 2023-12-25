@@ -21,17 +21,34 @@ func readInput() -> Grid {
     return Grid(items: items, lastNode: .init(x: x - 1, y: y - 1))
 }
 
-func shortestPath(grid: Grid) -> Int? {
-    let startNode = Node(x: 0, y: 0)
-    func isEnd(node: Node) -> Bool { node == grid.lastNode }
+enum Direction {
+    case l, r, u, d
+}
 
-    var dist: [Node: Int] = [startNode: 0]
-    var seen: Set<Node> = Set()
+struct Cell: Hashable {
+    let node: Node
+    let direction: Direction
+    let moves: Int
+}
+
+func shortestPath(grid: Grid, moveRange: ClosedRange<Int>) -> Int? {
+    let startNode = Node(x: 0, y: 0)
+    // Setting moves to 0 to allows us to equally consider both left and down
+    // neighbours.
+    let startCell = Cell(node: startNode, direction: .l, moves: 0)
+    func isEnd(_ cell: Cell) -> Bool { cell.node == grid.lastNode }
+
+    func adj(_ u: Cell) -> [Cell] {
+        neighbours(grid: grid, moveRange: moveRange, cell: u)
+    }
+
+    var dist: [Cell: Int] = [startCell: 0]
+    var seen: Set<Cell> = Set()
     //var invDist: [Int: [Node]] = []
     //var minDist = 0
 
-    func popNearest() -> (Node, Int)? {
-        var u: Node?
+    func popNearest() -> (Cell, Int)? {
+        var u: Cell?
         var du: Int = .max
         for (v, dv) in dist {
             if dv < du && !seen.contains(v) {
@@ -45,9 +62,9 @@ func shortestPath(grid: Grid) -> Int? {
 
     while let (u, du) = popNearest() {
         if !seen.insert(u).inserted { continue }
-        if isEnd(node: u) { return du }
-        for v in neighbours(grid: grid, node: u) {
-            let d = grid.items[v]!
+        if isEnd(u) { return du }
+        for v in adj(u) {
+            let d = grid.items[v.node]!
             let dv = dist[v] ?? .max
             if du + d < dv {
                 dist[v] = du + d
@@ -58,13 +75,39 @@ func shortestPath(grid: Grid) -> Int? {
     return nil
 }
 
-func neighbours(grid: Grid, node: Node) -> [Node] {
+func neighbours(grid: Grid, moveRange: ClosedRange<Int>, cell: Cell) -> [Cell] {
+    func make(_ xy: (Int, Int), _ direction: Direction, _ moves: Int) -> Cell {
+        Cell(node: Node(x: xy.0, y: xy.1), direction: direction, moves: moves)
+    }
+
+    let node = cell.node
+    let moves = cell.moves
     let (x, y) = (node.x, node.y)
-    return [(x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)]
-      .map { Node(x: $0.0, y: $0.1) }
-      .filter { grid.items[$0] != nil }
+    let cells: [Cell]
+    switch cell.direction {
+    case .l:
+        cells = [make((x + 1, y), .l, moves + 1),
+                 make((x, y - 1), .u, 1),
+                 make((x, y + 1), .d, 1)]
+    case .r:
+        cells = [make((x - 1, y), .r, moves + 1),
+                 make((x, y - 1), .u, 1),
+                 make((x, y + 1), .d, 1)]
+    case .u:
+        cells = [make((x, y - 1), .u, moves + 1),
+                 make((x - 1, y), .r, 1),
+                 make((x + 1, y), .l, 1)]
+    case .d:
+        cells = [make((x, y + 1), .d, moves + 1),
+                 make((x - 1, y), .r, 1),
+                 make((x + 1, y), .l, 1)]
+    }
+    return cells
+      .filter { grid.items[$0.node] != nil }
+      .filter { moveRange.contains($0.moves) }
 }
 
 let grid = readInput()
-let sp = shortestPath(grid: grid)
-print(sp ?? 0)
+let p1 = shortestPath(grid: grid, moveRange: 1...3)
+// let p1 = shortestPath(grid: grid, moveRange: 4...10)
+print(p1 ?? 0)
