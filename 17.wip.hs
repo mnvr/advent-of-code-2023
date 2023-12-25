@@ -25,10 +25,6 @@ parse s = Grid { items = M.fromList xs, lastNode = fst (last xs) }
 enum :: [a] -> [(Int, a)]
 enum = zip [0..]
 
-visitor :: (Show a) => Cell -> a -> Int -> Maybe Cell -> String
-visitor cell item d p =
-  "visiting item " ++ show item ++ " at " ++ show cell ++ " tentative distance " ++ show d ++ " parent " ++ show p
-
 neighbours :: Grid Int -> [Int] -> Cell -> [Neighbour]
 neighbours Grid { items } range = adjacent
   where
@@ -75,24 +71,17 @@ neighbours Grid { items } range = adjacent
           snd (foldl (\(d, xs) m -> let cell = Cell (x + m, y) L m
                                     in toNeighbour cell d xs) (0, []) rng)
           ]
-      -- L -> [Cell (x + 1, y) L (moves + 1), Cell (x, y - 1) U 1, Cell (x, y + 1) D 1]
-      -- R -> [Cell (x - 1, y) R (moves + 1), Cell (x, y - 1) U 1, Cell (x, y + 1) D 1]
-      -- U -> [Cell (x, y - 1) U (moves + 1), Cell (x - 1, y) R 1, Cell (x + 1, y) L 1]
-      -- D -> [Cell (x, y + 1) D (moves + 1), Cell (x - 1, y) R 1, Cell (x + 1, y) L 1]
 
 -- Find the shortest path from start to an end using Dijkstra's algorithm.
 dijkstra :: Grid Int -> Node -> (Cell -> Bool)
             -> [Int]
-            -> (Cell -> Int -> Int -> Maybe Cell -> String)
             -> (Maybe Int, [String])
-dijkstra grid@Grid { items } start isEnd range visitor =
+dijkstra grid@Grid { items } start isEnd range =
   go (M.singleton startCell 0) M.empty S.empty (h_singleton (0, startCell))
   where
     -- Since moves is 0, the direction doesn't distinguish between moving ahead
     -- or turning.
     startCell = Cell { node = start, direction = L, moves = 0 }
-    visit x d p = let item = fromJust $ M.lookup (node x) items
-                  in visitor x item d p
     go :: M.Map Cell Int -> M.Map Cell Cell -> S.Set Cell ->  Heap (Int, Cell) -> (Maybe Int, [String])
     go ds parent seen q = case extractMin q of
         Nothing -> case nearestEnd ds of
@@ -159,11 +148,9 @@ showDistanceMap Grid { lastNode = (mx, my) } ds parent end range = map line [0..
 p1, p2 :: Grid Int -> [String]
 p1 grid = runP grid [1..3]
 p2 grid = runP grid [4..10]
--- p1 grid = runP grid [1..3]
--- p1 grid = map show (neighbours grid [4..10] (Cell (0, 0) L 0))
 
 runP :: Grid Int -> [Int] -> [String]
-runP grid range = let (r, zs) = dijkstra grid (0, 0) isEnd range visitor
+runP grid range = let (r, zs) = dijkstra grid (0, 0) isEnd range
           in zs ++ ["shortest-path result " ++ (show $ fromMaybe (-1) r)]
   where
     isEnd Cell { node } = node == (lastNode grid)
