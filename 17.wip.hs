@@ -3,6 +3,7 @@ import Data.Set qualified as S
 import Data.Maybe (fromJust, fromMaybe, mapMaybe)
 import Data.Sequence (Seq(..), fromList, (><))
 import Data.List (find)
+import Debug.Trace (trace)
 
 main :: IO ()
 main = interact $ unlines . p1 . parse
@@ -26,8 +27,9 @@ parse s = Grid { items = M.fromList xs, lastNode = fst (last xs) }
 enum :: [a] -> [(Int, a)]
 enum = zip [0..]
 
-visitor :: (Show a) => Cell -> a -> String
-visitor cell item = "visiting item " ++ show item ++ " at " ++ show cell
+visitor :: (Show a) => Cell -> a -> Int -> Cell -> String
+visitor cell item d p =
+  "visiting item " ++ show item ++ " at " ++ show cell ++ " tentative distance " ++ show d ++ " parent " ++ show p
 
 neighbours :: Grid Int -> Cell -> [Neighbour]
 neighbours Grid { items } = mapMaybe toNeighbour . adjacent
@@ -44,14 +46,15 @@ neighbours Grid { items } = mapMaybe toNeighbour . adjacent
       D -> [Cell (x, y + 1) D (moves + 1), Cell (x - 1, y) R 1, Cell (x + 1, y) L 1]
 
 -- Find the shortest path from start to an end using Dijkstra's algorithm.
-dijkstra :: Grid Int -> Node -> (Cell -> Bool) -> (Cell -> Int -> String) -> (Maybe Int, [String])
+dijkstra :: Grid Int -> Node -> (Cell -> Bool) -> (Cell -> Int -> Int -> Cell -> String) -> (Maybe Int, [String])
 dijkstra grid@Grid { items } start isEnd visitor =
   go (M.singleton startCell 0) M.empty S.empty
   where
     -- Since moves is 0, the direction doesn't distinguish between moving ahead
     -- or turning.
     startCell = Cell { node = start, direction = D, moves = 0 }
-    visit x = let item = fromJust $ M.lookup (node x) items in visitor x item
+    visit x d p = let item = fromJust $ M.lookup (node x) items
+                  in visitor x item d (fromMaybe startCell p)
     next ds seen = (M.lookupMin $ M.withoutKeys ds seen)
     go ds parent seen = case next ds seen of
         Nothing -> case nearestEnd ds of
@@ -59,14 +62,18 @@ dijkstra grid@Grid { items } start isEnd visitor =
                      Just (u, du) -> (Just du, showDistanceMap grid ds parent u)
         Just (u, du)
           -- | isEnd u -> (Just du, [visit u] )
+          | u `S.member` seen -> error "Should've been filtered out already"
           | otherwise ->
-             let (ds', parent') = foldl (relax u du) (ds, parent) (neighbours grid u)
+             let adj = (neighbours grid u)
+                 adj' = filter (\Neighbour {cell} -> cell `S.notMember` seen) adj
+                 (ds', parent') = foldl (relax u du) (ds, parent) adj
                  (d', vs) = go ds' parent' (S.insert u seen)
-             in (d', visit u : vs)
+             in (d', trace (visit u du (M.lookup u parent')) "" : vs)
 
     relax :: Cell -> Int -> (M.Map Cell Int, M.Map Cell Cell)
              -> Neighbour -> (M.Map Cell Int, M.Map Cell Cell)
     relax u du (ds, parent) Neighbour { cell = v, distance = d } =
+      trace ("relax u " ++ show u ++ " du " ++ show du  ++ " v " ++ show v ++ " d " ++ show d ++ " dv " ++ show (M.lookup v ds)) $
       case M.lookup v ds of
         Just dv | dv < du + d -> (ds, parent)
         _ -> (M.insert v (du + d) ds, M.insert v u parent)
