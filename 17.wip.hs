@@ -1,22 +1,22 @@
 import Data.Map qualified as M
 import Data.Set qualified as S
-import Data.Maybe (fromJust, fromMaybe, mapMaybe, listToMaybe, isJust)
-import Data.List (find, minimumBy)
+import Data.Maybe (fromJust, fromMaybe)
+import Data.List (find)
 
 main :: IO ()
 main = interact $ unlines . (\grid -> concat [p1 grid, p2 grid]) . parse
 
 type Node = (Int, Int)
-data Grid a = Grid { items :: M.Map Node a, lastNode :: Node } deriving Show
+data Grid a = Grid { items :: M.Map Node a, lastNode :: Node }
 
-data Direction = L | R | U | D deriving (Show, Eq, Ord)
+data Direction = L | R | U | D deriving (Eq, Ord)
 data Cell = Cell {
   node :: Node, direction :: Direction,
   -- The number of blocks that we have already moved in this direction.
   moves :: Int }
-  deriving  (Show, Eq, Ord)
+  deriving  (Eq, Ord)
 
-data Neighbour = Neighbour { cell :: Cell, distance :: Int } deriving Show
+data Neighbour = Neighbour { cell :: Cell, distance :: Int }
 
 parse :: String -> Grid Int
 parse s = Grid { items = M.fromList xs, lastNode = fst (last xs) }
@@ -73,14 +73,12 @@ neighbours Grid { items } range = adjacent
           ]
 
 -- Find the shortest path from start to an end using Dijkstra's algorithm.
-dijkstra :: Grid Int -> Node -> (Cell -> Bool)
-            -> [Int]
-            -> (Maybe Int, [String])
+dijkstra :: Grid Int -> Node -> (Cell -> Bool) -> [Int] -> (Maybe Int, [String])
 dijkstra grid@Grid { items } start isEnd range =
   go (M.singleton startCell 0) M.empty S.empty (singleton (0, startCell))
   where
-    -- Since moves is 0, the direction doesn't distinguish between moving ahead
-    -- or turning.
+    -- By setting moves to 0, the starting cell's considers both the left and
+    -- down neighbours as equivalent (which is what we want).
     startCell = Cell { node = start, direction = L, moves = 0 }
 
     go ds parent seen q = case extractMin q of
@@ -91,12 +89,11 @@ dijkstra grid@Grid { items } start isEnd range =
           | otherwise ->
              let adj = neighbours grid range u
                  (ds', parent', q'') = foldl (relax u du) (ds, parent, q') adj
-                 (d', vs) = go ds' parent' (S.insert u seen) q''
-             in (d', vs)
+             in go ds' parent' (S.insert u seen) q''
 
     relax u du (ds, parent, q) Neighbour { cell = v, distance = d } =
       let d' = du + d in case M.lookup v ds of
-        Just dv | dv < du + d -> (ds, parent, q)
+        Just dv | dv < d' -> (ds, parent, q)
         _ -> (M.insert v d' ds, M.insert v u parent, insert (d', v) q)
 
 data Heap a = Empty | Heap a (Heap a) (Heap a)
