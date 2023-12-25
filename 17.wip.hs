@@ -40,38 +40,38 @@ neighbours Grid { items } range = adjacent
     adjacent Cell { node = (x, y), direction, moves } =
       let rng = [1..maximum range] in case direction of
         L -> concat [
-          snd (foldr (\m (d, xs) -> let cell = Cell (x + m, y) L (moves + m)
+          snd (foldl (\(d, xs) m -> let cell = Cell (x + m, y) L (moves + m)
                                     in toNeighbour cell d xs) (0, []) rng),
-          snd (foldr (\m (d, xs) -> let cell = Cell (x, y - m) U m
+          snd (foldl (\(d, xs) m -> let cell = Cell (x, y - m) U m
                                     in toNeighbour cell d xs) (0, []) rng),
-          snd (foldr (\m (d, xs) -> let cell = Cell (x, y + m) D m
+          snd (foldl (\(d, xs) m -> let cell = Cell (x, y + m) D m
                                     in toNeighbour cell d xs) (0, []) rng)
           ]
 
         R -> concat [
-          snd (foldr (\m (d, xs) -> let cell = Cell (x - m, y) R (moves + m)
+          snd (foldl (\(d, xs) m -> let cell = Cell (x - m, y) R (moves + m)
                                     in toNeighbour cell d xs) (0, []) rng),
-          snd (foldr (\m (d, xs) -> let cell = Cell (x, y - m) U m
+          snd (foldl (\(d, xs) m -> let cell = Cell (x, y - m) U m
                                     in toNeighbour cell d xs) (0, []) rng),
-          snd (foldr (\m (d, xs) -> let cell = Cell (x, y + m) D m
+          snd (foldl (\(d, xs) m -> let cell = Cell (x, y + m) D m
                                     in toNeighbour cell d xs) (0, []) rng)
           ]
 
         U -> concat [
-          snd (foldr (\m (d, xs) -> let cell = Cell (x, y - m) U (moves + m)
+          snd (foldl (\(d, xs) m -> let cell = Cell (x, y - m) U (moves + m)
                                     in toNeighbour cell d xs) (0, []) rng),
-          snd (foldr (\m (d, xs) -> let cell = Cell (x - m, y) R m
+          snd (foldl (\(d, xs) m -> let cell = Cell (x - m, y) R m
                                     in toNeighbour cell d xs) (0, []) rng),
-          snd (foldr (\m (d, xs) -> let cell = Cell (x + m, y) L m
+          snd (foldl (\(d, xs) m -> let cell = Cell (x + m, y) L m
                                     in toNeighbour cell d xs) (0, []) rng)
           ]
 
         D -> concat [
-          snd (foldr (\m (d, xs) -> let cell = Cell (x, y + m) D (moves + m)
+          snd (foldl (\(d, xs) m -> let cell = Cell (x, y + m) D (moves + m)
                                     in toNeighbour cell d xs) (0, []) rng),
-          snd (foldr (\m (d, xs) -> let cell = Cell (x - m, y) R m
+          snd (foldl (\(d, xs) m -> let cell = Cell (x - m, y) R m
                                     in toNeighbour cell d xs) (0, []) rng),
-          snd (foldr (\m (d, xs) -> let cell = Cell (x + m, y) L m
+          snd (foldl (\(d, xs) m -> let cell = Cell (x + m, y) L m
                                     in toNeighbour cell d xs) (0, []) rng)
           ]
       -- L -> [Cell (x + 1, y) L (moves + 1), Cell (x, y - 1) U 1, Cell (x, y + 1) D 1]
@@ -157,8 +157,8 @@ showDistanceMap Grid { lastNode = (mx, my) } ds parent end range = map line [0..
 
 p1 :: Grid Int -> [String]
 -- p1 grid = runP grid [4..9]
--- p1 grid = runP grid [1..3]
-p1 grid = map show (neighbours grid [1..3] (Cell (0, 0) L 0))
+p1 grid = runP grid [1..3]
+-- p1 grid = map show (neighbours grid [1..3] (Cell (0, 0) L 0))
 
 runP :: Grid Int -> [Int] -> [String]
 runP grid range = let (r, zs) = dijkstra grid (0, 0) isEnd range visitor
