@@ -25,21 +25,21 @@ data Cell = Cell {
 data Neighbour = Neighbour { cell :: Cell, distance :: Int }
 
 neighbours :: Grid Int -> [Int] -> Cell -> [Neighbour]
-neighbours Grid { items } range = filter inRange . adjacent
+neighbours Grid { items } range = filter inRange . concat . adjacent
   where
     adjacent Cell { node = (x, y), direction, moves } = case direction of
-      L -> concat [cells (\m -> Cell (x + m, y) L (moves + m)),
-                   cells (\m -> Cell (x, y - m) U m),
-                   cells (\m -> Cell (x, y + m) D m)]
-      R -> concat [cells (\m -> Cell (x - m, y) R (moves + m)),
-                   cells (\m -> Cell (x, y - m) U m),
-                   cells (\m -> Cell (x, y + m) D m)]
-      U -> concat [cells (\m -> Cell (x, y - m) U (moves + m)),
-                   cells (\m -> Cell (x - m, y) R m),
-                   cells (\m -> Cell (x + m, y) L m)]
-      D -> concat [cells (\m -> Cell (x, y + m) D (moves + m)),
-                   cells (\m -> Cell (x - m, y) R m),
-                   cells (\m -> Cell (x + m, y) L m)]
+      L -> [cells (\m -> Cell (x + m, y) L (moves + m)),
+            cells (\m -> Cell (x, y - m) U m),
+            cells (\m -> Cell (x, y + m) D m)]
+      R -> [cells (\m -> Cell (x - m, y) R (moves + m)),
+            cells (\m -> Cell (x, y - m) U m),
+            cells (\m -> Cell (x, y + m) D m)]
+      U -> [cells (\m -> Cell (x, y - m) U (moves + m)),
+            cells (\m -> Cell (x - m, y) R m),
+            cells (\m -> Cell (x + m, y) L m)]
+      D -> [cells (\m -> Cell (x, y + m) D (moves + m)),
+            cells (\m -> Cell (x - m, y) R m),
+            cells (\m -> Cell (x + m, y) L m)]
     cells c = snd (foldl (\(d, xs) m -> toNeighbour (c m) d xs) (0, []) extent)
     extent = [1..maximum range]
     toNeighbour cell d xs = case M.lookup (node cell) items of
