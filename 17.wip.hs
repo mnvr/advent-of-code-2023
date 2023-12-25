@@ -49,45 +49,57 @@ dijkstra :: Grid Int -> Node -> (Cell -> Bool)
             -> (Cell -> Int -> Int -> Maybe Cell -> String)
             -> (Maybe Int, [String])
 dijkstra grid@Grid { items } start isEnd visitor =
-  go (M.singleton startCell 0) M.empty S.empty
+  go (M.singleton startCell 0) (M.singleton 0 (S.fromList [startCell])) M.empty S.empty
   where
     -- Since moves is 0, the direction doesn't distinguish between moving ahead
     -- or turning.
     startCell = Cell { node = start, direction = L, moves = 0 }
     visit x d p = let item = fromJust $ M.lookup (node x) items
                   in visitor x item d p
-    next' ds seen = (M.lookupMin $ M.withoutKeys ds seen)
-    next :: M.Map Cell Int -> S.Set Cell -> Maybe (Cell, Int)
-    next ds seen = case filter (\k -> S.notMember k seen) (M.keys ds) of
-      [] -> Nothing
-      ks -> let mv = minimum $ map (\k -> fromJust (M.lookup k ds)) ks
-                mk = filter (\k -> (M.lookup k ds) == (Just mv)) ks
-            in if null mk then Nothing else Just (mk !! 0, mv)
-    go ds parent seen = case next ds seen of
+    -- next' ds seen = (M.lookupMin $ M.withoutKeys ds seen)
+    -- next'' :: M.Map Cell Int -> S.Set Cell -> Maybe (Cell, Int)
+    -- next'' ds invds seen = case filter (\k -> S.notMember k seen) (M.keys ds) of
+    --   [] -> Nothing
+    --   ks -> let mv = minimum $ map (\k -> fromJust (M.lookup k ds)) ks
+    --             mk = filter (\k -> (M.lookup k ds) == (Just mv)) ks
+    --         in if null mk then Nothing else Just (mk !! 0, mv)
+    next :: M.Map Cell Int -> M.Map Int (S.Set Cell) -> S.Set Cell -> Maybe (Cell, Int, M.Map Int (S.Set Cell))
+    next ds ids seen = case M.minView ids of
+      Nothing -> Nothing
+      Just (s, ids') -> let s' = S.filter (`S.notMember` seen) s in case (S.size s') of
+        0 -> next ds ids' seen
+        _ -> let (u, s'') = fromJust $ S.minView s'
+                 du = fromJust $ M.lookup u ds
+             in Just (u, du, M.insert du s'' ids')
+    go :: M.Map Cell Int -> M.Map Int (S.Set Cell) -> M.Map Cell Cell -> S.Set Cell -> (Maybe Int, [String])
+    go ds ids parent seen = case next ds ids seen of
         Nothing -> case nearestEnd ds of
                      Nothing -> (Nothing, [])
                      Just (u, du) -> (Just du, showDistanceMap grid ds parent u)
-        Just (u, du)
+        Just (u, du, ids')
           -- | isEnd u -> (Just du, [visit u] )
           | u `S.member` seen -> error "Should've been filtered out already"
           | otherwise ->
              let adj = (neighbours grid u)
                  adj' = filter (\Neighbour {cell} -> cell `S.notMember` seen) adj
-                 (ds', parent') = foldl (relax u du) (ds, parent) adj
-                 (d', vs) = go ds' parent' (S.insert u seen)
+                 (ds', ids'', parent') = foldl (relax u du) (ds, ids', parent) adj
+                 (d', vs) = go ds' ids'' parent' (S.insert u seen)
             --  in (d', (visit u du (M.lookup u parent)) : vs)
              in (d', vs)
 
-    relax :: Cell -> Int -> (M.Map Cell Int, M.Map Cell Cell)
-             -> Neighbour -> (M.Map Cell Int, M.Map Cell Cell)
-    relax u du (ds, parent) Neighbour { cell = v, distance = d } =
+    relax :: Cell -> Int -> (M.Map Cell Int, M.Map Int (S.Set Cell), M.Map Cell Cell)
+             -> Neighbour -> (M.Map Cell Int, M.Map Int (S.Set Cell), M.Map Cell Cell)
+    relax u du (ds, ids, parent) Neighbour { cell = v, distance = d } =
       case M.lookup v ds of
-        Just dv | dv < du + d -> (ds, parent)
-        _ -> (M.insert v (du + d) ds, M.insert v u parent)
-    nearestEnd' ds = M.lookupMin $ M.filterWithKey (\k _ -> isEnd k) ds
+        Just dv | dv < du + d -> (ds, ids, parent)
+        _ -> (M.insert v (du + d) ds, M.alter af (du + d) ids, M.insert v u parent)
+            where af Nothing = Just (S.singleton v)
+                  af (Just s) = Just (S.insert v s)
+    -- nearestEnd' ds = M.lookupMin $ M.filterWithKey (\k _ -> isEnd k) ds
     nearestEnd ds = case map (\k -> (k, fromJust (M.lookup k ds))) $ filter (\k -> isEnd k) (M.keys ds) of
       [] -> Nothing
       kvs -> Just $ minimumBy (\(k, v) (k2, v2) -> v `compare` v2) kvs
+
 
 showDistanceMap :: Grid a -> M.Map Cell Int -> M.Map Cell Cell -> Cell -> [String]
 showDistanceMap Grid { lastNode = (mx, my) } ds parent end = map line [0..my]
