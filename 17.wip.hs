@@ -1,6 +1,6 @@
 import Data.Map qualified as M
 import Data.Set qualified as S
-import Data.Maybe (fromJust, fromMaybe, mapMaybe)
+import Data.Maybe (fromJust, fromMaybe, mapMaybe, listToMaybe)
 import Data.Sequence (Seq(..), fromList, (><))
 import Data.List (find)
 import Debug.Trace (trace)
@@ -27,7 +27,7 @@ parse s = Grid { items = M.fromList xs, lastNode = fst (last xs) }
 enum :: [a] -> [(Int, a)]
 enum = zip [0..]
 
-visitor :: (Show a) => Cell -> a -> Int -> Cell -> String
+visitor :: (Show a) => Cell -> a -> Int -> Maybe Cell -> String
 visitor cell item d p =
   "visiting item " ++ show item ++ " at " ++ show cell ++ " tentative distance " ++ show d ++ " parent " ++ show p
 
@@ -46,16 +46,24 @@ neighbours Grid { items } = mapMaybe toNeighbour . adjacent
       D -> [Cell (x, y + 1) D (moves + 1), Cell (x - 1, y) R 1, Cell (x + 1, y) L 1]
 
 -- Find the shortest path from start to an end using Dijkstra's algorithm.
-dijkstra :: Grid Int -> Node -> (Cell -> Bool) -> (Cell -> Int -> Int -> Cell -> String) -> (Maybe Int, [String])
+dijkstra :: Grid Int -> Node -> (Cell -> Bool)
+            -> (Cell -> Int -> Int -> Maybe Cell -> String)
+            -> (Maybe Int, [String])
 dijkstra grid@Grid { items } start isEnd visitor =
   go (M.singleton startCell 0) M.empty S.empty
   where
     -- Since moves is 0, the direction doesn't distinguish between moving ahead
     -- or turning.
-    startCell = Cell { node = start, direction = D, moves = 0 }
+    startCell = Cell { node = start, direction = L, moves = 0 }
     visit x d p = let item = fromJust $ M.lookup (node x) items
-                  in visitor x item d (fromMaybe startCell p)
-    next ds seen = (M.lookupMin $ M.withoutKeys ds seen)
+                  in visitor x item d p
+    next' ds seen = (M.lookupMin $ M.withoutKeys ds seen)
+    next :: M.Map Cell Int -> S.Set Cell -> Maybe (Cell, Int)
+    next ds seen = case filter (\k -> S.notMember k seen) (M.keys ds) of
+      [] -> Nothing
+      ks -> let mv = minimum $ map (\k -> fromJust (M.lookup k ds)) ks
+                mk = filter (\k -> (M.lookup k ds) == (Just mv)) ks
+            in trace ("distance map has " ++ show (length ks) ++ " unseen keys, minimum distance is " ++ show mv ++ ", there are " ++ show (length mk) ++ " keys with that distance, returning the first one of those") $ if null mk then Nothing else Just (mk !! 0, mv)
     go ds parent seen = case next ds seen of
         Nothing -> case nearestEnd ds of
                      Nothing -> (Nothing, [])
@@ -63,12 +71,12 @@ dijkstra grid@Grid { items } start isEnd visitor =
         Just (u, du)
           -- | isEnd u -> (Just du, [visit u] )
           | u `S.member` seen -> error "Should've been filtered out already"
-          | otherwise ->
+          | otherwise -> trace (visit u du (M.lookup u parent)) $
              let adj = (neighbours grid u)
                  adj' = filter (\Neighbour {cell} -> cell `S.notMember` seen) adj
                  (ds', parent') = foldl (relax u du) (ds, parent) adj
                  (d', vs) = go ds' parent' (S.insert u seen)
-             in (d', trace (visit u du (M.lookup u parent')) "" : vs)
+             in (d', "" : vs)
 
     relax :: Cell -> Int -> (M.Map Cell Int, M.Map Cell Cell)
              -> Neighbour -> (M.Map Cell Int, M.Map Cell Cell)
