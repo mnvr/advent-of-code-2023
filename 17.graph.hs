@@ -62,7 +62,9 @@ dijkstra :: Grid Int -> Node -> Node -> (Node -> Int -> b) -> (Maybe Int, [b])
 dijkstra grid@Grid { items } start end visitor = go (M.singleton start 0) S.empty
   where
     visit x = let item = fromJust $ M.lookup x items in visitor x item
-    next ds seen = (M.lookupMin $ M.withoutKeys ds seen)
+    next ds seen = M.foldrWithKey f Nothing $ M.withoutKeys ds seen
+      where f u du (Just (v, dv)) | dv < du = Just (v, dv)
+            f u du _ = Just (u, du)
     go ds seen = case next ds seen of
         Nothing -> (Nothing, [])
         Just (u, du)
