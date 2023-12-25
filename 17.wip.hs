@@ -4,7 +4,7 @@ import Data.Maybe (fromJust, fromMaybe, mapMaybe, listToMaybe, isJust)
 import Data.List (find, minimumBy)
 
 main :: IO ()
-main = interact $ unlines . p1 . parse
+main = interact $ unlines . (\grid -> concat [p1 grid, p2 grid]) . parse
 
 type Node = (Int, Int)
 data Grid a = Grid { items :: M.Map Node a, lastNode :: Node } deriving Show
@@ -156,8 +156,9 @@ showDistanceMap Grid { lastNode = (mx, my) } ds parent end range = map line [0..
                 where d = pad3 $ show $ fromJust $ M.lookup cell ds
                       pad3 s = reverse $ take 3 (reverse ("   " ++ s))
 
-p1 :: Grid Int -> [String]
-p1 grid = runP grid [4..10]
+p1, p2 :: Grid Int -> [String]
+p1 grid = runP grid [1..3]
+p2 grid = runP grid [4..10]
 -- p1 grid = runP grid [1..3]
 -- p1 grid = map show (neighbours grid [4..10] (Cell (0, 0) L 0))
 
