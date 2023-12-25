@@ -77,7 +77,7 @@ dijkstra :: Grid Int -> Node -> (Cell -> Bool)
             -> [Int]
             -> (Maybe Int, [String])
 dijkstra grid@Grid { items } start isEnd range =
-  go (M.singleton startCell 0) M.empty S.empty (h_singleton (0, startCell))
+  go (M.singleton startCell 0) M.empty S.empty (singleton (0, startCell))
   where
     -- Since moves is 0, the direction doesn't distinguish between moving ahead
     -- or turning.
@@ -100,8 +100,7 @@ dijkstra grid@Grid { items } start isEnd range =
     relax u du (ds, parent, q) Neighbour { cell = v, distance = d } =
       case M.lookup v ds of
         Just dv | dv < du + d -> (ds, parent, q)
-        _ -> (M.insert v (du + d) ds, M.insert v u parent, h_insert (du + d, v) q)
-
+        _ -> (M.insert v (du + d) ds, M.insert v u parent, insert (du + d, v) q)
 
 data Heap a = Empty | Heap a (Heap a) (Heap a)
 
@@ -116,11 +115,11 @@ extractMin :: Ord a => Heap a -> Maybe (a, Heap a)
 extractMin Empty = Nothing
 extractMin (Heap x l r) = Just (x, union l r)
 
-h_singleton :: a -> Heap a
-h_singleton x = Heap x Empty Empty
+singleton :: a -> Heap a
+singleton x = Heap x Empty Empty
 
-h_insert :: Ord a => a -> Heap a -> Heap a
-h_insert x h = h_singleton x `union` h
+insert :: Ord a => a -> Heap a -> Heap a
+insert x h = singleton x `union` h
 
 showDistanceMap :: Grid a -> M.Map Cell Int -> M.Map Cell Cell -> Cell -> [Int] -> [String]
 showDistanceMap Grid { lastNode = (mx, my) } ds parent end range = map line [0..my]
