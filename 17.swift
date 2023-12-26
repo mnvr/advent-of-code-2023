@@ -32,13 +32,12 @@ struct Cell: Hashable {
 }
 
 func shortestPath(grid: Grid, moveRange: ClosedRange<Int>) -> Int {
-    let startNode = Node(x: 0, y: 0)
-    // Setting moves to 0 to allows us to equally consider both left and down
-    // neighbours.
-    let startCell = Cell(node: startNode, direction: .l, moves: 0)
+    // Starting with 0 moves allows us to consider both left and down neighbours
+    // equally.
+    let startCell = Cell(node: Node(x: 0, y: 0), direction: .l, moves: 0)
     func isEnd(_ cell: Cell) -> Bool { cell.node == grid.lastNode }
 
-    func adj(_ u: Cell) -> [Neighbour] {
+    func adj(_ u: Cell) -> any Sequence<Neighbour> {
         neighbours(grid: grid, moveRange: moveRange, cell: u)
     }
 
@@ -48,10 +47,10 @@ func shortestPath(grid: Grid, moveRange: ClosedRange<Int>) -> Int {
     var minDist = 0
 
     func popNearest() -> (Cell, Int)? {
+        // Use an inverse distance map to simulate a priority queue.
         guard minDist < invDist.count else { return nil }
         if var unseen = invDist[minDist]?.filter({ !seen.contains($0) }),
-            unseen.count > 0 {
-            let v = unseen.removeFirst()
+            let v = unseen.popLast() {
             let d = minDist
             if unseen.count == 0 { minDist += 1 }
             return (v, d)
@@ -59,29 +58,17 @@ func shortestPath(grid: Grid, moveRange: ClosedRange<Int>) -> Int {
             minDist += 1
             return popNearest()
         }
-
-        // var u: Cell?
-        // var du: Int = .max
-        // for (v, dv) in dist {
-        //     if dv < du && !seen.contains(v) {
-        //         u = v
-        //         du = dv
-        //     }
-        // }
-        // if let u { return (u, du) }
-        // return nil
     }
 
     while let (u, du) = popNearest() {
         if !seen.insert(u).inserted { continue }
         if isEnd(u) { return du }
-        for n in adj(u) {
-            let v = n.cell
-            let d = n.d
+        for (v, d) in adj(u) {
+            let d2 = du + d
             let dv = dist[v] ?? .max
-            if du + d < dv {
-                dist[v] = du + d
-                invDist[du + d, default: []].append(v)
+            if d2 < dv {
+                dist[v] = d2
+                invDist[d2, default: []].append(v)
             }
         }
     }
@@ -89,16 +76,14 @@ func shortestPath(grid: Grid, moveRange: ClosedRange<Int>) -> Int {
     return 0
 }
 
-struct Neighbour {
-    let cell: Cell
-    let d: Int
-}
+typealias Neighbour = (cell: Cell, d: Int)
 
-func neighbours(grid: Grid, moveRange: ClosedRange<Int>, cell: Cell) -> [Neighbour] {
+func neighbours(
+    grid: Grid, moveRange: ClosedRange<Int>, cell: Cell
+) -> any Sequence<Neighbour> {
     let node = cell.node
     let moves = cell.moves
     let (x, y) = (node.x, node.y)
-    let nbrs: [[Neighbour]]
 
     func make(_ xy: (Int, Int), _ direction: Direction, _ moves: Int) -> Cell {
         Cell(node: Node(x: xy.0, y: xy.1), direction: direction, moves: moves)
@@ -112,36 +97,31 @@ func neighbours(grid: Grid, moveRange: ClosedRange<Int>, cell: Cell) -> [Neighbo
             let cell = makeCell(m)
             guard let d = grid.items[cell.node] else { return nil }
             s += d
-            if moveRange.contains(cell.moves) {
-                return Neighbour(cell: cell, d: s)
-            }
-            return nil
+            return moveRange.contains(cell.moves) ? (cell: cell, d: s) : nil
         })
     }
 
     switch cell.direction {
     case .l:
-        nbrs = [seq({ m in make((x + m, y), .l, moves + m) }),
+        return [seq({ m in make((x + m, y), .l, moves + m) }),
                 seq({ m in make((x, y - m), .u, m) }),
-                seq({ m in make((x, y + m), .d, m) })]
+                seq({ m in make((x, y + m), .d, m) })].joined()
     case .r:
-        nbrs = [seq({ m in make((x - m, y), .r, moves + m) }),
+        return [seq({ m in make((x - m, y), .r, moves + m) }),
                 seq({ m in make((x, y - m), .u, m) }),
-                seq({ m in make((x, y + m), .d, m) })]
+                seq({ m in make((x, y + m), .d, m) })].joined()
     case .u:
-        nbrs = [seq({ m in make((x, y - m), .u, moves + m) }),
+        return [seq({ m in make((x, y - m), .u, moves + m) }),
                 seq({ m in make((x - m, y), .r, m) }),
-                seq({ m in make((x + m, y), .l, m) })]
+                seq({ m in make((x + m, y), .l, m) })].joined()
     case .d:
-        nbrs = [seq({ m in make((x, y + m), .d, moves + m) }),
+        return [seq({ m in make((x, y + m), .d, moves + m) }),
                 seq({ m in make((x - m, y), .r, m) }),
-                seq({ m in make((x + m, y), .l, m) })]
+                seq({ m in make((x + m, y), .l, m) })].joined()
     }
-    return nbrs.flatMap { $0 }
 }
 
 let grid = readInput()
 let p1 = shortestPath(grid: grid, moveRange: 1...3)
-// let p2 = shortestPath(grid: grid, moveRange: 4...10)
-// print(p1, p2)
-print(p1)
+let p2 = shortestPath(grid: grid, moveRange: 4...10)
+print(p1, p2)
