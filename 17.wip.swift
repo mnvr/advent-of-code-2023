@@ -31,7 +31,7 @@ struct Cell: Hashable {
     let moves: Int
 }
 
-func shortestPath(grid: Grid, moveRange: ClosedRange<Int>) -> Int? {
+func shortestPath(grid: Grid, moveRange: ClosedRange<Int>) -> Int {
     let startNode = Node(x: 0, y: 0)
     // Setting moves to 0 to allows us to equally consider both left and down
     // neighbours.
@@ -73,7 +73,7 @@ func shortestPath(grid: Grid, moveRange: ClosedRange<Int>) -> Int? {
         }
     }
 
-    return nil
+    return 0
 }
 
 struct Neighbour {
@@ -129,5 +129,5 @@ func neighbours(grid: Grid, moveRange: ClosedRange<Int>, cell: Cell) -> [Neighbo
 
 let grid = readInput()
 let p1 = shortestPath(grid: grid, moveRange: 1...3)
-// let p1 = shortestPath(grid: grid, moveRange: 4...10)
-print(p1 ?? 0)
+let p2 = shortestPath(grid: grid, moveRange: 4...10)
+print(p1, p2)
