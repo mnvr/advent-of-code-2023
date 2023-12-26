@@ -22,7 +22,7 @@ func readInput() -> Grid {
 }
 
 enum Direction {
-    case l, r, u, d
+    case h, v
 }
 
 struct Cell: Hashable {
@@ -32,20 +32,20 @@ struct Cell: Hashable {
 
 func shortestPath(grid: Grid, moveRange: ClosedRange<Int>) -> Int {
     let startNode = Node(x: 0, y: 0)
-    // Create two starting cells, one for each axis of movement, so that when
-    // considering neighbours, we never need to go straight, we can always turn.
-    let startL = Cell(node: startNode, direction: .l)
-    let startD = Cell(node: startNode, direction: .d)
+    // Create two starting cells, one for each axis of movement, so that we only
+    // need to turn.
+    let startH = Cell(node: startNode, direction: .h)
+    let startV = Cell(node: startNode, direction: .v)
     func isEnd(_ cell: Cell) -> Bool { cell.node == grid.lastNode }
 
     func adj(_ u: Cell) -> some Sequence<Neighbour> {
         neighbours(grid: grid, moveRange: moveRange, cell: u)
     }
 
-    var dist: [Cell: Int] = [startL: 0, startD: 0]
+    var dist: [Cell: Int] = [startH: 0, startV: 0]
     var seen: Set<Cell> = Set()
     // Use the inverse of the distance map to simulate a priority queue.
-    var inverseDistance = [0: Set([startL, startD])]
+    var inverseDistance = [0: Set([startH, startV])]
 
     func popNearest() -> (Cell, Int)? {
         while let d = inverseDistance.keys.min() {
@@ -94,12 +94,12 @@ func neighbours(
 
     let (x, y) = (cell.node.x, cell.node.y)
     switch cell.direction {
-    case .l, .r:
-        return [seq({ make((x, y - $0), .u) }),
-                seq({ make((x, y + $0), .d) })].joined()
-    default:
-        return [seq({ make((x - $0, y), .r) }),
-                seq({ make((x + $0, y), .l) })].joined()
+    case .h:
+        return [seq({ make((x, y - $0), .v) }),
+                seq({ make((x, y + $0), .v) })].joined()
+    case .v:
+        return [seq({ make((x - $0, y), .h) }),
+                seq({ make((x + $0, y), .h) })].joined()
     }
 }
 
