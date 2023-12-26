@@ -32,19 +32,21 @@ struct Cell: Hashable {
 }
 
 func shortestPath(grid: Grid, moveRange: ClosedRange<Int>) -> Int {
-    // Starting with 0 moves allows us to consider both left and down neighbours
-    // equally.
-    let startCell = Cell(node: Node(x: 0, y: 0), direction: .l, moves: 0)
+    let startNode = Node(x: 0, y: 0)
+    // Create two starting cells, one for each axis of movement. Then, when
+    // considering the neighbours, we never go straight, we always turn.
+    let startL = Cell(node: startNode, direction: .l, moves: 1)
+    let startD = Cell(node: startNode, direction: .d, moves: 1)
     func isEnd(_ cell: Cell) -> Bool { cell.node == grid.lastNode }
 
     func adj(_ u: Cell) -> some Sequence<Neighbour> {
         neighbours(grid: grid, moveRange: moveRange, cell: u)
     }
 
-    var dist: [Cell: Int] = [startCell: 0]
+    var dist: [Cell: Int] = [startL: 0, startD: 0]
     var seen: Set<Cell> = Set()
     // Use the inverse of the distance map to simulate a priority queue.
-    var inverseDistance = [0: Set([startCell])]
+    var inverseDistance = [0: Set([startL, startD])]
 
     func popNearest() -> (Cell, Int)? {
         while let d = inverseDistance.keys.min() {
@@ -77,10 +79,6 @@ typealias Neighbour = (cell: Cell, d: Int)
 func neighbours(
     grid: Grid, moveRange: ClosedRange<Int>, cell: Cell
 ) -> some Sequence<Neighbour> {
-    let node = cell.node
-    let moves = cell.moves
-    let (x, y) = (node.x, node.y)
-
     func make(_ xy: (Int, Int), _ direction: Direction, _ moves: Int) -> Cell {
         Cell(node: Node(x: xy.0, y: xy.1), direction: direction, moves: moves)
     }
@@ -97,22 +95,13 @@ func neighbours(
         }
     }
 
+    let (x, y) = (cell.node.x, cell.node.y)
     switch cell.direction {
-    case .l:
-        return [seq({ m in make((x + m, y), .l, moves + m) }),
-                seq({ m in make((x, y - m), .u, m) }),
+    case .l, .r:
+        return [seq({ m in make((x, y - m), .u, m) }),
                 seq({ m in make((x, y + m), .d, m) })].joined()
-    case .r:
-        return [seq({ m in make((x - m, y), .r, moves + m) }),
-                seq({ m in make((x, y - m), .u, m) }),
-                seq({ m in make((x, y + m), .d, m) })].joined()
-    case .u:
-        return [seq({ m in make((x, y - m), .u, moves + m) }),
-                seq({ m in make((x - m, y), .r, m) }),
-                seq({ m in make((x + m, y), .l, m) })].joined()
-    case .d:
-        return [seq({ m in make((x, y + m), .d, moves + m) }),
-                seq({ m in make((x - m, y), .r, m) }),
+    default:
+        return [seq({ m in make((x - m, y), .r, m) }),
                 seq({ m in make((x + m, y), .l, m) })].joined()
     }
 }

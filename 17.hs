@@ -27,19 +27,11 @@ data Neighbour = Neighbour { cell :: Cell, distance :: Int }
 neighbours :: Grid Int -> [Int] -> Cell -> [Neighbour]
 neighbours Grid { items } range = filter inRange . concat . adjacent
   where
-    adjacent Cell { node = (x, y), direction, moves } = case direction of
-      L -> [cells (\m -> Cell (x + m, y) L (moves + m)),
-            cells (\m -> Cell (x, y - m) U m),
-            cells (\m -> Cell (x, y + m) D m)]
-      R -> [cells (\m -> Cell (x - m, y) R (moves + m)),
-            cells (\m -> Cell (x, y - m) U m),
-            cells (\m -> Cell (x, y + m) D m)]
-      U -> [cells (\m -> Cell (x, y - m) U (moves + m)),
-            cells (\m -> Cell (x - m, y) R m),
-            cells (\m -> Cell (x + m, y) L m)]
-      D -> [cells (\m -> Cell (x, y + m) D (moves + m)),
-            cells (\m -> Cell (x - m, y) R m),
-            cells (\m -> Cell (x + m, y) L m)]
+    adjacent Cell { node = (x, y), direction = d, moves }
+      | d == L || d == R = [cells (\m -> Cell (x, y - m) U m),
+                            cells (\m -> Cell (x, y + m) D m)]
+      | otherwise = [cells (\m -> Cell (x - m, y) R m),
+                     cells (\m -> Cell (x + m, y) L m)]
     cells c = snd (foldl (\(d, xs) m -> toNeighbour (c m) d xs) (0, []) extent)
     extent = [1..maximum range]
     toNeighbour cell d xs = case M.lookup (node cell) items of
@@ -48,12 +40,14 @@ neighbours Grid { items } range = filter inRange . concat . adjacent
     inRange Neighbour { cell } = moves cell `elem` range
 
 shortestPath :: [Int] -> Grid Int -> Int
-shortestPath moveRange grid@Grid { items, lastNode } =
-  go (M.singleton startCell 0) S.empty (S.singleton (0, startCell))
+shortestPath moveRange grid@Grid { lastNode } = go startDist S.empty startQ
   where
-    -- By setting moves to 0, the starting cell's considers both the left and
-    -- down neighbours as equivalent (which is what we want).
-    startCell = Cell { node = (0, 0), direction = L, moves = 0 }
+    -- Start in both directions so that we never have to go straight and just
+    -- always turn.
+    startCells = [Cell { node = (0, 0), direction = L, moves = 1 },
+                  Cell { node = (0, 0), direction = D, moves = 1 }]
+    startDist = M.fromList $ zip startCells [0, 0]
+    startQ = S.fromList $ zip [0, 0] startCells
     isEnd Cell { node } = node == lastNode
 
     go ds seen q = case S.minView q of
