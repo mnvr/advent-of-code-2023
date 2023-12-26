@@ -1,5 +1,6 @@
 import Data.Char (isDigit)
 import Data.List (elemIndex, find)
+import Data.Map ((!))
 import Data.Map qualified as M
 import Control.Arrow ((&&&))
 
@@ -33,7 +34,7 @@ valid ws p = go "in"
   where
     go "A" = True
     go "R" = False
-    go w = go $ next ((M.!) ws w)
+    go w = go $ next (ws ! w)
     next ((Nothing, r) : _) = r
     next ((Just c, r) : rs) = if test c then r else next rs
     test (i, '<', v) = (p !! i) < v
@@ -42,25 +43,27 @@ valid ws p = go "in"
 p1 :: (Workflows, [Part]) -> Int
 p1 (workflows, parts) = sum . concat $ filter (valid workflows) parts
 
-type Ranges = [(Int, Int)]
-type Thread = (Ranges, String)
+type Ranges = [(Int, Int)]     -- 4 ranges, one for each attribute of a part
+type Thread = (Ranges, String) -- Ranges undergoing a particular workflow
 
 validCombinations :: Workflows -> Int
 validCombinations ws = go [(replicate 4 (1, 4000), "in")]
   where
     combo :: Ranges -> Int
-    combo ranges = product $ map ((+1) . uncurry subtract) ranges
-    rules w = ((M.!) ws w)
+    combo = product . map ((+1) . uncurry subtract)
+
     go :: [Thread] -> Int
     go [] = 0
     go ((rs, "A") : xs) = combo rs + go xs
     go ((_, "R") : xs) = go xs
-    go ((rs, w) : xs) = go $ (splitThreads rs (rules w)) ++ xs
+    go ((rs, w) : xs) = go $ splitThreads rs (ws ! w) ++ xs
+
     splitThreads :: Ranges -> [Rule] -> [Thread]
     splitThreads rs ((Nothing, w) : _) = [(rs, w)]
     splitThreads rs ((Just c, w) : rest) =
         let (matching, notMatching) = split rs c
         in [(matching, w)] ++ splitThreads notMatching rest
+
     split :: Ranges -> Condition -> (Ranges, Ranges)
     split ranges (i, op, v) = foldl f ([], []) (zip [0..] ranges)
       where f (m, n) (j, r) | i == j = let (match, nomatch) = split' r op v
