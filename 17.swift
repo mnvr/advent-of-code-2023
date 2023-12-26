@@ -28,15 +28,14 @@ enum Direction {
 struct Cell: Hashable {
     let node: Node
     let direction: Direction
-    let moves: Int
 }
 
 func shortestPath(grid: Grid, moveRange: ClosedRange<Int>) -> Int {
     let startNode = Node(x: 0, y: 0)
-    // Create two starting cells, one for each axis of movement. Then, when
-    // considering the neighbours, we never go straight, we always turn.
-    let startL = Cell(node: startNode, direction: .l, moves: 1)
-    let startD = Cell(node: startNode, direction: .d, moves: 1)
+    // Create two starting cells, one for each axis of movement, so that when
+    // considering neighbours, we never need to go straight, we can always turn.
+    let startL = Cell(node: startNode, direction: .l)
+    let startD = Cell(node: startNode, direction: .d)
     func isEnd(_ cell: Cell) -> Bool { cell.node == grid.lastNode }
 
     func adj(_ u: Cell) -> some Sequence<Neighbour> {
@@ -79,30 +78,28 @@ typealias Neighbour = (cell: Cell, d: Int)
 func neighbours(
     grid: Grid, moveRange: ClosedRange<Int>, cell: Cell
 ) -> some Sequence<Neighbour> {
-    func make(_ xy: (Int, Int), _ direction: Direction, _ moves: Int) -> Cell {
-        Cell(node: Node(x: xy.0, y: xy.1), direction: direction, moves: moves)
+    func make(_ xy: (Int, Int), _ direction: Direction) -> Cell {
+        Cell(node: Node(x: xy.0, y: xy.1), direction: direction)
     }
-
-    let cellRange = 1...moveRange.upperBound
 
     func seq(_ makeCell: (Int) -> Cell) -> some Sequence<Neighbour> {
         var s = 0
-        return cellRange.compactMap { m in
+        return (1...moveRange.upperBound).compactMap { m in
             let cell = makeCell(m)
             guard let d = grid.items[cell.node] else { return nil }
             s += d
-            return moveRange.contains(cell.moves) ? (cell: cell, d: s) : nil
+            return moveRange.contains(m) ? (cell: cell, d: s) : nil
         }
     }
 
     let (x, y) = (cell.node.x, cell.node.y)
     switch cell.direction {
     case .l, .r:
-        return [seq({ m in make((x, y - m), .u, m) }),
-                seq({ m in make((x, y + m), .d, m) })].joined()
+        return [seq({ make((x, y - $0), .u) }),
+                seq({ make((x, y + $0), .d) })].joined()
     default:
-        return [seq({ m in make((x - m, y), .r, m) }),
-                seq({ m in make((x + m, y), .l, m) })].joined()
+        return [seq({ make((x - $0, y), .r) }),
+                seq({ make((x + $0, y), .l) })].joined()
     }
 }
 
