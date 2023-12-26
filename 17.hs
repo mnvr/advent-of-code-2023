@@ -16,36 +16,29 @@ enum :: [a] -> [(Int, a)]
 enum = zip [0..]
 
 data Direction = L | R | U | D deriving (Eq, Ord)
-data Cell = Cell {
-  node :: Node, direction :: Direction,
-  -- The number of blocks that we have already moved in this direction.
-  moves :: Int }
-  deriving  (Eq, Ord)
-
+data Cell = Cell { node :: Node, direction :: Direction } deriving  (Eq, Ord)
 data Neighbour = Neighbour { cell :: Cell, distance :: Int }
 
 neighbours :: Grid Int -> [Int] -> Cell -> [Neighbour]
-neighbours Grid { items } range = filter inRange . concat . adjacent
+neighbours Grid { items } range = concat . adjacent
   where
-    adjacent Cell { node = (x, y), direction = d, moves }
-      | d == L || d == R = [cells (\m -> Cell (x, y - m) U m),
-                            cells (\m -> Cell (x, y + m) D m)]
-      | otherwise = [cells (\m -> Cell (x - m, y) R m),
-                     cells (\m -> Cell (x + m, y) L m)]
-    cells c = snd (foldl (\(d, xs) m -> toNeighbour (c m) d xs) (0, []) extent)
-    extent = [1..maximum range]
-    toNeighbour cell d xs = case M.lookup (node cell) items of
-      Just d2 -> (d + d2, Neighbour cell (d + d2) : xs)
+    adjacent Cell { node = (x, y), direction = d }
+      | d `elem` [L, R] = [cells (\m -> Cell (x, y - m) U),
+                           cells (\m -> Cell (x, y + m) D)]
+      | otherwise = [cells (\m -> Cell (x - m, y) R),
+                     cells (\m -> Cell (x + m, y) L)]
+    cells mkCell = snd $ foldl (mkNeighbour mkCell) (0, []) [1..maximum range]
+    mkNeighbour mkCell (d, xs) m = let cell = mkCell m in case M.lookup (node cell) items of
+      Just d2 -> (d + d2, if m `elem` range then Neighbour cell (d + d2) : xs else xs)
       _ -> (d, xs)
-    inRange Neighbour { cell } = moves cell `elem` range
 
 shortestPath :: [Int] -> Grid Int -> Int
 shortestPath moveRange grid@Grid { lastNode } = go startDist S.empty startQ
   where
-    -- Start in both directions so that we never have to go straight and just
-    -- always turn.
-    startCells = [Cell { node = (0, 0), direction = L, moves = 1 },
-                  Cell { node = (0, 0), direction = D, moves = 1 }]
+    -- Start in both directions so that we never have to go straight and can
+    -- just always turn. This way, we don't even need to track moves.
+    startCells = [Cell { node = (0, 0), direction = L },
+                  Cell { node = (0, 0), direction = D }]
     startDist = M.fromList $ zip startCells [0, 0]
     startQ = S.fromList $ zip [0, 0] startCells
     isEnd Cell { node } = node == lastNode
