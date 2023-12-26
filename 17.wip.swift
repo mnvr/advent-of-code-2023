@@ -44,20 +44,32 @@ func shortestPath(grid: Grid, moveRange: ClosedRange<Int>) -> Int {
 
     var dist: [Cell: Int] = [startCell: 0]
     var seen: Set<Cell> = Set()
-    //var invDist: [Int: [Node]] = []
-    //var minDist = 0
+    var invDist: [Int: [Cell]] = [0: [startCell]]
+    var minDist = 0
 
     func popNearest() -> (Cell, Int)? {
-        var u: Cell?
-        var du: Int = .max
-        for (v, dv) in dist {
-            if dv < du && !seen.contains(v) {
-                u = v
-                du = dv
-            }
+        guard minDist < invDist.count else { return nil }
+        if var unseen = invDist[minDist]?.filter({ !seen.contains($0) }),
+            unseen.count > 0 {
+            let v = unseen.removeFirst()
+            let d = minDist
+            if unseen.count == 0 { minDist += 1 }
+            return (v, d)
+        } else {
+            minDist += 1
+            return popNearest()
         }
-        if let u { return (u, du) }
-        return nil
+
+        // var u: Cell?
+        // var du: Int = .max
+        // for (v, dv) in dist {
+        //     if dv < du && !seen.contains(v) {
+        //         u = v
+        //         du = dv
+        //     }
+        // }
+        // if let u { return (u, du) }
+        // return nil
     }
 
     while let (u, du) = popNearest() {
@@ -69,6 +81,7 @@ func shortestPath(grid: Grid, moveRange: ClosedRange<Int>) -> Int {
             let dv = dist[v] ?? .max
             if du + d < dv {
                 dist[v] = du + d
+                invDist[du + d, default: []].append(v)
             }
         }
     }
@@ -129,5 +142,6 @@ func neighbours(grid: Grid, moveRange: ClosedRange<Int>, cell: Cell) -> [Neighbo
 
 let grid = readInput()
 let p1 = shortestPath(grid: grid, moveRange: 1...3)
-let p2 = shortestPath(grid: grid, moveRange: 4...10)
-print(p1, p2)
+// let p2 = shortestPath(grid: grid, moveRange: 4...10)
+// print(p1, p2)
+print(p1)
