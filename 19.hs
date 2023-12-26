@@ -9,4 +9,6 @@ parse = both . lines
     both (l:ls) = let (w, p) = both ls in (workflow l : w, p)
     workflow s = "workflow " ++ s
     part :: String -> [Int]
-    part s = let (d, r) = span isDigit (snd (break isDigit s)) in if null r then [] else read d : part r
+    part s = case reads (snd $ break isDigit s) of
+        [] -> []
+        [(d, r)] -> d : part r
