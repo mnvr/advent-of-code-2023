@@ -5,15 +5,16 @@ import Data.Map qualified as M
 main :: IO ()
 main = interact $ (++ "\n") . show . parse
 
+type Workflows = M.Map String [Rule]
 type Rule = (Maybe Condition, String)
 type Condition = (Int, Char, Int)
 type Part = [Int]
 
-parse :: String -> (M.Map String [Rule], [Part])
+parse :: String -> (Workflows, [Part])
 parse = both . lines
   where
-    both s = let (a, b) = span (/= "") s
-             in (M.fromList (map workflow a), map part b)
+    both s = let (a, b) = span (/= "") s in (workflows a, map part b)
+    workflows = M.fromList . map workflow
     workflow s = (rules . drop 1) <$> break (== '{') s
     rules [] = []
     rules s = let (a, b) = break (`elem` ",}") s in rule a : rules (drop 1 b)
@@ -26,5 +27,8 @@ parse = both . lines
         [] -> []
         [(d, r)] -> d : part r
 
--- valid :: [Workflow] -> Part -> Bool
--- valid ws p =
+valid :: Workflows -> Part -> Bool
+valid ws p = go "in"
+  where
+    go "A" = True
+    go "R" = False
