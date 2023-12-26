@@ -14,5 +14,10 @@ parse = foldl row M.empty . enum . lines
 enum :: [a] -> [(Int, a)]
 enum = zip [0..]
 
-p1 :: Garden -> Garden
-p1 = id
+p1 :: Garden -> Int
+p1 = step 6
+  where
+    step :: Int -> Garden -> Int
+    step 0 = length . filter (== 'O') . M.elems
+    step i = step (i - 1) . foldl f M.empty . M.keys
+      where f m k = M.insert k 'O' m
