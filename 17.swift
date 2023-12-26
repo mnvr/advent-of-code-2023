@@ -37,7 +37,7 @@ func shortestPath(grid: Grid, moveRange: ClosedRange<Int>) -> Int {
     let startCell = Cell(node: Node(x: 0, y: 0), direction: .l, moves: 0)
     func isEnd(_ cell: Cell) -> Bool { cell.node == grid.lastNode }
 
-    func adj(_ u: Cell) -> any Sequence<Neighbour> {
+    func adj(_ u: Cell) -> some Sequence<Neighbour> {
         neighbours(grid: grid, moveRange: moveRange, cell: u)
     }
 
@@ -66,7 +66,6 @@ func shortestPath(grid: Grid, moveRange: ClosedRange<Int>) -> Int {
                 dist[v] = d2
                 inverseDistance[d2, default: Set()].insert(v)
             }
-            // todo.insert(v)
         }
     }
 
@@ -77,7 +76,7 @@ typealias Neighbour = (cell: Cell, d: Int)
 
 func neighbours(
     grid: Grid, moveRange: ClosedRange<Int>, cell: Cell
-) -> any Sequence<Neighbour> {
+) -> some Sequence<Neighbour> {
     let node = cell.node
     let moves = cell.moves
     let (x, y) = (node.x, node.y)
@@ -88,14 +87,14 @@ func neighbours(
 
     let cellRange = 1...moveRange.upperBound
 
-    func seq(_ makeCell: (Int) -> Cell) -> [Neighbour] {
+    func seq(_ makeCell: (Int) -> Cell) -> some Sequence<Neighbour> {
         var s = 0
-        return Array(cellRange.compactMap { m in
+        return cellRange.compactMap { m in
             let cell = makeCell(m)
             guard let d = grid.items[cell.node] else { return nil }
             s += d
             return moveRange.contains(cell.moves) ? (cell: cell, d: s) : nil
-        })
+        }
     }
 
     switch cell.direction {
