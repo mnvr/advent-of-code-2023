@@ -43,18 +43,13 @@ func shortestPath(grid: Grid, moveRange: ClosedRange<Int>) -> Int {
 
     var dist: [Cell: Int] = [startCell: 0]
     var seen: Set<Cell> = Set()
-
     // Use the inverse of the distance map to simulate a priority queue.
     var inverseDistance = [0: Set([startCell])]
-    var todo = Set([startCell])
 
     func popNearest() -> (Cell, Int)? {
-        while let d = inverseDistance.keys.min(), let vs = inverseDistance[d] {
-            for v in vs {
-                if todo.contains(v) {
-                    todo.remove(v)
-                    return (v, d)
-                }
+        while let d = inverseDistance.keys.min() {
+            for v in inverseDistance[d]! {
+                if !seen.contains(v) { return (v, d)  }
             }
             inverseDistance[d] = nil
         }
@@ -71,7 +66,7 @@ func shortestPath(grid: Grid, moveRange: ClosedRange<Int>) -> Int {
                 dist[v] = d2
                 inverseDistance[d2, default: Set()].insert(v)
             }
-            todo.insert(v)
+            // todo.insert(v)
         }
     }
 
