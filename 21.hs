@@ -3,7 +3,7 @@ import Data.Map ((!))
 import Debug.Trace (trace)
 
 main :: IO ()
-main = interact $ (++ "\n") . show . p2 . parse
+main = interact $ (++ "\n") . show . p1 . parse
 
 type Index = (Int, Int)
 type Garden = M.Map Index Char
