@@ -45,8 +45,6 @@ the solutions, these are just tailored for my own workflow):
     this for Haskell that uses the `-O2` level.
 -   `make verify` - Run `make test`, but for all days so far, in reverse. Print
     nice and pretty stats about all the days too.
--   `make hs` and `make swift` are variations of the default `make`, except they
-    specifically run the latest Haskell or Swift solution.
 -   `make clean` - Clean temporary files (written to `out/`).
 
 To run the command on a specific day's program without needing to edit it, just
@@ -69,9 +67,10 @@ But feel free to peek into the `Makefile` itself. I had as much fun writing this
 Makefile as I had writing some of the solutions.
 
 Some of the solutions are done in shell scripts. To run these, the filename
-needs to be passed to the script instead of passing the input via stdin:
+needs to be passed to the script instead of passing the input via stdin²:
 
     ./xx.sh somefile
 
-(this is done differently this way because reading STDIN in a shell script is
-not straightforward, and would've otherwise shadowed the solution itself).
+<small>² (these were done differently because reading STDIN in a shell script is
+not straightforward, and would've otherwise shadowed the solution
+itself)</small> .

@@ -1,6 +1,6 @@
 default: example
 
-.PHONY: example test o o2 verify run-all min clean
+.PHONY: example test o o2 verify run-all min hs swift clean
 
 # For printing colored strings, we use escape sequences
 #
