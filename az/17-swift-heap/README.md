@@ -17,3 +17,6 @@ with the full input (must be present in your checkout!), and also prints the
 time it took:
 
     make time
+
+This version with the proper heap is indeed around 4x faster than 17.swift. On
+my machine, this takes around 0.13 s on the full input, while that takes 0.5 s.
